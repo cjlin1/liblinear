@@ -1,8 +1,8 @@
 CXX ?= g++
 CC ?= gcc
-CFLAGS ?= -Wall -Wconversion -O3 -fPIC
-LIBS ?= blas/blas.a
-#LIBS ?= -lblas
+CFLAGS = -Wall -Wconversion -O3 -fPIC
+LIBS = blas/blas.a
+#LIBS = -lblas
 
 all: train predict
 
