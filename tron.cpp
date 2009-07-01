@@ -25,12 +25,28 @@ extern int dscal_(int *, double *, double *, int *);
 }
 #endif
 
+void default_print(const char *buf)
+{
+	fputs(buf,stdout);
+	fflush(stdout);
+}
+
+void TRON::info(const char *fmt,...)
+{
+	char buf[BUFSIZ];
+	va_list ap;
+	va_start(ap,fmt);
+	vsprintf(buf,fmt,ap);
+	va_end(ap);
+	(*tron_print_string)(buf);
+}
 
 TRON::TRON(const function *fun_obj, double eps, int max_iter)
 {
 	this->fun_obj=const_cast<function *>(fun_obj);
 	this->eps=eps;
 	this->max_iter=max_iter;
+	tron_print_string = default_print;
 }
 
 TRON::~TRON()
@@ -104,7 +120,7 @@ void TRON::tron(double *w)
 		else
 			delta = max(delta, min(alpha*snorm, sigma3*delta));
 
-		printf("iter %2d act %5.3e pre %5.3e delta %5.3e f %5.3e |g| %5.3e CG %3d\n", iter, actred, prered, delta, f, gnorm, cg_iter);
+		info("iter %2d act %5.3e pre %5.3e delta %5.3e f %5.3e |g| %5.3e CG %3d\n", iter, actred, prered, delta, f, gnorm, cg_iter);
 
 		if (actred > eta0*prered)
 		{
@@ -119,18 +135,18 @@ void TRON::tron(double *w)
 		}
 		if (f < -1.0e+32)
 		{
-			printf("warning: f < -1.0e+32\n");
+			info("warning: f < -1.0e+32\n");
 			break;
 		}
 		if (fabs(actred) <= 0 && prered <= 0)
 		{
-			printf("warning: actred and prered <= 0\n");
+			info("warning: actred and prered <= 0\n");
 			break;
 		}
 		if (fabs(actred) <= 1.0e-12*fabs(f) &&
 		    fabs(prered) <= 1.0e-12*fabs(f))
 		{
-			printf("warning: actred and prered too small\n");
+			info("warning: actred and prered too small\n");
 			break;
 		}
 	}
@@ -171,7 +187,7 @@ int TRON::trcg(double delta, double *g, double *s, double *r)
 		daxpy_(&n, &alpha, d, &inc, s, &inc);
 		if (dnrm2_(&n, s, &inc) > delta)
 		{
-			printf("cg reaches trust region boundary\n");
+			info("cg reaches trust region boundary\n");
 			alpha = -alpha;
 			daxpy_(&n, &alpha, d, &inc, s, &inc);
 
@@ -211,4 +227,9 @@ double TRON::norm_inf(int n, double *x)
 		if (fabs(x[i]) >= dmax)
 			dmax = fabs(x[i]);
 	return(dmax);
+}
+
+void TRON::set_print_string(void (*print_string) (const char *buf))
+{
+	tron_print_string = print_string;
 }

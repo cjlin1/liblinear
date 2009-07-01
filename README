@@ -110,6 +110,7 @@ options:
 -B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default 1)
 -wi weight: weights adjust the parameter C of different classes (see README for details)
 -v n: n-fold cross validation mode
+-q : quiet mode (no outputs)
 
 Option -v randomly splits the data into n parts and calculates cross
 validation accuracy on them.
@@ -370,6 +371,11 @@ Library Usage
 - Function: void destroy_param(struct parameter *param);
 
     This function frees the memory used by a parameter set.
+
+- Variable: extern void (*liblinear_print_string) (const char *);
+
+    Users can specify their output format by
+    liblinear_print_string = &your_print_function;
 
 Building Windows Binaries
 =========================

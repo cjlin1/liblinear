@@ -60,6 +60,7 @@ void get_labels(const struct model *model_, int* label);
 void destroy_model(struct model *model_);
 void destroy_param(struct parameter *param);
 const char *check_parameter(const struct problem *prob, const struct parameter *param);
+extern void (*liblinear_print_string) (const char *);
 
 #ifdef __cplusplus
 }

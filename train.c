@@ -8,6 +8,8 @@
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
 
+void print_null(const char *s) {}
+
 void exit_with_help()
 {
 	printf(
@@ -29,6 +31,7 @@ void exit_with_help()
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default 1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
+	"-q : quiet mode (no outputs)\n"
 	);
 	exit(1);
 }
@@ -177,6 +180,11 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 					fprintf(stderr,"n-fold cross validation: n must >= 2\n");
 					exit_with_help();
 				}
+				break;
+
+			case 'q':
+				liblinear_print_string = &print_null;
+				i--;
 				break;
 
 			default:

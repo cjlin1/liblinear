@@ -21,21 +21,26 @@ template <class S, class T> inline void clone(T*& dst, S* src, int n)
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
 
+static void print_string_stdout(const char *s)
+{
+	fputs(s,stdout);
+	fflush(stdout);
+}
+
+void (*liblinear_print_string) (const char *) = &print_string_stdout;
+
 #if 1
 static void info(const char *fmt,...)
 {
+	char buf[BUFSIZ];
 	va_list ap;
 	va_start(ap,fmt);
-	vprintf(fmt,ap);
+	vsprintf(buf,fmt,ap);
 	va_end(ap);
-}
-static void info_flush()
-{
-	fflush(stdout);
+	(*liblinear_print_string)(buf);
 }
 #else
-static void info(char *fmt,...) {}
-static void info_flush() {}
+static void info(const char *fmt,...) {}
 #endif
 
 class l2_lr_fun : public function
@@ -614,8 +619,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 		iter++;
 		if(iter % 10 == 0)
 		{
-			info("."); 
-			info_flush();
+			info(".");
 		}
 
 		if(stopping < eps_shrink)
@@ -627,7 +631,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 				active_size = l;
 				for(i=0;i<l;i++)
 					active_size_i[i] = nr_class;
-				info("*"); info_flush();
+				info("*");
 				eps_shrink = max(eps_shrink/2, eps);
 				start_from_all = true;
 			}
@@ -831,8 +835,7 @@ static void solve_linear_c_svc(
 		iter++;
 		if(iter % 10 == 0)
 		{
-			info("."); 
-			info_flush();
+			info(".");
 		}
 
 		if(PGmax_new - PGmin_new <= eps)
@@ -842,7 +845,7 @@ static void solve_linear_c_svc(
 			else
 			{
 				active_size = l;
-				info("*"); info_flush();
+				info("*");
 				PGmax_old = INF;
 				PGmin_old = -INF;
 				continue;
@@ -960,6 +963,7 @@ void train_one(const problem *prob, const parameter *param, double *w, double Cp
 		{
 			fun_obj=new l2_lr_fun(prob, Cp, Cn);
 			TRON tron_obj(fun_obj, eps*min(pos,neg)/prob->l);
+			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
 			delete fun_obj;
 			break;
@@ -968,6 +972,7 @@ void train_one(const problem *prob, const parameter *param, double *w, double Cp
 		{
 			fun_obj=new l2loss_svm_fun(prob, Cp, Cn);
 			TRON tron_obj(fun_obj, eps*min(pos,neg)/prob->l);
+			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
 			delete fun_obj;
 			break;

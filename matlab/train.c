@@ -16,6 +16,10 @@ typedef int mwIndex;
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
 
+void print_null(const char *s){}
+
+void (*liblinear_default_print_string) (const char *);
+
 void exit_with_help()
 {
 	mexPrintf(
@@ -89,6 +93,12 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	col_format_flag = 0;
 	bias = 1;
 
+	// train loaded only once under matlab
+	if(liblinear_default_print_string == NULL)
+		liblinear_default_print_string = liblinear_print_string;
+	else
+		liblinear_print_string = liblinear_default_print_string;
+
 	if(nrhs <= 1)
 		return 1;
 
@@ -112,7 +122,8 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	for(i=1;i<argc;i++)
 	{
 		if(argv[i][0] != '-') break;
-		if(++i>=argc)
+		++i;
+		if(i>=argc && argv[i-1][1] != 'q') // since option -q has no parameter
 			return 1;
 		switch(argv[i-1][1])
 		{
@@ -143,6 +154,10 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				param.weight = (double *) realloc(param.weight,sizeof(double)*param.nr_weight);
 				param.weight_label[param.nr_weight-1] = atoi(&argv[i-1][2]);
 				param.weight[param.nr_weight-1] = atof(argv[i]);
+				break;
+			case 'q':
+				liblinear_print_string = &print_null;
+				i--;
 				break;
 			default:
 				mexPrintf("unknown option\n");
