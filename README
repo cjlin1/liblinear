@@ -104,7 +104,8 @@ options:
 -e epsilon : set tolerance of termination criterion
         -s 0 and 2
                 |f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,
-                where f is the primal function, (default 0.01)
+		where f is the primal function and pos/neg are # of
+		positive/negative data (default 0.01)
         -s 1, 3, and 4
                 Dual maximal violation <= eps; similar to libsvm (default 0.1)
 -B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default 1)
