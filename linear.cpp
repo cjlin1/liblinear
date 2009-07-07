@@ -705,7 +705,7 @@ static void solve_linear_c_svc(
 	int i, s, iter = 0;
 	double C, d, G;
 	double *QD = new double[l];
-	int max_iter = 20000;
+	int max_iter = 1000;
 	int *index = new int[l];
 	double *alpha = new double[l];
 	schar *y = new schar[l];
@@ -861,7 +861,7 @@ static void solve_linear_c_svc(
 
 	info("\noptimization finished, #iter = %d\n",iter);
 	if (iter >= max_iter)
-		info("Warning: reaching max number of iterations\n");
+		info("\nWARNING: reaching max number of iterations\nUsing -s 2 may be faster (also see FAQ)\n\n");
 
 	// calculate objective value
 
