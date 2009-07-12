@@ -100,7 +100,7 @@ double l2_lr_fun::fun(double *w)
 	double f=0;
 	int *y=prob->y;
 	int l=prob->l;
-	int n=prob->n;
+	int w_size=get_nr_variable();
 
 	Xv(w, z);
 	for(i=0;i<l;i++)
@@ -112,7 +112,7 @@ double l2_lr_fun::fun(double *w)
 			f += C[i]*(-yz+log(1 + exp(yz)));
 	}
 	f = 2*f;
-	for(i=0;i<n;i++)
+	for(i=0;i<w_size;i++)
 		f += w[i]*w[i];
 	f /= 2.0;
 
@@ -124,7 +124,7 @@ void l2_lr_fun::grad(double *w, double *g)
 	int i;
 	int *y=prob->y;
 	int l=prob->l;
-	int n=prob->n;
+	int w_size=get_nr_variable();
 
 	for(i=0;i<l;i++)
 	{
@@ -134,7 +134,7 @@ void l2_lr_fun::grad(double *w, double *g)
 	}
 	XTv(z, g);
 
-	for(i=0;i<n;i++)
+	for(i=0;i<w_size;i++)
 		g[i] = w[i] + g[i];
 }
 
@@ -147,7 +147,7 @@ void l2_lr_fun::Hv(double *s, double *Hs)
 {
 	int i;
 	int l=prob->l;
-	int n=prob->n;
+	int w_size=get_nr_variable();
 	double *wa = new double[l];
 
 	Xv(s, wa);
@@ -155,7 +155,7 @@ void l2_lr_fun::Hv(double *s, double *Hs)
 		wa[i] = C[i]*D[i]*wa[i];
 
 	XTv(wa, Hs);
-	for(i=0;i<n;i++)
+	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + Hs[i];
 	delete[] wa;
 }
@@ -182,10 +182,10 @@ void l2_lr_fun::XTv(double *v, double *XTv)
 {
 	int i;
 	int l=prob->l;
-	int n=prob->n;
+	int w_size=get_nr_variable();
 	feature_node **x=prob->x;
 
-	for(i=0;i<n;i++)
+	for(i=0;i<w_size;i++)
 		XTv[i]=0;
 	for(i=0;i<l;i++)
 	{
@@ -259,7 +259,7 @@ double l2loss_svm_fun::fun(double *w)
 	double f=0;
 	int *y=prob->y;
 	int l=prob->l;
-	int n=prob->n;
+	int w_size=get_nr_variable();	
 
 	Xv(w, z);
 	for(i=0;i<l;i++)
@@ -270,7 +270,7 @@ double l2loss_svm_fun::fun(double *w)
 			f += C[i]*d*d;
 	}
 	f = 2*f;
-	for(i=0;i<n;i++)
+	for(i=0;i<w_size;i++)
 		f += w[i]*w[i];
 	f /= 2.0;
 
@@ -282,7 +282,7 @@ void l2loss_svm_fun::grad(double *w, double *g)
 	int i;
 	int *y=prob->y;
 	int l=prob->l;
-	int n=prob->n;
+	int w_size=get_nr_variable();	
 
 	sizeI = 0;
 	for (i=0;i<l;i++)
@@ -294,7 +294,7 @@ void l2loss_svm_fun::grad(double *w, double *g)
 		}
 	subXTv(z, g);
 
-	for(i=0;i<n;i++)
+	for(i=0;i<w_size;i++)
 		g[i] = w[i] + 2*g[i];
 }
 
@@ -307,7 +307,7 @@ void l2loss_svm_fun::Hv(double *s, double *Hs)
 {
 	int i;
 	int l=prob->l;
-	int n=prob->n;
+	int w_size=get_nr_variable();
 	double *wa = new double[l];
 
 	subXv(s, wa);
@@ -315,7 +315,7 @@ void l2loss_svm_fun::Hv(double *s, double *Hs)
 		wa[i] = C[I[i]]*wa[i];
 
 	subXTv(wa, Hs);
-	for(i=0;i<n;i++)
+	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + 2*Hs[i];
 	delete[] wa;
 }
@@ -358,10 +358,10 @@ void l2loss_svm_fun::subXv(double *v, double *Xv)
 void l2loss_svm_fun::subXTv(double *v, double *XTv)
 {
 	int i;
-	int n=prob->n;
+	int w_size=get_nr_variable();
 	feature_node **x=prob->x;
 
-	for(i=0;i<n;i++)
+	for(i=0;i<w_size;i++)
 		XTv[i]=0;
 	for(i=0;i<sizeI;i++)
 	{
@@ -401,7 +401,7 @@ class Solver_MCSVM_CS
 		void solve_sub_problem(double A_i, int yi, double C_yi, int active_i, double *alpha_new);
 		bool be_shrunk(int m, int yi, double alpha_i, double minG);
 		double *B, *C, *G;
-		int n, l;
+		int w_size, l;
 		int nr_class;
 		int max_iter;
 		double eps;
@@ -410,7 +410,7 @@ class Solver_MCSVM_CS
 
 Solver_MCSVM_CS::Solver_MCSVM_CS(const problem *prob, int nr_class, double *C, double eps, int max_iter)
 {
-	this->n = prob->n;
+	this->w_size = prob->n;
 	this->l = prob->l;
 	this->nr_class = nr_class;
 	this->eps = eps;
@@ -490,7 +490,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 	// initial
 	for(i=0;i<l*nr_class;i++)
 		alpha[i] = 0;
-	for(i=0;i<n*nr_class;i++)
+	for(i=0;i<w_size*nr_class;i++)
 		w[i] = 0; 
 	for(i=0;i<l;i++)
 	{
@@ -647,7 +647,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 	// calculate objective value
 	double v = 0;
 	int nSV = 0;
-	for(i=0;i<n*nr_class;i++)
+	for(i=0;i<w_size*nr_class;i++)
 		v += w[i]*w[i];
 	v = 0.5*v;
 	for(i=0;i<l*nr_class;i++)
@@ -701,7 +701,7 @@ static void solve_linear_c_svc(
 	double Cp, double Cn, int solver_type)
 {
 	int l = prob->l;
-	int n = prob->n;
+	int w_size = prob->n;
 	int i, s, iter = 0;
 	double C, d, G;
 	double *QD = new double[l];
@@ -726,7 +726,7 @@ static void solve_linear_c_svc(
 		upper_bound_p = Cp; upper_bound_n = Cn;
 	}
 
-	for(i=0; i<n; i++)
+	for(i=0; i<w_size; i++)
 		w[i] = 0;
 	for(i=0; i<l; i++)
 	{
@@ -867,7 +867,7 @@ static void solve_linear_c_svc(
 
 	double v = 0;
 	int nSV = 0;
-	for(i=0; i<n; i++)
+	for(i=0; i<w_size; i++)
 		v += w[i]*w[i];
 	for(i=0; i<l; i++)
 	{
@@ -997,6 +997,7 @@ model* train(const problem *prob, const parameter *param)
 	int i,j;
 	int l = prob->l;
 	int n = prob->n;
+	int w_size = prob->n;
 	model *model_ = Malloc(model,1);
 
 	if(prob->bias>=0)
@@ -1064,7 +1065,7 @@ model* train(const problem *prob, const parameter *param)
 	{
 		if(nr_class == 2)
 		{
-			model_->w=Malloc(double, n);
+			model_->w=Malloc(double, w_size);
 
 			int e0 = start[0]+count[0];
 			k=0;
@@ -1077,8 +1078,8 @@ model* train(const problem *prob, const parameter *param)
 		}
 		else
 		{
-			model_->w=Malloc(double, n*nr_class);
-			double *w=Malloc(double, n);
+			model_->w=Malloc(double, w_size*nr_class);
+			double *w=Malloc(double, w_size);
 			for(i=0;i<nr_class;i++)
 			{
 				int si = start[i];
@@ -1094,7 +1095,7 @@ model* train(const problem *prob, const parameter *param)
 
 				train_one(&sub_prob, param, w, weighted_C[i], param->C);
 
-				for(int j=0;j<n;j++)
+				for(int j=0;j<w_size;j++)
 					model_->w[j*nr_class+i] = w[j];
 			}
 			free(w);
@@ -1138,6 +1139,7 @@ int save_model(const char *model_file_name, const struct model *model_)
 		n=nr_feature+1;
 	else
 		n=nr_feature;
+	int w_size = n;
 	FILE *fp = fopen(model_file_name,"w");
 	if(fp==NULL) return -1;
 
@@ -1159,7 +1161,7 @@ int save_model(const char *model_file_name, const struct model *model_)
 	fprintf(fp, "bias %.16g\n", model_->bias);
 
 	fprintf(fp, "w\n");
-	for(i=0; i<n; i++)
+	for(i=0; i<w_size; i++)
 	{
 		int j;
 		for(j=0; j<nr_w; j++)
@@ -1249,15 +1251,15 @@ struct model *load_model(const char *model_file_name)
 		n=nr_feature+1;
 	else
 		n=nr_feature;
-
+	int w_size = n;
 	int nr_w;
 	if(nr_class==2 && param.solver_type != MCSVM_CS)
 		nr_w = 1;
 	else
 		nr_w = nr_class;
 
-	model_->w=Malloc(double, n*nr_w);
-	for(i=0; i<n; i++)
+	model_->w=Malloc(double, w_size*nr_w);
+	for(i=0; i<w_size; i++)
 	{
 		int j;
 		for(j=0; j<nr_w; j++)
