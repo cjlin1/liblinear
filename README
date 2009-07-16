@@ -299,6 +299,38 @@ Library Usage
     *NOTE* To avoid wrong parameters, check_parameter() should be
     called before train().
 
+    struct model stores the model obtained from the training procedure:
+
+        struct model
+        {
+                struct parameter param;
+                int nr_class;           /* number of classes */
+                int nr_feature;
+                double *w;
+                int *label;             /* label of each class */
+                double bias;
+        };
+
+     param describes the parameters used to obtain the model.
+
+     nr_class and nr_feature are the number of classes and features, respectively.
+
+     The nr_feature*nr_class array w gives feature weights. We use one
+     against the rest for multi-class classification, so each feature
+     index corresponds to nr_class weight values. Weights are
+     organized in the following way
+
+     +------------------+------------------+------------+
+     | nr_class weights | nr_class weights |  ...   
+     | for 1st feature  | for 2nd feature  |      
+     +------------------+------------------+------------+
+
+     If bias >= 0, x becomes [x; bias]. The number of features is
+     increased by one, so w is a (nr_feature+1)*nr_class array. The
+     value of bias is stored in the variable bias.
+
+     The array label stores class labels.
+
 - Function: void cross_validation(const problem *prob, const parameter *param, int nr_fold, int *target);
 
     This function conducts cross validation. Data are separated to
