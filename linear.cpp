@@ -259,7 +259,7 @@ double l2loss_svm_fun::fun(double *w)
 	double f=0;
 	int *y=prob->y;
 	int l=prob->l;
-	int w_size=get_nr_variable();	
+	int w_size=get_nr_variable();
 
 	Xv(w, z);
 	for(i=0;i<l;i++)
@@ -282,7 +282,7 @@ void l2loss_svm_fun::grad(double *w, double *g)
 	int i;
 	int *y=prob->y;
 	int l=prob->l;
-	int w_size=get_nr_variable();	
+	int w_size=get_nr_variable();
 
 	sizeI = 0;
 	for (i=0;i<l;i++)
