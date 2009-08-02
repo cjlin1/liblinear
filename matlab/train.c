@@ -41,6 +41,7 @@ void exit_with_help()
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default 1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
+	"-q : quiet mode (no outputs)\n"
 	"col:\n"
 	"	if 'col' is setted, training_instance_matrix is parsed in column format, otherwise is in row format\n"
 	);
