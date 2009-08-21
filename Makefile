@@ -23,4 +23,5 @@ blas/blas.a:
 
 clean:
 	cd blas;	make clean
+	cd matlab;	make clean
 	rm -f *~ tron.o linear.o train predict
