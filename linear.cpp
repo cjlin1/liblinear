@@ -923,7 +923,7 @@ static void solve_l1_l2_svc(
 	feature_node *x;
 
 	// To support weights for instances,
-	// replace C[y[ind]] with C[i].
+	// replace C[y[i]] with C[i].
 	double C[2] = {Cn,Cp};
 
 	for(i=0; i<l; i++)
@@ -1204,7 +1204,7 @@ static void solve_l1_lr(
 	feature_node *x;
 
 	// To support weights for instances,
-	// replace C[y[ind]] with C[i].
+	// replace C[y[i]] with C[i].
 	double C[2] = {Cn,Cp};
 
 	for(i=0; i<l; i++)
