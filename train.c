@@ -17,10 +17,12 @@ void exit_with_help()
 	"options:\n"
 	"-s type : set type of solver (default 1)\n"
 	"	0 -- L2-regularized logistic regression\n"
-	"	1 -- L2-loss support vector machines (dual)\n"	
-	"	2 -- L2-loss support vector machines (primal)\n"
-	"	3 -- L1-loss support vector machines (dual)\n"
-	"	4 -- multi-class support vector machines by Crammer and Singer\n"
+	"	1 -- L2-regularized L2-loss support vector classification (dual)\n"	
+	"	2 -- L2-regularized L2-loss support vector classification (primal)\n"
+	"	3 -- L2-regularized L1-loss support vector classification (dual)\n"
+	"	4 -- multi-class support vector classification by Crammer and Singer\n"
+	"	5 -- L1-regularized L2-loss support vector classification\n"
+	"	6 -- L1-regularized logistic regression\n"
 	"-c cost : set the parameter C (default 1)\n"
 	"-e epsilon : set tolerance of termination criterion\n"
 	"	-s 0 and 2\n" 
@@ -29,6 +31,9 @@ void exit_with_help()
 	"		positive/negative data (default 0.01)\n"
 	"	-s 1, 3, and 4\n"
 	"		Dual maximal violation <= eps; similar to libsvm (default 0.1)\n"
+	"	-s 5 and 6\n"
+	"		|f'(w)|_inf <= eps*min(pos,neg)/l*|f'(w0)|_inf,\n"
+	"		where f is the primal function (default 0.01)\n"
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default 1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
@@ -132,7 +137,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	int i;
 
 	// default values
-	param.solver_type = L2LOSS_SVM_DUAL;
+	param.solver_type = L2_L2LOSS_SVC_DUAL;
 	param.C = 1;
 	param.eps = INF; // see setting below
 	param.nr_weight = 0;
@@ -215,10 +220,12 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 
 	if(param.eps == INF)
 	{
-		if(param.solver_type == L2_LR || param.solver_type == L2LOSS_SVM)
+		if(param.solver_type == L2_LR || param.solver_type == L2_L2LOSS_SVC)
 			param.eps = 0.01;
-		else if(param.solver_type == L2LOSS_SVM_DUAL || param.solver_type == L1LOSS_SVM_DUAL || param.solver_type == MCSVM_CS)
+		else if(param.solver_type == L2_L2LOSS_SVC_DUAL || param.solver_type == L2_L1LOSS_SVC_DUAL || param.solver_type == MCSVM_CS)
 			param.eps = 0.1;
+		else if(param.solver_type == L1_L2LOSS_SVC || param.solver_type == L1_LR)
+			param.eps = 0.01;
 	}
 }
 

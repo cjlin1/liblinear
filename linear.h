@@ -19,7 +19,7 @@ struct problem
 	double bias;            /* < 0 if no bias term */  
 };
 
-enum { L2_LR, L2LOSS_SVM_DUAL, L2LOSS_SVM, L1LOSS_SVM_DUAL, MCSVM_CS }; /* solver_type */
+enum { L2_LR, L2_L2LOSS_SVC_DUAL, L2_L2LOSS_SVC, L2_L1LOSS_SVC_DUAL, MCSVM_CS, L1_L2LOSS_SVC, L1_LR }; /* solver_type */
 
 struct parameter
 {
