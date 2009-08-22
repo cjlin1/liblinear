@@ -28,7 +28,7 @@ const char *model_to_matlab_structure(mxArray *plhs[], struct model *model_)
 	double *ptr;
 	mxArray *return_model, **rhs;
 	int out_id = 0;
-	int n;
+	int n, w_size;
 
 	rhs = (mxArray **)mxMalloc(sizeof(mxArray *)*NUM_OF_RETURN_FIELD);
 
@@ -67,6 +67,7 @@ const char *model_to_matlab_structure(mxArray *plhs[], struct model *model_)
 	else
 		n=model_->nr_feature;
 
+	w_size = n;
 	// Label
 	if(model_->label)
 	{
@@ -80,9 +81,9 @@ const char *model_to_matlab_structure(mxArray *plhs[], struct model *model_)
 	out_id++;
 
 	// w
-	rhs[out_id] = mxCreateDoubleMatrix(nr_w, n, mxREAL);
+	rhs[out_id] = mxCreateDoubleMatrix(nr_w, w_size, mxREAL);
 	ptr = mxGetPr(rhs[out_id]);
-	for(i = 0; i < n*nr_w; i++)
+	for(i = 0; i < w_size*nr_w; i++)
 		ptr[i]=model_->w[i];
 	out_id++;
 
@@ -105,7 +106,7 @@ const char *matlab_matrix_to_model(struct model *model_, const mxArray *matlab_s
 	int nr_w;
 	double *ptr;
 	int id = 0;
-	int n;
+	int n, w_size;
 	mxArray **rhs;
 
 	num_of_fields = mxGetNumberOfFields(matlab_struct);
@@ -149,6 +150,7 @@ const char *matlab_matrix_to_model(struct model *model_, const mxArray *matlab_s
 		n=model_->nr_feature+1;
 	else
 		n=model_->nr_feature;
+	w_size = n;
 
 	ptr = mxGetPr(rhs[id]);
 	model_->label=Malloc(int, model_->nr_class);
@@ -157,8 +159,8 @@ const char *matlab_matrix_to_model(struct model *model_, const mxArray *matlab_s
 	id++;
 
 	ptr = mxGetPr(rhs[id]);
-	model_->w=Malloc(double, nr_w*n);
-	for(i = 0; i < n*nr_w; i++)
+	model_->w=Malloc(double, w_size*nr_w);
+	for(i = 0; i < w_size*nr_w; i++)
 		model_->w[i]=ptr[i];
 	id++;
 	mxFree(rhs);
