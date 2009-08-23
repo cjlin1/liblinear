@@ -5,11 +5,11 @@
 #include "tron.h"
 
 #ifndef min
-template <class T> inline T min(T x,T y) { return (x<y)?x:y; }
+template <class T> static inline T min(T x,T y) { return (x<y)?x:y; }
 #endif
 
 #ifndef max
-template <class T> inline T max(T x,T y) { return (x>y)?x:y; }
+template <class T> static inline T max(T x,T y) { return (x>y)?x:y; }
 #endif
 
 #ifdef __cplusplus
@@ -25,7 +25,7 @@ extern int dscal_(int *, double *, double *, int *);
 }
 #endif
 
-void default_print(const char *buf)
+static void default_print(const char *buf)
 {
 	fputs(buf,stdout);
 	fflush(stdout);

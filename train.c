@@ -137,7 +137,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	int i;
 
 	// default values
-	param.solver_type = L2_L2LOSS_SVC_DUAL;
+	param.solver_type = L2R_L2LOSS_SVC_DUAL;
 	param.C = 1;
 	param.eps = INF; // see setting below
 	param.nr_weight = 0;
@@ -220,11 +220,11 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 
 	if(param.eps == INF)
 	{
-		if(param.solver_type == L2_LR || param.solver_type == L2_L2LOSS_SVC)
+		if(param.solver_type == L2R_LR || param.solver_type == L2R_L2LOSS_SVC)
 			param.eps = 0.01;
-		else if(param.solver_type == L2_L2LOSS_SVC_DUAL || param.solver_type == L2_L1LOSS_SVC_DUAL || param.solver_type == MCSVM_CS)
+		else if(param.solver_type == L2R_L2LOSS_SVC_DUAL || param.solver_type == L2R_L1LOSS_SVC_DUAL || param.solver_type == MCSVM_CS)
 			param.eps = 0.1;
-		else if(param.solver_type == L1_L2LOSS_SVC || param.solver_type == L1_LR)
+		else if(param.solver_type == L1R_L2LOSS_SVC || param.solver_type == L1R_LR)
 			param.eps = 0.01;
 	}
 }

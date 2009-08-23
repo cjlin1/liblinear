@@ -56,7 +56,7 @@ void do_predict(FILE *input, FILE *output, struct model* model_)
 	{
 		int *labels;
 
-		if(model_->param.solver_type!=L2_LR)
+		if(model_->param.solver_type!=L2R_LR)
 		{
 			fprintf(stderr, "probability output is only supported for logistic regression\n");
 			exit(1);

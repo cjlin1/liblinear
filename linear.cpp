@@ -43,11 +43,11 @@ static void info(const char *fmt,...)
 static void info(const char *fmt,...) {}
 #endif
 
-class l2_lr_fun : public function
+class l2r_lr_fun : public function
 {
 public:
-	l2_lr_fun(const problem *prob, double Cp, double Cn);
-	~l2_lr_fun();
+	l2r_lr_fun(const problem *prob, double Cp, double Cn);
+	~l2r_lr_fun();
 
 	double fun(double *w);
 	void grad(double *w, double *g);
@@ -65,7 +65,7 @@ private:
 	const problem *prob;
 };
 
-l2_lr_fun::l2_lr_fun(const problem *prob, double Cp, double Cn)
+l2r_lr_fun::l2r_lr_fun(const problem *prob, double Cp, double Cn)
 {
 	int i;
 	int l=prob->l;
@@ -86,7 +86,7 @@ l2_lr_fun::l2_lr_fun(const problem *prob, double Cp, double Cn)
 	}
 }
 
-l2_lr_fun::~l2_lr_fun()
+l2r_lr_fun::~l2r_lr_fun()
 {
 	delete[] z;
 	delete[] D;
@@ -94,7 +94,7 @@ l2_lr_fun::~l2_lr_fun()
 }
 
 
-double l2_lr_fun::fun(double *w)
+double l2r_lr_fun::fun(double *w)
 {
 	int i;
 	double f=0;
@@ -119,7 +119,7 @@ double l2_lr_fun::fun(double *w)
 	return(f);
 }
 
-void l2_lr_fun::grad(double *w, double *g)
+void l2r_lr_fun::grad(double *w, double *g)
 {
 	int i;
 	int *y=prob->y;
@@ -138,12 +138,12 @@ void l2_lr_fun::grad(double *w, double *g)
 		g[i] = w[i] + g[i];
 }
 
-int l2_lr_fun::get_nr_variable(void)
+int l2r_lr_fun::get_nr_variable(void)
 {
 	return prob->n;
 }
 
-void l2_lr_fun::Hv(double *s, double *Hs)
+void l2r_lr_fun::Hv(double *s, double *Hs)
 {
 	int i;
 	int l=prob->l;
@@ -160,7 +160,7 @@ void l2_lr_fun::Hv(double *s, double *Hs)
 	delete[] wa;
 }
 
-void l2_lr_fun::Xv(double *v, double *Xv)
+void l2r_lr_fun::Xv(double *v, double *Xv)
 {
 	int i;
 	int l=prob->l;
@@ -178,7 +178,7 @@ void l2_lr_fun::Xv(double *v, double *Xv)
 	}
 }
 
-void l2_lr_fun::XTv(double *v, double *XTv)
+void l2r_lr_fun::XTv(double *v, double *XTv)
 {
 	int i;
 	int l=prob->l;
@@ -198,11 +198,11 @@ void l2_lr_fun::XTv(double *v, double *XTv)
 	}
 }
 
-class l2loss_svm_fun : public function
+class l2r_l2_svc_fun : public function
 {
 public:
-	l2loss_svm_fun(const problem *prob, double Cp, double Cn);
-	~l2loss_svm_fun();
+	l2r_l2_svc_fun(const problem *prob, double Cp, double Cn);
+	~l2r_l2_svc_fun();
 
 	double fun(double *w);
 	void grad(double *w, double *g);
@@ -223,7 +223,7 @@ private:
 	const problem *prob;
 };
 
-l2loss_svm_fun::l2loss_svm_fun(const problem *prob, double Cp, double Cn)
+l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, double Cp, double Cn)
 {
 	int i;
 	int l=prob->l;
@@ -245,7 +245,7 @@ l2loss_svm_fun::l2loss_svm_fun(const problem *prob, double Cp, double Cn)
 	}
 }
 
-l2loss_svm_fun::~l2loss_svm_fun()
+l2r_l2_svc_fun::~l2r_l2_svc_fun()
 {
 	delete[] z;
 	delete[] D;
@@ -253,7 +253,7 @@ l2loss_svm_fun::~l2loss_svm_fun()
 	delete[] I;
 }
 
-double l2loss_svm_fun::fun(double *w)
+double l2r_l2_svc_fun::fun(double *w)
 {
 	int i;
 	double f=0;
@@ -277,7 +277,7 @@ double l2loss_svm_fun::fun(double *w)
 	return(f);
 }
 
-void l2loss_svm_fun::grad(double *w, double *g)
+void l2r_l2_svc_fun::grad(double *w, double *g)
 {
 	int i;
 	int *y=prob->y;
@@ -298,12 +298,12 @@ void l2loss_svm_fun::grad(double *w, double *g)
 		g[i] = w[i] + 2*g[i];
 }
 
-int l2loss_svm_fun::get_nr_variable(void)
+int l2r_l2_svc_fun::get_nr_variable(void)
 {
 	return prob->n;
 }
 
-void l2loss_svm_fun::Hv(double *s, double *Hs)
+void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 {
 	int i;
 	int l=prob->l;
@@ -320,7 +320,7 @@ void l2loss_svm_fun::Hv(double *s, double *Hs)
 	delete[] wa;
 }
 
-void l2loss_svm_fun::Xv(double *v, double *Xv)
+void l2r_l2_svc_fun::Xv(double *v, double *Xv)
 {
 	int i;
 	int l=prob->l;
@@ -338,7 +338,7 @@ void l2loss_svm_fun::Xv(double *v, double *Xv)
 	}
 }
 
-void l2loss_svm_fun::subXv(double *v, double *Xv)
+void l2r_l2_svc_fun::subXv(double *v, double *Xv)
 {
 	int i;
 	feature_node **x=prob->x;
@@ -355,7 +355,7 @@ void l2loss_svm_fun::subXv(double *v, double *Xv)
 	}
 }
 
-void l2loss_svm_fun::subXTv(double *v, double *XTv)
+void l2r_l2_svc_fun::subXTv(double *v, double *XTv)
 {
 	int i;
 	int w_size=get_nr_variable();
@@ -685,7 +685,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 // 		upper_bound_i = Cp if y_i = 1
 // 		upper_bound_i = Cn if y_i = -1
 // 		D_ii = 0
-// In L2-Svm case:
+// In L2-SVM case:
 // 		upper_bound_i = INF
 // 		D_ii = 1/(2*Cp)	if y_i = 1
 // 		D_ii = 1/(2*Cn)	if y_i = -1
@@ -696,7 +696,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 //
 // solution will be put in w
 
-static void solve_l2_l1l2_svc(
+static void solve_l2r_l1l2_svc(
 	const problem *prob, double *w, double eps, 
 	double Cp, double Cn, int solver_type)
 {
@@ -717,10 +717,10 @@ static void solve_l2_l1l2_svc(
 	double PGmin_old = -INF;
 	double PGmax_new, PGmin_new;
 
-	// default solver_type: L2_L2LOSS_SVC_DUAL
+	// default solver_type: L2R_L2LOSS_SVC_DUAL
 	double diag_p = 0.5/Cp, diag_n = 0.5/Cn;
 	double upper_bound_p = INF, upper_bound_n = INF;
-	if(solver_type == L2_L1LOSS_SVC_DUAL)
+	if(solver_type == L2R_L1LOSS_SVC_DUAL)
 	{
 		diag_p = 0; diag_n = 0;
 		upper_bound_p = Cp; upper_bound_n = Cn;
@@ -896,7 +896,7 @@ static void solve_l2_l1l2_svc(
 //
 // solution will be put in w
 
-static void solve_l1_l2_svc(
+static void solve_l1r_l2_svc(
 	problem *prob_col, double *w, double eps, 
 	double Cp, double Cn)
 {
@@ -1172,7 +1172,7 @@ static void solve_l1_l2_svc(
 //
 // solution will be put in w
 
-static void solve_l1_lr(
+static void solve_l1r_lr(
 	const problem *prob_col, double *w, double eps, 
 	double Cp, double Cn)
 {
@@ -1442,13 +1442,14 @@ static void solve_l1_lr(
 }
 
 // transpose matrix X from row format to column format
-static void transpose(const problem *prob, feature_node *x_space, problem *prob_col)
+static void transpose(const problem *prob, feature_node **x_space_ret, problem *prob_col)
 {
 	int i;
 	int l = prob->l;
 	int n = prob->n;
 	int nnz = 0;
 	int *col_ptr = new int[n+1];
+	feature_node *x_space;
 	prob_col->l = l;
 	prob_col->n = n;
 	prob_col->y = new int[l];
@@ -1490,6 +1491,8 @@ static void transpose(const problem *prob, feature_node *x_space, problem *prob_
 	}
 	for(i=0; i<n; i++)
 		x_space[col_ptr[i]].index = -1;
+
+	*x_space_ret = x_space;
 
 	delete [] col_ptr;
 }
@@ -1566,47 +1569,47 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 	function *fun_obj=NULL;
 	switch(param->solver_type)
 	{
-		case L2_LR:
+		case L2R_LR:
 		{
-			fun_obj=new l2_lr_fun(prob, Cp, Cn);
+			fun_obj=new l2r_lr_fun(prob, Cp, Cn);
 			TRON tron_obj(fun_obj, eps*min(pos,neg)/prob->l);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
 			delete fun_obj;
 			break;
 		}
-		case L2_L2LOSS_SVC:
+		case L2R_L2LOSS_SVC:
 		{
-			fun_obj=new l2loss_svm_fun(prob, Cp, Cn);
+			fun_obj=new l2r_l2_svc_fun(prob, Cp, Cn);
 			TRON tron_obj(fun_obj, eps*min(pos,neg)/prob->l);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
 			delete fun_obj;
 			break;
 		}
-		case L2_L2LOSS_SVC_DUAL:
-			solve_l2_l1l2_svc(prob, w, eps, Cp, Cn, L2_L2LOSS_SVC_DUAL);
+		case L2R_L2LOSS_SVC_DUAL:
+			solve_l2r_l1l2_svc(prob, w, eps, Cp, Cn, L2R_L2LOSS_SVC_DUAL);
 			break;
-		case L2_L1LOSS_SVC_DUAL:
-			solve_l2_l1l2_svc(prob, w, eps, Cp, Cn, L2_L1LOSS_SVC_DUAL);
+		case L2R_L1LOSS_SVC_DUAL:
+			solve_l2r_l1l2_svc(prob, w, eps, Cp, Cn, L2R_L1LOSS_SVC_DUAL);
 			break;
-		case L1_L2LOSS_SVC:
+		case L1R_L2LOSS_SVC:
 		{
 			problem prob_col;
 			feature_node *x_space = NULL;
-			transpose(prob, x_space ,&prob_col);
-			solve_l1_l2_svc(&prob_col, w, eps*min(pos,neg)/prob->l, Cp, Cn);
+			transpose(prob, &x_space ,&prob_col);
+			solve_l1r_l2_svc(&prob_col, w, eps*min(pos,neg)/prob->l, Cp, Cn);
 			delete [] prob_col.y;
 			delete [] prob_col.x;
 			delete [] x_space;
 			break;
 		}
-		case L1_LR:
+		case L1R_LR:
 		{
 			problem prob_col;
 			feature_node *x_space = NULL;
-			transpose(prob, x_space ,&prob_col);
-			solve_l1_lr(&prob_col, w, eps*min(pos,neg)/prob->l, Cp, Cn);
+			transpose(prob, &x_space ,&prob_col);
+			solve_l1r_lr(&prob_col, w, eps*min(pos,neg)/prob->l, Cp, Cn);
 			delete [] prob_col.y;
 			delete [] prob_col.x;
 			delete [] x_space;
@@ -1754,7 +1757,7 @@ void destroy_model(struct model *model_)
 
 static const char *solver_type_table[]=
 {
-	"L2_LR", "L2_L2LOSS_SVC_DUAL", "L2_L2LOSS_SVC","L2_L1LOSS_SVC_DUAL","MCSVM_CS", "L1_L2LOSS_SVC","L1_LR", NULL
+	"L2R_LR", "L2R_L2LOSS_SVC_DUAL", "L2R_L2LOSS_SVC","L2R_L1LOSS_SVC_DUAL","MCSVM_CS", "L1R_L2LOSS_SVC","L1R_LR", NULL
 };
 
 int save_model(const char *model_file_name, const struct model *model_)
@@ -1952,7 +1955,7 @@ int predict(const model *model_, const feature_node *x)
 
 int predict_probability(const struct model *model_, const struct feature_node *x, double* prob_estimates)
 {
-	if(model_->param.solver_type==L2_LR)
+	if(model_->param.solver_type==L2R_LR)
 	{
 		int i;
 		int nr_class=model_->nr_class;
@@ -2000,13 +2003,13 @@ const char *check_parameter(const problem *prob, const parameter *param)
 	if(param->C <= 0)
 		return "C <= 0";
 
-	if(param->solver_type != L2_LR
-		&& param->solver_type != L2_L2LOSS_SVC_DUAL
-		&& param->solver_type != L2_L2LOSS_SVC
-		&& param->solver_type != L2_L1LOSS_SVC_DUAL
+	if(param->solver_type != L2R_LR
+		&& param->solver_type != L2R_L2LOSS_SVC_DUAL
+		&& param->solver_type != L2R_L2LOSS_SVC
+		&& param->solver_type != L2R_L1LOSS_SVC_DUAL
 		&& param->solver_type != MCSVM_CS
-		&& param->solver_type != L1_L2LOSS_SVC
-		&& param->solver_type != L1_LR)
+		&& param->solver_type != L1R_L2LOSS_SVC
+		&& param->solver_type != L1R_LR)
 		return "unknown solver type";
 
 	return NULL;
