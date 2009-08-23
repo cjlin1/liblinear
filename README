@@ -287,15 +287,15 @@ Library Usage
                 double* weight;
         };
 
-    solver_type can be one of L2_LR, L2_L2LOSS_SVC_DUAL, L2_L2LOSS_SVC, L2_L1LOSS_SVC_DUAL, MCSVM_CS, L1_L2LOSS_SVC, L1_LR.
+    solver_type can be one of L2R_LR, L2R_L2LOSS_SVC_DUAL, L2R_L2LOSS_SVC, L2R_L1LOSS_SVC_DUAL, MCSVM_CS, L1R_L2LOSS_SVC, L1R_LR.
 
-    L2_LR                L2-regularized logistic regression
-    L2_L2LOSS_SVC_DUAL   L2-regularized L2-loss support vector classification (dual) 
-    L2_L2LOSS_SVC        L2-regularized L2-loss support vector classification (primal)
-    L2_L1LOSS_SVC_DUAL   L2-regularized L1-loss support vector classification (dual)  
+    L2R_LR                L2-regularized logistic regression
+    L2R_L2LOSS_SVC_DUAL   L2-regularized L2-loss support vector classification (dual) 
+    L2R_L2LOSS_SVC        L2-regularized L2-loss support vector classification (primal)
+    L2R_L1LOSS_SVC_DUAL   L2-regularized L1-loss support vector classification (dual)  
     MCSVM_CS multi-class support vector classification by Crammer and Singer        
-    L1_L2LOSS_SVC        L1-regularized L2-loss support vector classification
-    L1_LR                L1-regularized logistic regression
+    L1R_L2LOSS_SVC        L1-regularized L2-loss support vector classification
+    L1R_LR                L1-regularized logistic regression
 
     C is the cost of constraints violation. 
     eps is the stopping criterion. 
