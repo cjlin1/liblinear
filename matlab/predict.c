@@ -272,7 +272,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 		if(prob_estimate_flag)
 		{
-			if(model_->param.solver_type!=L2_LR)
+			if(model_->param.solver_type!=L2R_LR)
 			{
 				mexPrintf("probability output is only supported for logistic regression\n");
 				prob_estimate_flag=0;
