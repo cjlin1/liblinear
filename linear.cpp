@@ -888,7 +888,7 @@ static void solve_l2r_l1l2_svc(
 // A coordinate descent algorithm for 
 // L1-regularized L2-loss support vector classification
 //
-//  min_w \sum |wj| - C \sum max(0, 1-yi w^T xi)^2,
+//  min_w \sum |wj| + C \sum max(0, 1-yi w^T xi)^2,
 //
 // Given: 
 // x, y, Cp, Cn
@@ -902,7 +902,7 @@ static void solve_l1r_l2_svc(
 {
 	int l = prob_col->l;
 	int w_size = prob_col->n;
-	int i, s, iter = 0;
+	int j, s, iter = 0;
 	int max_iter = 1000;
 	int active_size = w_size;
 	int max_num_linesearch = 20;
@@ -919,34 +919,33 @@ static void solve_l1r_l2_svc(
 	int *index = new int[w_size];
 	schar *y = new schar[l];
 	double *b = new double[l]; // b = 1-ywTx
-	double *xi_sq = new double[w_size];
+	double *xj_sq = new double[w_size];
 	feature_node *x;
 
 	// To support weights for instances,
 	// replace C[y[i]] with C[i].
 	double C[2] = {Cn,Cp};
 
-	for(i=0; i<l; i++)
+	for(j=0; j<l; j++)
 	{
-		b[i] = 1;
-		if(prob_col->y[i] > 0)
-			y[i] = 1;
+		b[j] = 1;
+		if(prob_col->y[j] > 0)
+			y[j] = 1;
 		else
-			y[i] = 0;
+			y[j] = 0;
 	}
-
-	for(i=0; i<w_size; i++)
+	for(j=0; j<w_size; j++)
 	{
-		w[i] = 0;
-		index[i] = i;
-		xi_sq[i] = 0;
-		x = prob_col->x[i];
+		w[j] = 0;
+		index[j] = j;
+		xj_sq[j] = 0;
+		x = prob_col->x[j];
 		while(x->index != -1)
 		{
 			int ind = x->index;
 			double val = x->value;
-			x->value *= prob_col->y[ind]; // x->value stores yj*xji
-			xi_sq[i] += C[y[ind]]*val*val;
+			x->value *= prob_col->y[ind]; // x->value stores yi*xij
+			xj_sq[j] += C[y[ind]]*val*val;
 			x++;
 		}
 	}
@@ -955,19 +954,19 @@ static void solve_l1r_l2_svc(
 	{
 		Gmax_new  = 0;
 
-		for(i=0; i<active_size; i++)
+		for(j=0; j<active_size; j++)
 		{
-			int j = i+rand()%(active_size-i);
+			int i = j+rand()%(active_size-j);
 			swap(index[i], index[j]);
 		}
 
 		for(s=0; s<active_size; s++)
 		{
-			i = index[s];
+			j = index[s];
 			G_loss = 0;
 			H = 0;
 
-			x = prob_col->x[i];
+			x = prob_col->x[j];
 			while(x->index != -1)
 			{
 				int ind = x->index;
@@ -984,13 +983,18 @@ static void solve_l1r_l2_svc(
 
 			G = G_loss;
 			H *= 2;
+			H = max(H, 1e-12);
 
 			double Gp = G+1;
 			double Gn = G-1;
-			// shrinking
-			if(w[i] == 0)
+			double violation = 0;
+			if(w[j] == 0)
 			{
-				if(Gp>Gmax_old/l && Gn<-Gmax_old/l)
+				if(Gp < 0)
+					violation = -Gp;
+				else if(Gn > 0)
+					violation = Gn;
+				else if(Gp>Gmax_old/l && Gn<-Gmax_old/l)
 				{
 					active_size--;
 					swap(index[s], index[active_size]);
@@ -998,40 +1002,36 @@ static void solve_l1r_l2_svc(
 					continue;
 				}
 			}
+			else if(w[j] > 0)
+				violation = fabs(Gp);
+			else
+				violation = fabs(Gn);
+
+			Gmax_new = max(Gmax_new, violation);
 
 			// obtain Newton direction d
-			if(Gp <= H*w[i])
-			{
-				G = Gp;
+			if(Gp <= H*w[j])
 				d = -Gp/H;
-			}
-			else if(Gn >= H*w[i])
-			{
-				G = Gn;
+			else if(Gn >= H*w[j])
 				d = -Gn/H;
-			}
 			else
-			{
-				G = 0;
-				d = -w[i];
-			}
-
-			Gmax_new = max(Gmax_new, fabs(G));
+				d = -w[j];
 
 			if(fabs(d) < 1.0e-12)
 				continue;
 
+			double delta = fabs(w[j]+d)-fabs(w[j]) + G*d;
 			d_old = 0;
 			int num_linesearch;
 			for(num_linesearch=0; num_linesearch < max_num_linesearch; num_linesearch++)
 			{
 				d_diff = d_old - d;
-				cond = fabs(w[i]+d)-fabs(w[i]) + sigma*d*d;
+				cond = fabs(w[j]+d)-fabs(w[j]) - sigma*delta;
 
-				appxcond = xi_sq[i]*d*d + G_loss*d + cond;
+				appxcond = xj_sq[j]*d*d + G_loss*d + cond;
 				if(appxcond <= 0)
 				{
-					x = prob_col->x[i];
+					x = prob_col->x[j];
 					while(x->index != -1)
 					{
 						b[x->index] += d_diff*x->value;
@@ -1044,7 +1044,7 @@ static void solve_l1r_l2_svc(
 				{
 					loss_old = 0;
 					loss_new = 0;
-					x = prob_col->x[i];
+					x = prob_col->x[j];
 					while(x->index != -1)
 					{
 						int ind = x->index;
@@ -1057,10 +1057,10 @@ static void solve_l1r_l2_svc(
 						x++;
 					}
 				}
-				else 
+				else
 				{
 					loss_new = 0;
-					x = prob_col->x[i];
+					x = prob_col->x[j];
 					while(x->index != -1)
 					{
 						int ind = x->index;
@@ -1079,25 +1079,26 @@ static void solve_l1r_l2_svc(
 				{
 					d_old = d;
 					d *= 0.5;
+					delta *= 0.5;
 				}
 			}
 
-			w[i] += d;
+			w[j] += d;
 
 			// recompute b[] if line search takes too many steps
 			if(num_linesearch >= max_num_linesearch)
 			{
 				info("#");
-				for(int j=0; j<l; j++)
-					b[j] = 1;
+				for(int i=0; i<l; i++)
+					b[i] = 1;
 
-				for(int j=0; j<w_size; j++)
+				for(int i=0; i<w_size; i++)
 				{
-					if(w[j]==0) continue;
-					x = prob_col->x[j];
+					if(w[i]==0) continue;
+					x = prob_col->x[i];
 					while(x->index != -1)
 					{
-						b[x->index] -= w[j]*x->value;
+						b[x->index] -= w[i]*x->value;
 						x++;
 					}
 				}
@@ -1134,23 +1135,23 @@ static void solve_l1r_l2_svc(
 
 	double v = 0;
 	int nnz = 0;
-	for(i=0; i<w_size; i++)
+	for(j=0; j<w_size; j++)
 	{
-		x = prob_col->x[i];
+		x = prob_col->x[j];
 		while(x->index != -1)
 		{
 			x->value *= prob_col->y[x->index]; // restore x->value
 			x++;
 		}
-		if(w[i] != 0)
+		if(w[j] != 0)
 		{
-			v += fabs(w[i]);
+			v += fabs(w[j]);
 			nnz++;
 		}
 	}
-	for(i=0; i<l; i++)
-		if(b[i] > 0)
-			v += C[y[i]]*b[i]*b[i];
+	for(j=0; j<l; j++)
+		if(b[j] > 0)
+			v += C[y[j]]*b[j]*b[j];
 
 	info("Objective value = %lf\n", v);
 	info("#nonzeros/#features = %d/%d\n", nnz, w_size);
@@ -1158,13 +1159,13 @@ static void solve_l1r_l2_svc(
 	delete [] index;
 	delete [] y;
 	delete [] b;
-	delete [] xi_sq;
+	delete [] xj_sq;
 }
 
 // A coordinate descent algorithm for 
 // L1-regularized logistic regression problems
 //
-//  min_w \sum |wj| - C \sum log(1+exp(-yi w^T xi)),
+//  min_w \sum |wj| + C \sum log(1+exp(-yi w^T xi)),
 //
 // Given: 
 // x, y, Cp, Cn
@@ -1178,7 +1179,7 @@ static void solve_l1r_lr(
 {
 	int l = prob_col->l;
 	int w_size = prob_col->n;
-	int i, s, iter = 0;
+	int j, s, iter = 0;
 	int max_iter = 1000;
 	int active_size = w_size;
 	int max_num_linesearch = 20;
@@ -1197,44 +1198,44 @@ static void solve_l1r_lr(
 	schar *y = new schar[l];
 	double *exp_wTx = new double[l];
 	double *exp_wTx_new = new double[l];
-	double *xi_max = new double[w_size];
+	double *xj_max = new double[w_size];
 	double *C_sum = new double[w_size];
-	double *xineg_sum = new double[w_size];
-	double *xipos_sum = new double[w_size];
+	double *xjneg_sum = new double[w_size];
+	double *xjpos_sum = new double[w_size];
 	feature_node *x;
 
 	// To support weights for instances,
 	// replace C[y[i]] with C[i].
 	double C[2] = {Cn,Cp};
 
-	for(i=0; i<l; i++)
+	for(j=0; j<l; j++)
 	{
-		exp_wTx[i] = 1;
-		if(prob_col->y[i] > 0)
-			y[i] = 1;
+		exp_wTx[j] = 1;
+		if(prob_col->y[j] > 0)
+			y[j] = 1;
 		else
-			y[i] = 0;
+			y[j] = 0;
 	}
-	for(i=0; i<w_size; i++)
+	for(j=0; j<w_size; j++)
 	{
-		w[i] = 0;
-		index[i] = i;
-		xi_max[i] = 0;
-		C_sum[i] = 0;
-		xineg_sum[i] = 0;
-		xipos_sum[i] = 0;
-		x = prob_col->x[i];
+		w[j] = 0;
+		index[j] = j;
+		xj_max[j] = 0;
+		C_sum[j] = 0;
+		xjneg_sum[j] = 0;
+		xjpos_sum[j] = 0;
+		x = prob_col->x[j];
 		while(x->index != -1)
 		{
 			int ind = x->index;
 			double val = x->value;
 			x_min = min(x_min, val);
-			xi_max[i] = max(xi_max[i], val);
-			C_sum[i] += C[y[ind]];
+			xj_max[j] = max(xj_max[j], val);
+			C_sum[j] += C[y[ind]];
 			if(y[ind] == 0)
-				xineg_sum[i] += C[y[ind]]*val;
+				xjneg_sum[j] += C[y[ind]]*val;
 			else
-				xipos_sum[i] += C[y[ind]]*val;
+				xjpos_sum[j] += C[y[ind]]*val;
 			x++;
 		}
 	}
@@ -1243,20 +1244,20 @@ static void solve_l1r_lr(
 	{
 		Gmax_new = 0;
 
-		for(i=0; i<active_size; i++)
+		for(j=0; j<active_size; j++)
 		{
-			int j = i+rand()%(active_size-i);
+			int i = j+rand()%(active_size-j);
 			swap(index[i], index[j]);
 		}
 
 		for(s=0; s<active_size; s++)
 		{
-			i = index[s];
+			j = index[s];
 			sum1 = 0;
 			sum2 = 0;
 			H = 0;
 
-			x = prob_col->x[i];
+			x = prob_col->x[j];
 			while(x->index != -1)
 			{
 				int ind = x->index;
@@ -1270,14 +1271,18 @@ static void solve_l1r_lr(
 				x++;
 			}
 
-			G = -sum2 + xineg_sum[i];
+			G = -sum2 + xjneg_sum[j];
 
 			double Gp = G+1;
 			double Gn = G-1;
-			// shrinking
-			if(w[i] == 0)
+			double violation = 0;
+			if(w[j] == 0)
 			{
-				if(Gp>Gmax_old/l && Gn<-Gmax_old/l)
+				if(Gp < 0)
+					violation = -Gp;
+				else if(Gn > 0)
+					violation = Gn;
+				else if(Gp>Gmax_old/l && Gn<-Gmax_old/l)
 				{
 					active_size--;
 					swap(index[s], index[active_size]);
@@ -1285,44 +1290,40 @@ static void solve_l1r_lr(
 					continue;
 				}
 			}
+			else if(w[j] > 0)
+				violation = fabs(Gp);
+			else
+				violation = fabs(Gn);
+
+			Gmax_new = max(Gmax_new, violation);
 
 			// obtain Newton direction d
-			if(Gp <= H*w[i])
-			{
-				G = Gp;
+			if(Gp <= H*w[j])
 				d = -Gp/H;
-			}
-			else if(Gn >= H*w[i])
-			{
-				G = Gn;
+			else if(Gn >= H*w[j])
 				d = -Gn/H;
-			}
 			else
-			{
-				G = 0;
-				d = -w[i];
-			}
-
-			Gmax_new = max(Gmax_new, fabs(G));
+				d = -w[j];
 
 			if(fabs(d) < 1.0e-12)
 				continue;
 
 			d = min(max(d,-10.0),10.0);
 
+			double delta = fabs(w[j]+d)-fabs(w[j]) + G*d;
 			int num_linesearch;
 			for(num_linesearch=0; num_linesearch < max_num_linesearch; num_linesearch++)
 			{
-				cond = fabs(w[i]+d)-fabs(w[i]) + sigma*d*d;
+				cond = fabs(w[j]+d)-fabs(w[j]) - sigma*delta;
 
 				if(x_min >= 0)
 				{
-					double tmp = exp(d*xi_max[i]);
-					appxcond1 = log(1+sum1*(tmp-1)/xi_max[i]/C_sum[i])*C_sum[i] + cond - d*xipos_sum[i];
-					appxcond2 = log(1+sum2*(1/tmp-1)/xi_max[i]/C_sum[i])*C_sum[i] + cond + d*xineg_sum[i];
+					double tmp = exp(d*xj_max[j]);
+					appxcond1 = log(1+sum1*(tmp-1)/xj_max[j]/C_sum[j])*C_sum[j] + cond - d*xjpos_sum[j];
+					appxcond2 = log(1+sum2*(1/tmp-1)/xj_max[j]/C_sum[j])*C_sum[j] + cond + d*xjneg_sum[j];
 					if(min(appxcond1,appxcond2) <= 0)
 					{
-						x = prob_col->x[i];
+						x = prob_col->x[j];
 						while(x->index != -1)
 						{
 							exp_wTx[x->index] *= exp(d*x->value);
@@ -1332,57 +1333,60 @@ static void solve_l1r_lr(
 					}
 				}
 
-				cond += d*xineg_sum[i];
+				cond += d*xjneg_sum[j];
 
-				int j = 0;
-				x = prob_col->x[i];
+				int i = 0;
+				x = prob_col->x[j];
 				while(x->index != -1)
 				{
 					int ind = x->index;
 					double exp_dx = exp(d*x->value);
-					exp_wTx_new[j] = exp_wTx[ind]*exp_dx;
-					cond += C[y[ind]]*log((1+exp_wTx_new[j])/(exp_dx+exp_wTx_new[j]));
-					x++; j++;
+					exp_wTx_new[i] = exp_wTx[ind]*exp_dx;
+					cond += C[y[ind]]*log((1+exp_wTx_new[i])/(exp_dx+exp_wTx_new[i]));
+					x++; i++;
 				}
 
 				if(cond <= 0)
 				{
-					int j = 0;
-					x = prob_col->x[i];
+					int i = 0;
+					x = prob_col->x[j];
 					while(x->index != -1)
 					{
 						int ind = x->index;
-						exp_wTx[ind] = exp_wTx_new[j];
-						x++; j++;
+						exp_wTx[ind] = exp_wTx_new[i];
+						x++; i++;
 					}
 					break;
 				}
 				else
+				{
 					d *= 0.5;
+					delta *= 0.5;
+				}
 			}
 
-			w[i] += d;
+			w[j] += d;
 
 			// recompute exp_wTx[] if line search takes too many steps
 			if(num_linesearch >= max_num_linesearch)
 			{
 				info("#");
-				for(int j=0; j<l; j++)
-					exp_wTx[j] = 0;
+				for(int i=0; i<l; i++)
+					exp_wTx[i] = 0;
 
-				for(int j=0; j<w_size; j++)
+				for(int i=0; i<w_size; i++)
 				{
-					if(w[j]==0) continue;
-					x = prob_col->x[j];
+					if(w[i]==0) continue;
+					x = prob_col->x[i];
 					while(x->index != -1)
 					{
-						exp_wTx[x->index] += w[j]*x->value;
+						exp_wTx[x->index] += w[i]*x->value;
 						x++;
 					}
 				}
 
-				for(int j=0; j<l; j++)
-					exp_wTx[j] = exp(exp_wTx[j]);
+				for(int i=0; i<l; i++)
+					exp_wTx[i] = exp(exp_wTx[i]);
 			}
 		}
 
@@ -1416,17 +1420,17 @@ static void solve_l1r_lr(
 	
 	double v = 0;
 	int nnz = 0;
-	for(i=0; i<w_size; i++)
-		if(w[i] != 0)
+	for(j=0; j<w_size; j++)
+		if(w[j] != 0)
 		{
-			v += fabs(w[i]);
+			v += fabs(w[j]);
 			nnz++;
 		}
-	for(i=0; i<l; i++)
-		if(y[i] == 1)
-			v += C[y[i]]*log(1+1/exp_wTx[i]);
+	for(j=0; j<l; j++)
+		if(y[j] == 1)
+			v += C[y[j]]*log(1+1/exp_wTx[j]);
 		else
-			v += C[y[i]]*log(1+exp_wTx[i]);
+			v += C[y[j]]*log(1+exp_wTx[j]);
 
 	info("Objective value = %lf\n", v);
 	info("#nonzeros/#features = %d/%d\n", nnz, w_size);
@@ -1435,10 +1439,10 @@ static void solve_l1r_lr(
 	delete [] y;
 	delete [] exp_wTx;
 	delete [] exp_wTx_new;
-	delete [] xi_max;
+	delete [] xj_max;
 	delete [] C_sum;
-	delete [] xineg_sum;
-	delete [] xipos_sum;
+	delete [] xjneg_sum;
+	delete [] xjpos_sum;
 }
 
 // transpose matrix X from row format to column format
