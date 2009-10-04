@@ -114,7 +114,7 @@ options:
         -s 5 and 6
                 |f'(w)|_inf <= eps*min(pos,neg)/l*|f'(w0)|_inf,
         where f is the primal function (default 0.01)
--B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default 1)
+-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)
 -wi weight: weights adjust the parameter C of different classes (see README for details)
 -v n: n-fold cross validation mode
 -q : quiet mode (no outputs)

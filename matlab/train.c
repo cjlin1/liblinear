@@ -43,7 +43,7 @@ void exit_with_help()
 	"	-s 5 and 6\n"
 	"		|f'(w)|_inf <= eps*min(pos,neg)/l*|f'(w0)|_inf,\n"
 	"		where f is the primal function (default 0.01)\n"
-	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default 1)\n"
+	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
 	"-q : quiet mode (no outputs)\n"
@@ -97,7 +97,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	param.weight = NULL;
 	cross_validation_flag = 0;
 	col_format_flag = 0;
-	bias = 1;
+	bias = -1;
 
 	// train loaded only once under matlab
 	if(liblinear_default_print_string == NULL)

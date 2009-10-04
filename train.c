@@ -34,7 +34,7 @@ void exit_with_help()
 	"	-s 5 and 6\n"
 	"		|f'(w)|_inf <= eps*min(pos,neg)/l*|f'(w0)|_inf,\n"
 	"		where f is the primal function (default 0.01)\n"
-	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default 1)\n"
+	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
 	"-q : quiet mode (no outputs)\n"
@@ -144,7 +144,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	param.weight_label = NULL;
 	param.weight = NULL;
 	flag_cross_validation = 0;
-	bias = 1;
+	bias = -1;
 
 	// parse options
 	for(i=1;i<argc;i++)
