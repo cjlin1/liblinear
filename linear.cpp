@@ -942,7 +942,7 @@ static void solve_l1r_l2_svc(
 		x = prob_col->x[j];
 		while(x->index != -1)
 		{
-			int ind = x->index;
+			int ind = x->index-1;
 			double val = x->value;
 			x->value *= prob_col->y[ind]; // x->value stores yi*xij
 			xj_sq[j] += C[y[ind]]*val*val;
@@ -969,7 +969,7 @@ static void solve_l1r_l2_svc(
 			x = prob_col->x[j];
 			while(x->index != -1)
 			{
-				int ind = x->index;
+				int ind = x->index-1;
 				if(b[ind] > 0)
 				{
 					double val = x->value;
@@ -1034,7 +1034,7 @@ static void solve_l1r_l2_svc(
 					x = prob_col->x[j];
 					while(x->index != -1)
 					{
-						b[x->index] += d_diff*x->value;
+						b[x->index-1] += d_diff*x->value;
 						x++;
 					}
 					break;
@@ -1047,7 +1047,7 @@ static void solve_l1r_l2_svc(
 					x = prob_col->x[j];
 					while(x->index != -1)
 					{
-						int ind = x->index;
+						int ind = x->index-1;
 						if(b[ind] > 0)
 							loss_old += C[y[ind]]*b[ind]*b[ind];
 						double b_new = b[ind] + d_diff*x->value;
@@ -1063,7 +1063,7 @@ static void solve_l1r_l2_svc(
 					x = prob_col->x[j];
 					while(x->index != -1)
 					{
-						int ind = x->index;
+						int ind = x->index-1;
 						double b_new = b[ind] + d_diff*x->value;
 						b[ind] = b_new;
 						if(b_new > 0)
@@ -1098,7 +1098,7 @@ static void solve_l1r_l2_svc(
 					x = prob_col->x[i];
 					while(x->index != -1)
 					{
-						b[x->index] -= w[i]*x->value;
+						b[x->index-1] -= w[i]*x->value;
 						x++;
 					}
 				}
@@ -1140,7 +1140,7 @@ static void solve_l1r_l2_svc(
 		x = prob_col->x[j];
 		while(x->index != -1)
 		{
-			x->value *= prob_col->y[x->index]; // restore x->value
+			x->value *= prob_col->y[x->index-1]; // restore x->value
 			x++;
 		}
 		if(w[j] != 0)
@@ -1227,7 +1227,7 @@ static void solve_l1r_lr(
 		x = prob_col->x[j];
 		while(x->index != -1)
 		{
-			int ind = x->index;
+			int ind = x->index-1;
 			double val = x->value;
 			x_min = min(x_min, val);
 			xj_max[j] = max(xj_max[j], val);
@@ -1260,7 +1260,7 @@ static void solve_l1r_lr(
 			x = prob_col->x[j];
 			while(x->index != -1)
 			{
-				int ind = x->index;
+				int ind = x->index-1;
 				double exp_wTxind = exp_wTx[ind];
 				double tmp1 = x->value/(1+exp_wTxind);
 				double tmp2 = C[y[ind]]*tmp1;
@@ -1326,7 +1326,7 @@ static void solve_l1r_lr(
 						x = prob_col->x[j];
 						while(x->index != -1)
 						{
-							exp_wTx[x->index] *= exp(d*x->value);
+							exp_wTx[x->index-1] *= exp(d*x->value);
 							x++;
 						}
 						break;
@@ -1339,7 +1339,7 @@ static void solve_l1r_lr(
 				x = prob_col->x[j];
 				while(x->index != -1)
 				{
-					int ind = x->index;
+					int ind = x->index-1;
 					double exp_dx = exp(d*x->value);
 					exp_wTx_new[i] = exp_wTx[ind]*exp_dx;
 					cond += C[y[ind]]*log((1+exp_wTx_new[i])/(exp_dx+exp_wTx_new[i]));
@@ -1352,7 +1352,7 @@ static void solve_l1r_lr(
 					x = prob_col->x[j];
 					while(x->index != -1)
 					{
-						int ind = x->index;
+						int ind = x->index-1;
 						exp_wTx[ind] = exp_wTx_new[i];
 						x++; i++;
 					}
@@ -1380,7 +1380,7 @@ static void solve_l1r_lr(
 					x = prob_col->x[i];
 					while(x->index != -1)
 					{
-						exp_wTx[x->index] += w[i]*x->value;
+						exp_wTx[x->index-1] += w[i]*x->value;
 						x++;
 					}
 				}
@@ -1487,7 +1487,7 @@ static void transpose(const problem *prob, feature_node **x_space_ret, problem *
 		while(x->index != -1)
 		{
 			int ind = x->index-1;
-			x_space[col_ptr[ind]].index = i;
+			x_space[col_ptr[ind]].index = i+1; // starts from 1
 			x_space[col_ptr[ind]].value = x->value;
 			col_ptr[ind]++;
 			x++;
