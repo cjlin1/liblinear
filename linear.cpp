@@ -399,7 +399,7 @@ class Solver_MCSVM_CS
 		void Solve(double *w);
 	private:
 		void solve_sub_problem(double A_i, int yi, double C_yi, int active_i, double *alpha_new);
-		bool be_shrunk(int m, int yi, double alpha_i, double minG);
+		bool be_shrunk(int i, int m, int yi, double alpha_i, double minG);
 		double *B, *C, *G;
 		int w_size, l;
 		int nr_class;
@@ -461,11 +461,11 @@ void Solver_MCSVM_CS::solve_sub_problem(double A_i, int yi, double C_yi, int act
 	delete[] D;
 }
 
-bool Solver_MCSVM_CS::be_shrunk(int m, int yi, double alpha_i, double minG)
+bool Solver_MCSVM_CS::be_shrunk(int i, int m, int yi, double alpha_i, double minG)
 {
 	double bound = 0;
 	if(m == yi)
-		bound = C[yi];
+		bound = C[prob->y[i]];
 	if(alpha_i == bound && G[m] < minG)
 		return true;
 	return false;
@@ -554,12 +554,12 @@ void Solver_MCSVM_CS::Solve(double *w)
 
 				for(m=0;m<active_size_i[i];m++)
 				{
-					if(be_shrunk(m, y_index[i], alpha_i[alpha_index_i[m]], minG))
+					if(be_shrunk(i, m, y_index[i], alpha_i[alpha_index_i[m]], minG))
 					{
 						active_size_i[i]--;
 						while(active_size_i[i]>m)
 						{
-							if(!be_shrunk(active_size_i[i], y_index[i], 
+							if(!be_shrunk(i, active_size_i[i], y_index[i], 
 											alpha_i[alpha_index_i[active_size_i[i]]], minG))
 							{
 								swap(alpha_index_i[m], alpha_index_i[active_size_i[i]]);
