@@ -283,7 +283,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	srand(1);
 
 	// Transform the input Matrix to libsvm format
-	if(nrhs > 0 && nrhs < 5)
+	if(nrhs > 1 && nrhs < 5)
 	{
 		int err=0;
 
