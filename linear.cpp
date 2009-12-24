@@ -420,9 +420,9 @@ Solver_MCSVM_CS::Solver_MCSVM_CS(const problem *prob, int nr_class, double *weig
 	this->eps = eps;
 	this->max_iter = max_iter;
 	this->prob = prob;
-	this->C = weighted_C;
 	this->B = new double[nr_class];
 	this->G = new double[nr_class];
+	this->C = weighted_C;
 }
 
 Solver_MCSVM_CS::~Solver_MCSVM_CS()
