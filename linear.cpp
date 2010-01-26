@@ -2091,7 +2091,7 @@ void get_labels(const model *model_, int* label)
 			label[i] = model_->label[i];
 }
 
-void set_print_string_function(void (*print_func) (const char*))
+void set_print_string_function(void (*print_func)(const char*))
 {
 	if (print_func == NULL) 
 		liblinear_print_string = &print_string_stdout;
