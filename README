@@ -421,10 +421,11 @@ Library Usage
 
     This function frees the memory used by a parameter set.
 
-- Variable: extern void (*liblinear_print_string) (const char *);
+- Function: void set_print_string_function(void (*print_func)(const char *));
 
-    Users can specify their output format by
-    liblinear_print_string = &your_print_function;
+    Users can specify their output format by a function. Use
+	svm_set_print_string_function(NULL); 
+	for default printing to stdout.
 
 Building Windows Binaries
 =========================

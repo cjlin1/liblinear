@@ -16,9 +16,7 @@ typedef int mwIndex;
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
 
-void print_null(const char *s){}
-
-void (*liblinear_default_print_string) (const char *);
+void print_null(const char *s) {}
 
 void exit_with_help()
 {
@@ -87,6 +85,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	int i, argc = 1;
 	char cmd[CMD_LEN];
 	char *argv[CMD_LEN/2];
+	void (*print_func)(const char*) = NULL;
 
 	// default values
 	param.solver_type = L2R_L2LOSS_SVC_DUAL;
@@ -99,11 +98,6 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	col_format_flag = 0;
 	bias = -1;
 
-	// train loaded only once under matlab
-	if(liblinear_default_print_string == NULL)
-		liblinear_default_print_string = liblinear_print_string;
-	else
-		liblinear_print_string = liblinear_default_print_string;
 
 	if(nrhs <= 1)
 		return 1;
@@ -162,7 +156,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				param.weight[param.nr_weight-1] = atof(argv[i]);
 				break;
 			case 'q':
-				liblinear_print_string = &print_null;
+				print_func = &print_null;
 				i--;
 				break;
 			default:
@@ -170,6 +164,8 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				return 1;
 		}
 	}
+
+	set_print_string_function(print_func);
 
 	if(param.eps == INF)
 	{

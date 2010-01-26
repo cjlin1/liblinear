@@ -27,7 +27,7 @@ static void print_string_stdout(const char *s)
 	fflush(stdout);
 }
 
-void (*liblinear_print_string) (const char *) = &print_string_stdout;
+static void (*liblinear_print_string) (const char *) = &print_string_stdout;
 
 #if 1
 static void info(const char *fmt,...)
@@ -2089,5 +2089,13 @@ void get_labels(const model *model_, int* label)
 	if (model_->label != NULL)
 		for(int i=0;i<model_->nr_class;i++)
 			label[i] = model_->label[i];
+}
+
+void set_print_string_function(void (*print_func) (const char*))
+{
+	if (print_func == NULL) 
+		liblinear_print_string = &print_string_stdout;
+	else
+		liblinear_print_string = print_func;
 }
 
