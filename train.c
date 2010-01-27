@@ -135,7 +135,7 @@ void do_cross_validation()
 void parse_command_line(int argc, char **argv, char *input_file_name, char *model_file_name)
 {
 	int i;
-	void (*print_func)(const char*) = NULL;
+	void (*print_func)(const char*) = NULL;	// default printing to stdout
 
 	// default values
 	param.solver_type = L2R_L2LOSS_SVC_DUAL;

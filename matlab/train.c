@@ -85,7 +85,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	int i, argc = 1;
 	char cmd[CMD_LEN];
 	char *argv[CMD_LEN/2];
-	void (*print_func)(const char*) = NULL;
+	void (*print_func)(const char*) = NULL;	// default printing to stdout
 
 	// default values
 	param.solver_type = L2R_L2LOSS_SVC_DUAL;
