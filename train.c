@@ -104,7 +104,11 @@ int main(int argc, char **argv)
 	else
 	{
 		model_=train(&prob, &param);
-		save_model(model_file_name, model_);
+		if(save_model(model_file_name, model_))
+		{
+			fprintf(stderr,"can't save model to file %s\n",model_file_name);
+			exit(1);
+		}
 		destroy_model(model_);
 	}
 	destroy_param(&param);
