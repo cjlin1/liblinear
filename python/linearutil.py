@@ -41,7 +41,7 @@ def save_model(model_file_name, model):
 	"""
 	save_model(model_file_name, model) -> None
 
-	Save a LIBLINEAR model model to the file model_file_name.
+	Save a LIBLINEAR model to the file model_file_name.
 	"""
 	liblinear.save_model(model_file_name, model)
 
@@ -67,7 +67,7 @@ def train(arg1, arg2=None, arg3=None):
 	train(prob, [, 'options']) -> model | ACC
 	train(prob, param) -> model | ACC
 
-	Train an SVM linear model from data (y, x) or a problem prob using
+	Train a model from data (y, x) or a problem prob using
 	'options' or a parameter param. 
 	If '-v' is specified in 'options' (i.e., cross validation)
 	accuracy (ACC) is returned.
@@ -111,7 +111,7 @@ def train(arg1, arg2=None, arg3=None):
 	if prob == None or param == None :
 		raise TypeError("Wrong types for the arguments")
 
-	prob.setBias(param.bias)
+	prob.set_bias(param.bias)
 	liblinear.set_print_string_function(param.print_func)
 	err_msg = liblinear.check_parameter(prob, param)
 	if err_msg :

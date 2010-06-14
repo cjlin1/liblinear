@@ -413,7 +413,7 @@ Library Usage
     This function returns a pointer to the model read from the file,
     or a null pointer if the model could not be loaded.
 
-- Function: void free_model_contents(struct model *model_ptr);
+- Function: void free_model_content(struct model *model_ptr);
 
     This function frees the memory used by the entries in a model structure.
 

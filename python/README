@@ -51,7 +51,7 @@ in linearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 >>> p_label, p_acc, p_val = predict(y[200:], x[200:], m)
 
 # Construct problem in python format
-# Dense data, the first element of the dense data must be 0
+# Dense data
 >>> y, x = [1,-1], [[1,0,1], [-1,0,-1]]
 # Sparse data
 >>> y, x = [1,-1], [{1:1, 3:1}, {1:-1,3:-1}]
@@ -150,7 +150,7 @@ LIBLINEAR shared library:
 
     You can alos modify the bias value by
 
-    >>> prob.setBias(1)
+    >>> prob.set_bias(1)
 
     Note that if your x contains sparse data (i.e., dictionary), the internal
     ctypes data format is still sparse.
@@ -213,7 +213,7 @@ To use utility functions, type
 The above command loads
     train()            : train an linear model
     predict()          : predict testing data
-    svm_read_problem() : read the data from a LIBLINEAR-format file.
+    svm_read_problem() : read the data from a LIBSVM-format file.
     load_model()       : load a LIBLINEAR model.
     save_model()       : save model to a file.
     evaluations()      : evaluate prediction results.

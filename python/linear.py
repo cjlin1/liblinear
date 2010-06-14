@@ -88,9 +88,9 @@ class problem(Structure):
 		self.x = (POINTER(feature_node) * l)() 
 		for i, xi in enumerate(self.x_space): self.x[i] = xi
 
-		self.setBias(bias)
+		self.set_bias(bias)
 
-	def setBias(self, bias):
+	def set_bias(self, bias):
 		if self.bias == bias:
 			return 
 		if bias >= 0 and self.bias < 0: 
