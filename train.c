@@ -267,7 +267,7 @@ void read_problem(const char *filename)
 				break;
 			elements++;
 		}
-		elements++;
+		elements++; // for bias term
 		prob.l++;
 	}
 	rewind(fp);
