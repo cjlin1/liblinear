@@ -1752,13 +1752,141 @@ model* train(const problem *prob, const parameter *param)
 	return model_;
 }
 
-void destroy_model(struct model *model_)
+void cross_validation(const problem *prob, const parameter *param, int nr_fold, int *target)
 {
-	if(model_->w != NULL)
-		free(model_->w);
-	if(model_->label != NULL)
-		free(model_->label);
-	free(model_);
+	int i;
+	int *fold_start = Malloc(int,nr_fold+1);
+	int l = prob->l;
+	int *perm = Malloc(int,l);
+
+	for(i=0;i<l;i++) perm[i]=i;
+	for(i=0;i<l;i++)
+	{
+		int j = i+rand()%(l-i);
+		swap(perm[i],perm[j]);
+	}
+	for(i=0;i<=nr_fold;i++)
+		fold_start[i]=i*l/nr_fold;
+
+	for(i=0;i<nr_fold;i++)
+	{
+		int begin = fold_start[i];
+		int end = fold_start[i+1];
+		int j,k;
+		struct problem subprob;
+
+		subprob.bias = prob->bias;
+		subprob.n = prob->n;
+		subprob.l = l-(end-begin);
+		subprob.x = Malloc(struct feature_node*,subprob.l);
+		subprob.y = Malloc(int,subprob.l);
+
+		k=0;
+		for(j=0;j<begin;j++)
+		{
+			subprob.x[k] = prob->x[perm[j]];
+			subprob.y[k] = prob->y[perm[j]];
+			++k;
+		}
+		for(j=end;j<l;j++)
+		{
+			subprob.x[k] = prob->x[perm[j]];
+			subprob.y[k] = prob->y[perm[j]];
+			++k;
+		}
+		struct model *submodel = train(&subprob,param);
+		for(j=begin;j<end;j++)
+			target[perm[j]] = predict(submodel,prob->x[perm[j]]);
+		free_and_destroy_model(&submodel);
+		free(subprob.x);
+		free(subprob.y);
+	}
+	free(fold_start);
+	free(perm);
+}
+
+int predict_values(const struct model *model_, const struct feature_node *x, double *dec_values)
+{
+	int idx;
+	int n;
+	if(model_->bias>=0)
+		n=model_->nr_feature+1;
+	else
+		n=model_->nr_feature;
+	double *w=model_->w;
+	int nr_class=model_->nr_class;
+	int i;
+	int nr_w;
+	if(nr_class==2 && model_->param.solver_type != MCSVM_CS)
+		nr_w = 1;
+	else
+		nr_w = nr_class;
+
+	const feature_node *lx=x;
+	for(i=0;i<nr_w;i++)
+		dec_values[i] = 0;
+	for(; (idx=lx->index)!=-1; lx++)
+	{
+		// the dimension of testing data may exceed that of training
+		if(idx<=n)
+			for(i=0;i<nr_w;i++)
+				dec_values[i] += w[(idx-1)*nr_w+i]*lx->value;
+	}
+
+	if(nr_class==2)
+		return (dec_values[0]>0)?model_->label[0]:model_->label[1];
+	else
+	{
+		int dec_max_idx = 0;
+		for(i=1;i<nr_class;i++)
+		{
+			if(dec_values[i] > dec_values[dec_max_idx])
+				dec_max_idx = i;
+		}
+		return model_->label[dec_max_idx];
+	}
+}
+
+int predict(const model *model_, const feature_node *x)
+{
+	double *dec_values = Malloc(double, model_->nr_class);
+	int label=predict_values(model_, x, dec_values);
+	free(dec_values);
+	return label;
+}
+
+int predict_probability(const struct model *model_, const struct feature_node *x, double* prob_estimates)
+{
+	if(check_probability_model(model_))
+	{
+		int i;
+		int nr_class=model_->nr_class;
+		int nr_w;
+		if(nr_class==2)
+			nr_w = 1;
+		else
+			nr_w = nr_class;
+
+		int label=predict_values(model_, x, prob_estimates);
+		for(i=0;i<nr_w;i++)
+			prob_estimates[i]=1/(1+exp(-prob_estimates[i]));
+
+		if(nr_class==2) // for binary classification
+			prob_estimates[1]=1.-prob_estimates[0];
+		else
+		{
+			double sum=0;
+			for(i=0; i<nr_class; i++)
+				sum+=prob_estimates[i];
+
+			for(i=0; i<nr_class; i++)
+				prob_estimates[i]=prob_estimates[i]/sum;
+		}
+
+		return label;		
+	}
+	else
+		return 0;
 }
 
 static const char *solver_type_table[]=
@@ -1909,88 +2037,37 @@ struct model *load_model(const char *model_file_name)
 	return model_;
 }
 
-int predict_values(const struct model *model_, const struct feature_node *x, double *dec_values)
+int get_nr_feature(const model *model_)
 {
-	int idx;
-	int n;
-	if(model_->bias>=0)
-		n=model_->nr_feature+1;
-	else
-		n=model_->nr_feature;
-	double *w=model_->w;
-	int nr_class=model_->nr_class;
-	int i;
-	int nr_w;
-	if(nr_class==2 && model_->param.solver_type != MCSVM_CS)
-		nr_w = 1;
-	else
-		nr_w = nr_class;
-
-	const feature_node *lx=x;
-	for(i=0;i<nr_w;i++)
-		dec_values[i] = 0;
-	for(; (idx=lx->index)!=-1; lx++)
-	{
-		// the dimension of testing data may exceed that of training
-		if(idx<=n)
-			for(i=0;i<nr_w;i++)
-				dec_values[i] += w[(idx-1)*nr_w+i]*lx->value;
-	}
-
-	if(nr_class==2)
-		return (dec_values[0]>0)?model_->label[0]:model_->label[1];
-	else
-	{
-		int dec_max_idx = 0;
-		for(i=1;i<nr_class;i++)
-		{
-			if(dec_values[i] > dec_values[dec_max_idx])
-				dec_max_idx = i;
-		}
-		return model_->label[dec_max_idx];
-	}
+	return model_->nr_feature;
 }
 
-int predict(const model *model_, const feature_node *x)
+int get_nr_class(const model *model_)
 {
-	double *dec_values = Malloc(double, model_->nr_class);
-	int label=predict_values(model_, x, dec_values);
-	free(dec_values);
-	return label;
+	return model_->nr_class;
 }
 
-int predict_probability(const struct model *model_, const struct feature_node *x, double* prob_estimates)
+void get_labels(const model *model_, int* label)
 {
-	if(model_->param.solver_type==L2R_LR || model_->param.solver_type==L1R_LR)
-	{
-		int i;
-		int nr_class=model_->nr_class;
-		int nr_w;
-		if(nr_class==2)
-			nr_w = 1;
-		else
-			nr_w = nr_class;
+	if (model_->label != NULL)
+		for(int i=0;i<model_->nr_class;i++)
+			label[i] = model_->label[i];
+}
 
-		int label=predict_values(model_, x, prob_estimates);
-		for(i=0;i<nr_w;i++)
-			prob_estimates[i]=1/(1+exp(-prob_estimates[i]));
+void free_model_content(struct model *model_ptr)
+{
+	if(model_ptr->w != NULL)
+		free(model_ptr->w);
+	if(model_ptr->label != NULL)
+		free(model_ptr->label);
+}
 
-		if(nr_class==2) // for binary classification
-			prob_estimates[1]=1.-prob_estimates[0];
-		else
-		{
-			double sum=0;
-			for(i=0; i<nr_class; i++)
-				sum+=prob_estimates[i];
-
-			for(i=0; i<nr_class; i++)
-				prob_estimates[i]=prob_estimates[i]/sum;
-		}
-
-		return label;		
-	}
-	else
-		return 0;
+void free_and_destroy_model(struct model **model_ptr_ptr)
+{
+	struct model *model_ptr = *model_ptr_ptr;
+	free_model_content(model_ptr);
+	if(model_ptr != NULL)
+		free(model_ptr);
 }
 
 void destroy_param(parameter* param)
@@ -2021,74 +2098,9 @@ const char *check_parameter(const problem *prob, const parameter *param)
 	return NULL;
 }
 
-void cross_validation(const problem *prob, const parameter *param, int nr_fold, int *target)
+int check_probability_model(const struct model *model_)
 {
-	int i;
-	int *fold_start = Malloc(int,nr_fold+1);
-	int l = prob->l;
-	int *perm = Malloc(int,l);
-
-	for(i=0;i<l;i++) perm[i]=i;
-	for(i=0;i<l;i++)
-	{
-		int j = i+rand()%(l-i);
-		swap(perm[i],perm[j]);
-	}
-	for(i=0;i<=nr_fold;i++)
-		fold_start[i]=i*l/nr_fold;
-
-	for(i=0;i<nr_fold;i++)
-	{
-		int begin = fold_start[i];
-		int end = fold_start[i+1];
-		int j,k;
-		struct problem subprob;
-
-		subprob.bias = prob->bias;
-		subprob.n = prob->n;
-		subprob.l = l-(end-begin);
-		subprob.x = Malloc(struct feature_node*,subprob.l);
-		subprob.y = Malloc(int,subprob.l);
-
-		k=0;
-		for(j=0;j<begin;j++)
-		{
-			subprob.x[k] = prob->x[perm[j]];
-			subprob.y[k] = prob->y[perm[j]];
-			++k;
-		}
-		for(j=end;j<l;j++)
-		{
-			subprob.x[k] = prob->x[perm[j]];
-			subprob.y[k] = prob->y[perm[j]];
-			++k;
-		}
-		struct model *submodel = train(&subprob,param);
-		for(j=begin;j<end;j++)
-			target[perm[j]] = predict(submodel,prob->x[perm[j]]);
-		destroy_model(submodel);
-		free(subprob.x);
-		free(subprob.y);
-	}
-	free(fold_start);
-	free(perm);
-}
-
-int get_nr_feature(const model *model_)
-{
-	return model_->nr_feature;
-}
-
-int get_nr_class(const model *model_)
-{
-	return model_->nr_class;
-}
-
-void get_labels(const model *model_, int* label)
-{
-	if (model_->label != NULL)
-		for(int i=0;i<model_->nr_class;i++)
-			label[i] = model_->label[i];
+	return (model_->param.solver_type==L2R_LR || model_->param.solver_type==L1R_LR);
 }
 
 void set_print_string_function(void (*print_func)(const char*))

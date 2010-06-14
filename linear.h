@@ -57,9 +57,12 @@ int get_nr_feature(const struct model *model_);
 int get_nr_class(const struct model *model_);
 void get_labels(const struct model *model_, int* label);
 
-void destroy_model(struct model *model_);
+void free_model_content(struct model *model_ptr);
+void free_and_destroy_model(struct model **model_ptr_ptr);
 void destroy_param(struct parameter *param);
+
 const char *check_parameter(const struct problem *prob, const struct parameter *param);
+int check_probability_model(const struct model *model);
 void set_print_string_function(void (*print_func) (const char*));
 
 #ifdef __cplusplus

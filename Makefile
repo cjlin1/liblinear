@@ -2,9 +2,13 @@ CXX ?= g++
 CC ?= gcc
 CFLAGS = -Wall -Wconversion -O3 -fPIC
 LIBS = blas/blas.a
+SHVER = 1
 #LIBS = -lblas
 
 all: train predict
+
+lib: linear.o tron.o blas/blas.a
+	$(CXX) -shared -dynamiclib linear.o tron.o blas/blas.a -o liblinear.so.$(SHVER)
 
 train: tron.o linear.o train.c blas/blas.a
 	$(CXX) $(CFLAGS) -o train train.c tron.o linear.o $(LIBS)
@@ -24,4 +28,4 @@ blas/blas.a:
 clean:
 	cd blas;	make clean
 	cd matlab;	make clean
-	rm -f *~ tron.o linear.o train predict
+	rm -f *~ tron.o linear.o train predict liblinear.so.$(SHVER)

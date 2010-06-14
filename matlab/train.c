@@ -337,7 +337,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			error_msg = model_to_matlab_structure(plhs, model_);
 			if(error_msg)
 				mexPrintf("Error: can't convert libsvm model to matrix structure: %s\n", error_msg);
-			destroy_model(model_);
+			free_and_destroy_model(&model_);
 		}
 		destroy_param(&param);
 		free(prob.y);

@@ -265,14 +265,14 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		if(error_msg)
 		{
 			mexPrintf("Error: can't read model: %s\n", error_msg);
-			destroy_model(model_);
+			free_and_destroy_model(&model_);
 			fake_answer(plhs);
 			return;
 		}
 
 		if(prob_estimate_flag)
 		{
-			if(model_->param.solver_type!=L2R_LR)
+			if(!check_probability_model(model_))
 			{
 				mexPrintf("probability output is only supported for logistic regression\n");
 				prob_estimate_flag=0;
@@ -288,7 +288,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		}
 
 		// destroy model_
-		destroy_model(model_);
+		free_and_destroy_model(&model_);
 	}
 	else
 	{

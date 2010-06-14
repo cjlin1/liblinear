@@ -56,7 +56,7 @@ void do_predict(FILE *input, FILE *output, struct model* model_)
 	{
 		int *labels;
 
-		if(model_->param.solver_type!=L2R_LR && model_->param.solver_type!=L1R_LR)
+		if(!check_probability_model(model_))
 		{
 			fprintf(stderr, "probability output is only supported for logistic regression\n");
 			exit(1);
@@ -205,7 +205,7 @@ int main(int argc, char **argv)
 
 	x = (struct feature_node *) malloc(max_nr_attr*sizeof(struct feature_node));
 	do_predict(input, output, model_);
-	destroy_model(model_);
+	free_and_destroy_model(&model_);
 	free(line);
 	free(x);
 	fclose(input);

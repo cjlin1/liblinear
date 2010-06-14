@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 			fprintf(stderr,"can't save model to file %s\n",model_file_name);
 			exit(1);
 		}
-		destroy_model(model_);
+		free_and_destroy_model(&model_);
 	}
 	destroy_param(&param);
 	free(prob.y);
