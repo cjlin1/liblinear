@@ -1,4 +1,4 @@
 all = lib
 
-lib: ../linear.o 
+lib:
 	cd ..; make lib; cd -
