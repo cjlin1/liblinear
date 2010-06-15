@@ -8,7 +8,7 @@ import sys
 if find_library('linear'):
 	liblinear = CDLL(find_library('linear'))
 elif find_library('liblinear'):
-	liblinear = CDLL(find_library('linear'))
+	liblinear = CDLL(find_library('liblinear'))
 else:
 	if sys.platform == 'win32':
 		liblinear = CDLL('../windows/liblinear.dll')
