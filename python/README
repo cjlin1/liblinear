@@ -294,7 +294,7 @@ The above command loads
     >>> m = train(y, x, '-c 5')
     >>> p_labels, p_acc, p_vals = predict(y, x, m)
 
-- Functions:  svm_read_problem/load_model/save_model
+- Functions: svm_read_problem/load_model/save_model
 
     See the usage by examples:
 
@@ -307,7 +307,7 @@ The above command loads
     Calculate some evaluations using the true values (ty) and predicted
     values (pv):
 
-    >>> ACC= evaluations(ty, pv)
+    >>> ACC = evaluations(ty, pv)
 
     ty: a list of true values.
 
