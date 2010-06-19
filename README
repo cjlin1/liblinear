@@ -21,6 +21,7 @@ Table of Contents
 - Building Windows Binaries
 - Additional Information
 - MATLAB/OCTAVE interface
+- PYTHON interface
 
 When to use LIBLINEAR but not LIBSVM
 ====================================
@@ -455,6 +456,11 @@ MATLAB/OCTAVE Interface
 =======================
 
 Please check the file README in the directory `matlab'.
+
+PYTHON Interface
+================
+
+Please check the file README in the directory `python'.
 
 Additional Information
 ======================
