@@ -391,6 +391,8 @@ void l2r_l2_svc_fun::subXTv(double *v, double *XTv)
 // eps is the stopping tolerance
 //
 // solution will be put in w
+//
+// See Appendix of LIBLINEAR paper, Fan et al. (2008)
 
 #define GETI(i) (prob->y[i])
 // To support weights for instances, use GETI(i) (i)
@@ -699,6 +701,8 @@ void Solver_MCSVM_CS::Solve(double *w)
 // eps is the stopping tolerance
 //
 // solution will be put in w
+// 
+// See Algorithm 3 of Hsieh et al., ICML 2008
 
 #undef GETI
 #define GETI(i) (y[i]+1)
@@ -893,6 +897,8 @@ static void solve_l2r_l1l2_svc(
 // eps is the stopping tolerance
 //
 // solution will be put in w
+//
+// See Yuan et al. (2010) and appendix of LIBLINEAR paper, Fan et al. (2008)
 
 #undef GETI
 #define GETI(i) (y[i]+1)
@@ -1172,6 +1178,8 @@ static void solve_l1r_l2_svc(
 // eps is the stopping tolerance
 //
 // solution will be put in w
+//
+// See Yuan et al. (2010) and appendix of LIBLINEAR paper, Fan et al. (2008)
 
 #undef GETI
 #define GETI(i) (y[i]+1)
