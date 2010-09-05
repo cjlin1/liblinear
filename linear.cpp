@@ -775,7 +775,7 @@ static void solve_l2r_l1l2_svc(
 			swap(index[i], index[j]);
 		}
 
-		for (s=0;s<active_size;s++)
+		for (s=0; s<active_size; s++)
 		{
 			i = index[s];
 			G = 0;
