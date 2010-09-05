@@ -16,20 +16,21 @@ void exit_with_help()
 	"Usage: train [options] training_set_file [model_file]\n"
 	"options:\n"
 	"-s type : set type of solver (default 1)\n"
-	"	0 -- L2-regularized logistic regression\n"
+	"	0 -- L2-regularized logistic regression (primal)\n"
 	"	1 -- L2-regularized L2-loss support vector classification (dual)\n"	
 	"	2 -- L2-regularized L2-loss support vector classification (primal)\n"
 	"	3 -- L2-regularized L1-loss support vector classification (dual)\n"
 	"	4 -- multi-class support vector classification by Crammer and Singer\n"
 	"	5 -- L1-regularized L2-loss support vector classification\n"
 	"	6 -- L1-regularized logistic regression\n"
+	"	7 -- L2-regularized logistic regression (dual)\n"
 	"-c cost : set the parameter C (default 1)\n"
 	"-e epsilon : set tolerance of termination criterion\n"
 	"	-s 0 and 2\n" 
 	"		|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,\n" 
 	"		where f is the primal function and pos/neg are # of\n" 
 	"		positive/negative data (default 0.01)\n"
-	"	-s 1, 3, and 4\n"
+	"	-s 1, 3, 4 and 7\n"
 	"		Dual maximal violation <= eps; similar to libsvm (default 0.1)\n"
 	"	-s 5 and 6\n"
 	"		|f'(w)|_inf <= eps*min(pos,neg)/l*|f'(w0)|_inf,\n"
@@ -229,7 +230,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	{
 		if(param.solver_type == L2R_LR || param.solver_type == L2R_L2LOSS_SVC)
 			param.eps = 0.01;
-		else if(param.solver_type == L2R_L2LOSS_SVC_DUAL || param.solver_type == L2R_L1LOSS_SVC_DUAL || param.solver_type == MCSVM_CS)
+		else if(param.solver_type == L2R_L2LOSS_SVC_DUAL || param.solver_type == L2R_L1LOSS_SVC_DUAL || param.solver_type == MCSVM_CS || param.solver_type == L2R_LR_DUAL)
 			param.eps = 0.1;
 		else if(param.solver_type == L1R_L2LOSS_SVC || param.solver_type == L1R_LR)
 			param.eps = 0.01;
