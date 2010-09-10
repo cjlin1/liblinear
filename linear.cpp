@@ -2245,9 +2245,11 @@ void free_model_content(struct model *model_ptr)
 void free_and_destroy_model(struct model **model_ptr_ptr)
 {
 	struct model *model_ptr = *model_ptr_ptr;
-	free_model_content(model_ptr);
 	if(model_ptr != NULL)
+	{
+		free_model_content(model_ptr);
 		free(model_ptr);
+	}
 }
 
 void destroy_param(parameter* param)
