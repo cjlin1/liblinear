@@ -96,7 +96,6 @@ and mark
 
 Usage: train [options] training_set_file [model_file]
 options:
-options:
 -s type : set type of solver (default 1)
 	0 -- L2-regularized logistic regression (primal)
 	1 -- L2-regularized L2-loss support vector classification (dual)
