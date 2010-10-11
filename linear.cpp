@@ -1494,6 +1494,7 @@ static void solve_l1r_lr(
 			{
 				cond = fabs(w[j]+d)-fabs(w[j]) - sigma*delta;
 
+				// approx line search works only if xij>=0
 				if(x_min >= 0)
 				{
 					double tmp = exp(d*xj_max[j]);
