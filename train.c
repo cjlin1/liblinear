@@ -286,9 +286,12 @@ void read_problem(const char *filename)
 		inst_max_index = 0; // strtol gives 0 if wrong format
 		readline(fp);
 		prob.x[i] = &x_space[j];
-		label = strtok(line," \t");
+		label = strtok(line," \t\n");
+		if(label == NULL) // empty line
+			exit_input_error(i+1);
+
 		prob.y[i] = (int) strtol(label,&endptr,10);
-		if(endptr == label)
+		if(endptr == label || *endptr != '\0')
 			exit_input_error(i+1);
 
 		while(1)

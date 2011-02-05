@@ -81,9 +81,12 @@ void do_predict(FILE *input, FILE *output, struct model* model_)
 		char *idx, *val, *label, *endptr;
 		int inst_max_index = 0; // strtol gives 0 if wrong format
 
-		label = strtok(line," \t");
+		label = strtok(line," \t\n");
+		if(label == NULL) // empty line
+			exit_input_error(total+1);
+
 		target_label = (int) strtol(label,&endptr,10);
-		if(endptr == label)
+		if(endptr == label || *endptr != '\0')
 			exit_input_error(total+1);
 
 		while(1)
