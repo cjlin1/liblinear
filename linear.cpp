@@ -1029,7 +1029,7 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 		if(Gmax < eps) 
 			break;
 
-		if(newton_iter < l/10) 
+		if(newton_iter <= l/10) 
 			innereps = max(innereps_min, 0.1*innereps);
 
 	}
