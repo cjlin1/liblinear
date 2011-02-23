@@ -62,10 +62,6 @@ Example:
 
         matlab> make
 
-Under 64-bit Windows, Visual Studio 2005 user will need "X64 Compiler and Tools".
-The package won't be installed by default, but you can find it in customized
-installation options.
-
 For list of supported/compatible compilers for MATLAB, please check the
 following page:
 

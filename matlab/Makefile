@@ -29,11 +29,11 @@ octave:
 
 binary: train.$(MEX_EXT) predict.$(MEX_EXT) libsvmread.$(MEX_EXT) libsvmwrite.$(MEX_EXT)
 
-train.$(MEX_EXT): train.c ../linear.h tron.o linear.o linear_model_matlab.o ../blas/blas.a
-	$(MEX) $(MEX_OPTION) train.c tron.o linear.o linear_model_matlab.o ../blas/blas.a
+train.$(MEX_EXT): train.c ../linear.h ../tron.o ../linear.o linear_model_matlab.o ../blas/blas.a
+	$(MEX) $(MEX_OPTION) train.c ../tron.o ../linear.o linear_model_matlab.o ../blas/blas.a
 
-predict.$(MEX_EXT): predict.c ../linear.h tron.o linear.o linear_model_matlab.o ../blas/blas.a
-	$(MEX) $(MEX_OPTION) predict.c tron.o linear.o linear_model_matlab.o ../blas/blas.a
+predict.$(MEX_EXT): predict.c ../linear.h ../tron.o ../linear.o linear_model_matlab.o ../blas/blas.a
+	$(MEX) $(MEX_OPTION) predict.c ../tron.o ../linear.o linear_model_matlab.o ../blas/blas.a
 
 libsvmread.$(MEX_EXT):	libsvmread.c
 	$(MEX) $(MEX_OPTION) libsvmread.c
@@ -44,15 +44,15 @@ libsvmwrite.$(MEX_EXT):	libsvmwrite.c
 linear_model_matlab.o: linear_model_matlab.c ../linear.h
 	$(CXX) $(CFLAGS) -c linear_model_matlab.c
 
-linear.o: ../linear.cpp ../linear.h
-	$(CXX) $(CFLAGS) -c ../linear.cpp
+../linear.o:
+	cd ..; make linear.o
 
-tron.o: ../tron.cpp ../tron.h
-	$(CXX) $(CFLAGS) -c ../tron.cpp
+../tron.o: 
+	cd ..; make tron.o
 
 ../blas/blas.a:
 	cd ../blas; make OPTFLAGS='$(CFLAGS)' CC='$(CC)';
 
 clean:
 	cd ../blas;	make clean
-	rm -f *~ *.o *.mex* *.obj
+	rm -f *~ *.o *.mex* *.obj ../linear.o ../tron.o
