@@ -42,9 +42,9 @@ Quick Start
 ===========
 
 There are two levels of usage. The high-level one uses utility functions
-in linearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
+in liblinearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 
->>> from linearutil import *
+>>> from liblinearutil import *
 # Read data in LIBSVM format
 >>> y, x = svm_read_problem('../heart_scale')
 >>> m = train(y[:200], x[:200], '-c 4')
@@ -68,11 +68,11 @@ in linearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 # Getting online help
 >>> help(train)
 
-The low-level use directly calls C interfaces imported by linear.py. Note that
+The low-level use directly calls C interfaces imported by liblinear.py. Note that
 all arguments and return values are in ctypes format. You need to handle them
 carefully.
 
->>> from linear import *
+>>> from liblinear import *
 >>> prob = problem([1,-1], [{1:1, 3:1}, {1:-1,3:-1}])
 >>> param = parameter('-c 4')
 >>> m = liblinear.train(prob, param) # m is a ctype pointer to a model
@@ -83,15 +83,15 @@ carefully.
 Design Description
 ==================
 
-There are two files linear.py and linearutil.py, which respectively correspond to
+There are two files liblinear.py and liblinearutil.py, which respectively correspond to
 low-level and high-level use of the interface.
 
-In linear.py, we adopt the Python built-in library "ctypes," so that
+In liblinear.py, we adopt the Python built-in library "ctypes," so that
 Python can directly access C structures and interface functions defined
 in linear.h.
 
-While advanced users can use structures/functions in linear.py, to
-avoid handling ctypes structures, in linearutil.py we provide some easy-to-use
+While advanced users can use structures/functions in liblinear.py, to
+avoid handling ctypes structures, in liblinearutil.py we provide some easy-to-use
 functions. The usage is similar to LIBLINEAR MATLAB interface.
 
 Data Structures
@@ -106,7 +106,7 @@ fields and methods.
 Before using the data structures, execute the following command to load the
 LIBLINEAR shared library:
 
-    >>> from linear import *
+    >>> from liblinear import *
 
 - class feature_node:
 
@@ -185,7 +185,7 @@ LIBLINEAR shared library:
     Note that the returned structure of interface functions
     liblinear.train and liblinear.load_model is a ctypes pointer of
     model, which is different from the model object returned
-    by train and load_model in linearutil.py. We provide a
+    by train and load_model in liblinearutil.py. We provide a
     function toPyModel for the conversion:
 
     >>> model_ptr = liblinear.train(prob, param)
@@ -208,7 +208,7 @@ Utility Functions
 
 To use utility functions, type
 
-    >>> from linearutil import *
+    >>> from liblinearutil import *
 
 The above command loads
     train()            : train an linear model
