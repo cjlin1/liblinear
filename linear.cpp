@@ -1604,8 +1604,7 @@ static void solve_l1r_lr(
 		int num_linesearch;
 		for(num_linesearch=0; num_linesearch < max_num_linesearch; num_linesearch++)
 		{
-			cond = w_norm_new-w_norm - sigma*delta;
-			cond += negsum_xTd;
+			cond = w_norm_new - w_norm + negsum_xTd - sigma*delta;
 
 			for(int i=0; i<l; i++)
 			{
