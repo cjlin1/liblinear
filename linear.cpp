@@ -1562,8 +1562,6 @@ static void solve_l1r_lr(
 			}
 
 			iter++;
-			//if(iter % 10 == 0)
-			//	info(".");
 
 			if(QP_Gnorm1_new <= inner_eps*Gnorm1_init)
 			{
@@ -1573,7 +1571,6 @@ static void solve_l1r_lr(
 				//active set reactivation
 				else
 				{
-					info("*");
 					QP_active_size = active_size;
 					QP_Gmax_old = INF;
 					continue;
