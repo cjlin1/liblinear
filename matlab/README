@@ -39,9 +39,9 @@ To use Octave, type 'make octave':
 Example:
         linux> make octave
 
-On Windows systems, pre-built 'train.mexw32' and 'predict.mexw32' are
+On Windows systems, pre-built 'train.mexw64' and 'predict.mexw64' are
 included in this package (in ..\windows), so no need to conduct
-installation unless you run 64 bit windows.  If you have modified the
+installation unless you run 32 bit windows.  If you have modified the
 sources and would like to re-build the package, type 'mex -setup' in
 MATLAB to choose a compiler for mex first. Then type 'make' to start
 the installation.
@@ -148,7 +148,7 @@ A matlab function libsvmwrite writes Matlab matrix to a file in LIBSVM format:
 libsvmwrite('data.txt', label_vector, instance_matrix]
 
 The instance_matrix must be a sparse matrix. (type must be double)
-For windows, `libsvmread.mexw32' and `libsvmwrite.mexw32' are ready in 
+For windows, `libsvmread.mexw64' and `libsvmwrite.mexw64' are ready in 
 the directory `..\windows'.
 
 These codes are prepared by Rong-En Fan and Kai-Wei Chang from National
