@@ -304,7 +304,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			err = read_problem_sparse(prhs[0], prhs[1]);
 		else
 		{
-			mexPrintf("Training_instance_matrix must be sparse\n");
+			mexPrintf("Training_instance_matrix must be sparse; "
+				"use sparse(Training_instance_matrix) first\n");
 			destroy_param(&param);
 			fake_answer(plhs);
 			return;

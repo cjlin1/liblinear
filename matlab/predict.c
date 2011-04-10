@@ -102,26 +102,19 @@ void do_predict(mxArray *plhs[], const mxArray *prhs[], struct model *model_, co
 	ptr_label    = mxGetPr(prhs[0]);
 
 	// transpose instance matrix
-	if(mxIsSparse(prhs[1]))
+	if(col_format_flag)
+		pplhs[0] = (mxArray *)prhs[1];
+	else
 	{
-		if(col_format_flag)
+		mxArray *pprhs[1];
+		pprhs[0] = mxDuplicateArray(prhs[1]);
+		if(mexCallMATLAB(1, pplhs, 1, pprhs, "transpose"))
 		{
-			pplhs[0] = (mxArray *)prhs[1];
-		}
-		else
-		{
-			mxArray *pprhs[1];
-			pprhs[0] = mxDuplicateArray(prhs[1]);
-			if(mexCallMATLAB(1, pplhs, 1, pprhs, "transpose"))
-			{
-				mexPrintf("Error: cannot transpose testing instance matrix\n");
-				fake_answer(plhs);
-				return;
-			}
+			mexPrintf("Error: cannot transpose testing instance matrix\n");
+			fake_answer(plhs);
+			return;
 		}
 	}
-	else
-		mexPrintf("Testing_instance_matrix must be sparse\n");
 
 
 	prob_estimates = Malloc(double, nr_class);
@@ -283,7 +276,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			do_predict(plhs, prhs, model_, prob_estimate_flag);
 		else
 		{
-			mexPrintf("Testing_instance_matrix must be sparse\n");
+			mexPrintf("Testing_instance_matrix must be sparse; "
+				"use sparse(Testing_instance_matrix) first\n");
 			fake_answer(plhs);
 		}
 
