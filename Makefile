@@ -22,10 +22,10 @@ tron.o: tron.cpp tron.h
 linear.o: linear.cpp linear.h
 	$(CXX) $(CFLAGS) -c -o linear.o linear.cpp
 
-blas/blas.a:
-	cd blas; make OPTFLAGS='$(CFLAGS)' CC='$(CC)';
+blas/blas.a: blas/*.c blas/*.h
+	make -C blas OPTFLAGS='$(CFLAGS)' CC='$(CC)';
 
 clean:
-	cd blas;	make clean
-	cd matlab;	make clean
+	make -C blas clean
+	make -C matlab clean
 	rm -f *~ tron.o linear.o train predict liblinear.so.$(SHVER)

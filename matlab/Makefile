@@ -44,15 +44,15 @@ libsvmwrite.$(MEX_EXT):	libsvmwrite.c
 linear_model_matlab.o: linear_model_matlab.c ../linear.h
 	$(CXX) $(CFLAGS) -c linear_model_matlab.c
 
-../linear.o:
-	cd ..; make linear.o
+../linear.o: ../linear.cpp ../linear.h
+	make -C .. linear.o
 
-../tron.o: 
-	cd ..; make tron.o
+../tron.o: ../tron.cpp ../tron.h 
+	make -C .. tron.o
 
-../blas/blas.a:
-	cd ../blas; make OPTFLAGS='$(CFLAGS)' CC='$(CC)';
+../blas/blas.a: ../blas/*.c ../blas/*.h
+	make -C ../blas OPTFLAGS='$(CFLAGS)' CC='$(CC)';
 
 clean:
-	cd ../blas;	make clean
+	make -C ../blas clean
 	rm -f *~ *.o *.mex* *.obj ../linear.o ../tron.o
