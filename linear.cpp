@@ -1885,7 +1885,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			solve_l2r_lr_dual(prob, w, eps, Cp, Cn);
 			break;
 		default:
-			fprintf(stderr, "Error: unknown solver_type\n");
+			fprintf(stderr, "ERROR: unknown solver_type\n");
 			break;
 	}
 }
