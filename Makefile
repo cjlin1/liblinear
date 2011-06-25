@@ -8,7 +8,7 @@ SHVER = 1
 all: train predict
 
 lib: linear.o tron.o blas/blas.a
-	$(CXX) -shared -dynamiclib linear.o tron.o blas/blas.a -o liblinear.so.$(SHVER)
+	$(CXX) -shared -dynamiclib -Wl,-soname,liblinear.so.$(SHVER) linear.o tron.o blas/blas.a -o liblinear.so.$(SHVER)
 
 train: tron.o linear.o train.c blas/blas.a
 	$(CXX) $(CFLAGS) -o train train.c tron.o linear.o $(LIBS)
