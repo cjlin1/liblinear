@@ -493,9 +493,15 @@ void Solver_MCSVM_CS::Solve(double *w)
 	int *active_size_i = new int[l];
 	double eps_shrink = max(10.0*eps, 1.0); // stopping tolerance for shrinking
 	bool start_from_all = true;
-	// initial
+
+	// Initial alpha can be set here. Note that 
+	// sum_m alpha[i*nr_class+m] = 0, for all i=1,...,l-1
+	// alpha[i*nr_class+m] <= C[GETI(i)] if prob->y[i] == m
+	// alpha[i*nr_class+m] <= 0 if prob->y[i] != m
+	// If initial alpha isn't zero, uncomment the for loop below to initialize w
 	for(i=0;i<l*nr_class;i++)
 		alpha[i] = 0;
+
 	for(i=0;i<w_size*nr_class;i++)
 		w[i] = 0; 
 	for(i=0;i<l;i++)
@@ -506,7 +512,12 @@ void Solver_MCSVM_CS::Solve(double *w)
 		QD[i] = 0;
 		while(xi->index != -1)
 		{
-			QD[i] += (xi->value)*(xi->value);
+			double val = xi->value;
+			QD[i] += val*val;
+	
+			// Uncomment the for loop if initial alpha isn't zero
+			// for(m=0; m<nr_class; m++)
+			//	w[(xi->index-1)*nr_class+m] += alpha[i*nr_class+m]*val;
 			xi++;
 		}
 		active_size_i[i] = nr_class;
@@ -740,11 +751,8 @@ static void solve_l2r_l1l2_svc(
 		upper_bound[2] = Cp;
 	}
 
-	for(i=0; i<w_size; i++)
-		w[i] = 0;
 	for(i=0; i<l; i++)
 	{
-		alpha[i] = 0;
 		if(prob->y[i] > 0)
 		{
 			y[i] = +1; 
@@ -753,12 +761,25 @@ static void solve_l2r_l1l2_svc(
 		{
 			y[i] = -1;
 		}
+	}
+
+	// Initial alpha can be set here. Note that
+	// 0 <= alpha[i] <= upper_bound[GETI(i)]
+	for(i=0; i<l; i++)
+		alpha[i] = 0;
+	
+	for(i=0; i<w_size; i++)
+		w[i] = 0;
+	for(i=0; i<l; i++)
+	{
 		QD[i] = diag[GETI(i)];
 
 		feature_node *xi = prob->x[i];
 		while (xi->index != -1)
 		{
-			QD[i] += (xi->value)*(xi->value);
+			double val = xi->value;
+			QD[i] += val*val;
+			w[xi->index-1] += y[i]*alpha[i]*val;
 			xi++;
 		}
 		index[i] = i;
@@ -924,8 +945,6 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 	double innereps_min = min(1e-8, eps);
 	double upper_bound[3] = {Cn, 0, Cp};
 
-	for(i=0; i<w_size; i++)
-		w[i] = 0;
 	for(i=0; i<l; i++)
 	{
 		if(prob->y[i] > 0)
@@ -936,15 +955,28 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 		{
 			y[i] = -1;
 		}
+	}
+		
+	// Initial alpha can be set here. Note that
+	// 0 < alpha[i] < upper_bound[GETI(i)]
+	// alpha[2*i] + alpha[2*i+1] = upper_bound[GETI(i)]
+	for(i=0; i<l; i++)
+	{
 		alpha[2*i] = min(0.001*upper_bound[GETI(i)], 1e-8);
 		alpha[2*i+1] = upper_bound[GETI(i)] - alpha[2*i];
+	}
 
+	for(i=0; i<w_size; i++)
+		w[i] = 0;
+	for(i=0; i<l; i++)
+	{
 		xTx[i] = 0;
 		feature_node *xi = prob->x[i];
 		while (xi->index != -1)
 		{
-			xTx[i] += (xi->value)*(xi->value);
-			w[xi->index-1] += y[i]*alpha[2*i]*xi->value;
+			double val = xi->value;
+			xTx[i] += val*val;
+			w[xi->index-1] += y[i]*alpha[2*i]*val;
 			xi++;
 		}
 		index[i] = i;
@@ -1100,6 +1132,10 @@ static void solve_l1r_l2_svc(
 
 	double C[3] = {Cn,0,Cp};
 
+	// Initial w can be set here.
+	for(j=0; j<w_size; j++)
+		w[j] = 0;
+
 	for(j=0; j<l; j++)
 	{
 		b[j] = 1;
@@ -1110,15 +1146,15 @@ static void solve_l1r_l2_svc(
 	}
 	for(j=0; j<w_size; j++)
 	{
-		w[j] = 0;
 		index[j] = j;
 		xj_sq[j] = 0;
 		x = prob_col->x[j];
 		while(x->index != -1)
 		{
 			int ind = x->index-1;
-			double val = x->value;
 			x->value *= y[ind]; // x->value stores yi*xij
+			double val = x->value;
+			b[ind] -= w[j]*val;
 			xj_sq[j] += C[GETI(ind)]*val*val;
 			x++;
 		}
@@ -1395,6 +1431,10 @@ static void solve_l1r_lr(
 
 	double C[3] = {Cn,0,Cp};
 
+	// Initial w can be set here.
+	for(j=0; j<w_size; j++)
+		w[j] = 0;
+
 	for(j=0; j<l; j++)
 	{
 		if(prob_col->y[j] > 0)
@@ -1402,14 +1442,10 @@ static void solve_l1r_lr(
 		else
 			y[j] = -1;
 
-		// assume initial w is 0
-		exp_wTx[j] = 1;
-		tau[j] = C[GETI(j)]*0.5;
-		D[j] = C[GETI(j)]*0.25;
+		exp_wTx[j] = 0;
 	}
 	for(j=0; j<w_size; j++)
 	{
-		w[j] = 0;
 		wpd[j] = w[j];
 		index[j] = j;
 		xjneg_sum[j] = 0;
@@ -1417,10 +1453,19 @@ static void solve_l1r_lr(
 		while(x->index != -1)
 		{
 			int ind = x->index-1;
+			double val = x->value;
+			exp_wTx[ind] += w[j]*val;
 			if(y[ind] == -1)
-				xjneg_sum[j] += C[GETI(ind)]*x->value;
+				xjneg_sum[j] += C[GETI(ind)]*val;
 			x++;
 		}
+	}
+	for(j=0; j<l; j++)
+	{
+		exp_wTx[j] = exp(exp_wTx[j]);
+		double tau_tmp = 1/(1+exp_wTx[j]);
+		tau[j] = C[GETI(j)]*tau_tmp;
+		D[j] = C[GETI(j)]*exp_wTx[j]*tau_tmp*tau_tmp;
 	}
 
 	while(newton_iter < max_newton_iter)
