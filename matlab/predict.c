@@ -1,13 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "linear.h"
+#include "../linear.h"
 
 #include "mex.h"
 #include "linear_model_matlab.h"
 
+#ifdef MX_API_VER
 #if MX_API_VER < 0x07030000
 typedef int mwIndex;
+#endif
 #endif
 
 #define CMD_LEN 2048

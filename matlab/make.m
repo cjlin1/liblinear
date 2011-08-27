@@ -1,10 +1,17 @@
-% This make.m is used under Windows
+% This make.m is for MATLAB and OCTAVE under Windows, Mac, and Unix
 
-mex -O -largeArrayDims -c ..\blas\*.c -outdir ..\blas
-mex -O -largeArrayDims -c ..\linear.cpp
-mex -O -largeArrayDims -c ..\tron.cpp
-mex -O -largeArrayDims -c linear_model_matlab.c -I..\
-mex -O -largeArrayDims train.c -I..\ tron.obj linear.obj linear_model_matlab.obj ..\blas\*.obj
-mex -O -largeArrayDims predict.c -I..\ tron.obj linear.obj linear_model_matlab.obj ..\blas\*.obj
-mex -O -largeArrayDims libsvmread.c
-mex -O -largeArrayDims libsvmwrite.c
+Type = ver;
+% This part is for OCTAVE
+if(strcmp(Type(1).Name, 'Octave') == 1)
+    mex libsvmread.c
+    mex libsvmwrite.c
+    mex train.c linear_model_matlab.c ../linear.cpp ../tron.cpp ../blas/*.c
+    mex predict.c linear_model_matlab.c ../linear.cpp ../tron.cpp ../blas/*.c
+% This part is for MATLAB
+% Add -largeArrayDims on 64-bit machines of MATLAB
+else
+    mex CFLAGS="\$CFLAGS -std=c99" -largeArrayDims libsvmread.c
+    mex CFLAGS="\$CFLAGS -std=c99" -largeArrayDims libsvmwrite.c
+    mex CFLAGS="\$CFLAGS -std=c99" -largeArrayDims train.c linear_model_matlab.c ../linear.cpp ../tron.cpp "../blas/*.c"
+    mex CFLAGS="\$CFLAGS -std=c99" -largeArrayDims predict.c linear_model_matlab.c ../linear.cpp ../tron.cpp "../blas/*.c"
+end
