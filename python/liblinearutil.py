@@ -139,8 +139,7 @@ def predict(y, x, m, options=""):
 
 	Predict data (y, x) with the SVM model m. 
 	"options": 
-	    -b probability_estimates: whether to predict probability estimates, 
-	        0 or 1 (default 0);
+	    -b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only
 
 	The return tuple contains
 	p_labels: a list of predicted labels

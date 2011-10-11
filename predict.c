@@ -156,7 +156,7 @@ void exit_with_help()
 	printf(
 	"Usage: predict [options] test_file model_file output_file\n"
 	"options:\n"
-	"-b probability_estimates: whether to output probability estimates, 0 or 1 (default 0)\n"
+	"-b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only\n"
 	);
 	exit(1);
 }

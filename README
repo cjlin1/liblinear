@@ -193,7 +193,7 @@ and C^m_i = C if m  = y_i,
 
 Usage: predict [options] test_file model_file output_file
 options:
--b probability_estimates: whether to predict probability estimates, 0 or 1 (default 0)
+-b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only
 
 Examples
 ========

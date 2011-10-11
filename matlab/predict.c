@@ -181,9 +181,8 @@ void exit_with_help()
 	mexPrintf(
 			"Usage: [predicted_label, accuracy, decision_values/prob_estimates] = predict(testing_label_vector, testing_instance_matrix, model, 'liblinear_options','col')\n"
 			"liblinear_options:\n"
-			"-b probability_estimates: whether to predict probability estimates, 0 or 1 (default 0)\n"
-			"col:\n"
-			"	if 'col' is setted testing_instance_matrix is parsed in column format, otherwise is in row format"
+			"-b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only\n"
+			"col: if 'col' is setted testing_instance_matrix is parsed in column format, otherwise is in row format"
 			);
 }
 
