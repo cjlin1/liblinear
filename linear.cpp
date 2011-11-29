@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <locale.h>
 #include "linear.h"
 #include "tron.h"
 typedef signed char schar;
@@ -2218,6 +2219,9 @@ int save_model(const char *model_file_name, const struct model *model_)
 	FILE *fp = fopen(model_file_name,"w");
 	if(fp==NULL) return -1;
 
+	char *old_locale = strdup(setlocale(LC_ALL, NULL));
+	setlocale(LC_ALL, "C");
+
 	int nr_w;
 	if(model_->nr_class==2 && model_->param.solver_type != MCSVM_CS)
 		nr_w=1;
@@ -2244,6 +2248,9 @@ int save_model(const char *model_file_name, const struct model *model_)
 		fprintf(fp, "\n");
 	}
 
+	setlocale(LC_ALL, old_locale);
+	free(old_locale);
+
 	if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
 	else return 0;
 }
@@ -2262,6 +2269,9 @@ struct model *load_model(const char *model_file_name)
 	parameter& param = model_->param;
 
 	model_->label = NULL;
+	
+	char *old_locale = strdup(setlocale(LC_ALL, NULL));
+	setlocale(LC_ALL, "C");
 
 	char cmd[81];
 	while(1)
@@ -2284,6 +2294,7 @@ struct model *load_model(const char *model_file_name)
 				fprintf(stderr,"unknown solver type.\n");
 				free(model_->label);
 				free(model_);
+				free(old_locale);
 				return NULL;
 			}
 		}
@@ -2316,7 +2327,9 @@ struct model *load_model(const char *model_file_name)
 		else
 		{
 			fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
+			free(model_->label);
 			free(model_);
+			free(old_locale);
 			return NULL;
 		}
 	}
@@ -2341,6 +2354,10 @@ struct model *load_model(const char *model_file_name)
 			fscanf(fp, "%lf ", &model_->w[i*nr_w+j]);
 		fscanf(fp, "\n");
 	}
+	
+	setlocale(LC_ALL, old_locale);
+	free(old_locale);
+	
 	if (ferror(fp) != 0 || fclose(fp) != 0) return NULL;
 
 	return model_;
