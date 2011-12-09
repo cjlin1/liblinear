@@ -1877,6 +1877,8 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 		if(prob->y[i]==+1)
 			pos++;
 	neg = prob->l - pos;
+	
+	double primal_solver_tol = eps*max(min(pos,neg), 1)/prob->l;
 
 	function *fun_obj=NULL;
 	switch(param->solver_type)
@@ -1884,7 +1886,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 		case L2R_LR:
 		{
 			fun_obj=new l2r_lr_fun(prob, Cp, Cn);
-			TRON tron_obj(fun_obj, eps*min(pos,neg)/prob->l);
+			TRON tron_obj(fun_obj, primal_solver_tol);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
 			delete fun_obj;
@@ -1893,7 +1895,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 		case L2R_L2LOSS_SVC:
 		{
 			fun_obj=new l2r_l2_svc_fun(prob, Cp, Cn);
-			TRON tron_obj(fun_obj, eps*min(pos,neg)/prob->l);
+			TRON tron_obj(fun_obj, primal_solver_tol);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
 			delete fun_obj;
@@ -1910,7 +1912,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			problem prob_col;
 			feature_node *x_space = NULL;
 			transpose(prob, &x_space ,&prob_col);
-			solve_l1r_l2_svc(&prob_col, w, eps*min(pos,neg)/prob->l, Cp, Cn);
+			solve_l1r_l2_svc(&prob_col, w, primal_solver_tol, Cp, Cn);
 			delete [] prob_col.y;
 			delete [] prob_col.x;
 			delete [] x_space;
@@ -1921,7 +1923,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			problem prob_col;
 			feature_node *x_space = NULL;
 			transpose(prob, &x_space ,&prob_col);
-			solve_l1r_lr(&prob_col, w, eps*min(pos,neg)/prob->l, Cp, Cn);
+			solve_l1r_lr(&prob_col, w, primal_solver_tol, Cp, Cn);
 			delete [] prob_col.y;
 			delete [] prob_col.x;
 			delete [] x_space;
