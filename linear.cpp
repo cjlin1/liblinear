@@ -1408,7 +1408,7 @@ static void solve_l1r_lr(
 	double nu = 1e-12;
 	double inner_eps = 1;
 	double sigma = 0.01;
-	double w_norm=0, w_norm_new;
+	double w_norm, w_norm_new;
 	double z, G, H;
 	double Gnorm1_init;
 	double Gmax_old = INF;
@@ -1445,8 +1445,11 @@ static void solve_l1r_lr(
 
 		exp_wTx[j] = 0;
 	}
+
+	w_norm = 0;
 	for(j=0; j<w_size; j++)
 	{
+		w_norm += fabs(w[j]);
 		wpd[j] = w[j];
 		index[j] = j;
 		xjneg_sum[j] = 0;
@@ -2294,6 +2297,8 @@ struct model *load_model(const char *model_file_name)
 			if(solver_type_table[i] == NULL)
 			{
 				fprintf(stderr,"unknown solver type.\n");
+				
+				setlocale(LC_ALL, old_locale);
 				free(model_->label);
 				free(model_);
 				free(old_locale);
@@ -2329,6 +2334,7 @@ struct model *load_model(const char *model_file_name)
 		else
 		{
 			fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
+			setlocale(LC_ALL, old_locale);
 			free(model_->label);
 			free(model_);
 			free(old_locale);
