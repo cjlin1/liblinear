@@ -63,7 +63,7 @@ in liblinearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 >>> save_model('heart_scale.model', m)
 >>> m = load_model('heart_scale.model')
 >>> p_label, p_acc, p_val = predict(y, x, m, '-b 1')
->>> ACC = evaluations(y, p_val)
+>>> ACC = evaluations(y, p_label)
 
 # Getting online help
 >>> help(train)
