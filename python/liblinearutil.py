@@ -30,7 +30,7 @@ def load_model(model_file_name):
 	
 	Load a LIBLINEAR model from model_file_name and return.
 	"""
-	model = liblinear.load_model(model_file_name)
+	model = liblinear.load_model(model_file_name.encode())
 	if not model: 
 		print("can't open model file %s" % model_file_name)
 		return None
@@ -43,7 +43,7 @@ def save_model(model_file_name, model):
 
 	Save a LIBLINEAR model to the file model_file_name.
 	"""
-	liblinear.save_model(model_file_name, model)
+	liblinear.save_model(model_file_name.encode(), model)
 
 def evaluations(ty, pv):
 	"""
