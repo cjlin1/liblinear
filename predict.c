@@ -38,7 +38,7 @@ static char* readline(FILE *input)
 	return line;
 }
 
-void do_predict(FILE *input, FILE *output, struct model* model_)
+void do_predict(FILE *input, FILE *output)
 {
 	int correct = 0;
 	int total = 0;
@@ -207,7 +207,7 @@ int main(int argc, char **argv)
 	}
 
 	x = (struct feature_node *) malloc(max_nr_attr*sizeof(struct feature_node));
-	do_predict(input, output, model_);
+	do_predict(input, output);
 	free_and_destroy_model(&model_);
 	free(line);
 	free(x);
