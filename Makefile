@@ -10,9 +10,9 @@ all: train predict
 
 lib: linear.o tron.o blas/blas.a
 	if [ "$(OS)" = "Darwin" ]; then \
-		SHARED_LIB_FLAG="-dynamiclib -W1,-install_name,liblinear.so.$(SHVER)"; \
+		SHARED_LIB_FLAG="-dynamiclib -Wl,-install_name,liblinear.so.$(SHVER)"; \
 	else \
-		SHARED_LIB_FLAG="-shared -W1,-soname,liblinear.so.$(SHVER)"; \
+		SHARED_LIB_FLAG="-shared -Wl,-soname,liblinear.so.$(SHVER)"; \
 	fi; \
 	$(CXX) $${SHARED_LIB_FLAG} linear.o tron.o blas/blas.a -o liblinear.so.$(SHVER)
 
