@@ -42,6 +42,8 @@ void do_predict(FILE *input, FILE *output)
 {
 	int correct = 0;
 	int total = 0;
+	double error = 0;
+	double sump = 0, sumt = 0, sumpp = 0, sumtt = 0, sumpt = 0;
 
 	int nr_class=get_nr_class(model_);
 	double *prob_estimates=NULL;
@@ -77,7 +79,7 @@ void do_predict(FILE *input, FILE *output)
 	while(readline(input) != NULL)
 	{
 		int i = 0;
-		int target_label, predict_label;
+		double target_label, predict_label;
 		char *idx, *val, *label, *endptr;
 		int inst_max_index = 0; // strtol gives 0 if wrong format
 
@@ -85,7 +87,7 @@ void do_predict(FILE *input, FILE *output)
 		if(label == NULL) // empty line
 			exit_input_error(total+1);
 
-		target_label = (int) strtol(label,&endptr,10);
+		target_label = strtod(label,&endptr);
 		if(endptr == label || *endptr != '\0')
 			exit_input_error(total+1);
 
@@ -131,7 +133,7 @@ void do_predict(FILE *input, FILE *output)
 		{
 			int j;
 			predict_label = predict_probability(model_,x,prob_estimates);
-			fprintf(output,"%d",predict_label);
+			fprintf(output,"%g",predict_label);
 			for(j=0;j<model_->nr_class;j++)
 				fprintf(output," %g",prob_estimates[j]);
 			fprintf(output,"\n");
@@ -139,14 +141,31 @@ void do_predict(FILE *input, FILE *output)
 		else
 		{
 			predict_label = predict(model_,x);
-			fprintf(output,"%d\n",predict_label);
+			fprintf(output,"%g\n",predict_label);
 		}
 
 		if(predict_label == target_label)
 			++correct;
-		++total;
-	}
-	printf("Accuracy = %g%% (%d/%d)\n",(double) correct/total*100,correct,total);
+		error += (predict_label-target_label)*(predict_label-target_label);
+                sump += predict_label;
+                sumt += target_label;
+                sumpp += predict_label*predict_label;
+                sumtt += target_label*target_label;
+                sumpt += predict_label*target_label;
+                ++total;
+        }
+        if(model_->param.solver_type==L2R_L2LOSS_SVR || 
+           model_->param.solver_type==L2R_L1LOSS_SVR_DUAL || 
+           model_->param.solver_type==L2R_L2LOSS_SVR_DUAL)
+        {
+                printf("Mean squared error = %g (regression)\n",error/total);
+                printf("Squared correlation coefficient = %g (regression)\n",
+                       ((total*sumpt-sump*sumt)*(total*sumpt-sump*sumt))/
+                       ((total*sumpp-sump*sump)*(total*sumtt-sumt*sumt))
+                       );
+        }
+	else
+		printf("Accuracy = %g%% (%d/%d)\n",(double) correct/total*100,correct,total);
 	if(flag_predict_probability)
 		free(prob_estimates);
 }

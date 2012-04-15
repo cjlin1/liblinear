@@ -16,25 +16,34 @@ void exit_with_help()
 	"Usage: train [options] training_set_file [model_file]\n"
 	"options:\n"
 	"-s type : set type of solver (default 1)\n"
-	"	0 -- L2-regularized logistic regression (primal)\n"
-	"	1 -- L2-regularized L2-loss support vector classification (dual)\n"	
-	"	2 -- L2-regularized L2-loss support vector classification (primal)\n"
-	"	3 -- L2-regularized L1-loss support vector classification (dual)\n"
-	"	4 -- multi-class support vector classification by Crammer and Singer\n"
-	"	5 -- L1-regularized L2-loss support vector classification\n"
-	"	6 -- L1-regularized logistic regression\n"
-	"	7 -- L2-regularized logistic regression (dual)\n"
+	"	 0 -- L2-regularized logistic regression (primal)\n"
+	"	 1 -- L2-regularized L2-loss support vector classification (dual)\n"	
+	"	 2 -- L2-regularized L2-loss support vector classification (primal)\n"
+	"	 3 -- L2-regularized L1-loss support vector classification (dual)\n"
+	"	 4 -- multi-class support vector classification by Crammer and Singer\n"
+	"	 5 -- L1-regularized L2-loss support vector classification\n"
+	"	 6 -- L1-regularized logistic regression\n"
+	"	 7 -- L2-regularized logistic regression (dual)\n"
+	"	11 -- L2-regularized L2-loss epsilon support vector regression (primal)\n"
+	"	12 -- L2-regularized L2-loss epsilon support vector regression (dual)\n"
+	"	13 -- L2-regularized L1-loss epsilon support vector regression (dual)\n"
 	"-c cost : set the parameter C (default 1)\n"
+	"-p epsilon : set the epsilon in loss function of epsilon-SVR (default 0.1)\n"
 	"-e epsilon : set tolerance of termination criterion\n"
 	"	-s 0 and 2\n" 
 	"		|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,\n" 
 	"		where f is the primal function and pos/neg are # of\n" 
 	"		positive/negative data (default 0.01)\n"
-	"	-s 1, 3, 4 and 7\n"
+	"	-s 11\n"
+	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)\n" 
+	"	-s 1, 3, 4, and 7\n"
 	"		Dual maximal violation <= eps; similar to libsvm (default 0.1)\n"
 	"	-s 5 and 6\n"
 	"		|f'(w)|_1 <= eps*min(pos,neg)/l*|f'(w0)|_1,\n"
 	"		where f is the primal function (default 0.01)\n"
+	"	-s 12 and 13\n"
+	"		|f'(alpha)|_1 <= eps |f'(alpha0)|,\n"
+	"		where f is the dual function (default 0.1)\n"
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
@@ -125,14 +134,39 @@ void do_cross_validation()
 {
 	int i;
 	int total_correct = 0;
-	int *target = Malloc(int, prob.l);
+	double total_error = 0;
+	double sumv = 0, sumy = 0, sumvv = 0, sumyy = 0, sumvy = 0;
+	double *target = Malloc(double, prob.l);
 
 	cross_validation(&prob,&param,nr_fold,target);
-
-	for(i=0;i<prob.l;i++)
-		if(target[i] == prob.y[i])
-			++total_correct;
-	printf("Cross Validation Accuracy = %g%%\n",100.0*total_correct/prob.l);
+	if(param.solver_type == L2R_L2LOSS_SVR || 
+	   param.solver_type == L2R_L1LOSS_SVR_DUAL || 
+	   param.solver_type == L2R_L2LOSS_SVR_DUAL)
+	{
+		for(i=0;i<prob.l;i++)
+                {
+                        double y = prob.y[i];
+                        double v = target[i];
+                        total_error += (v-y)*(v-y);
+                        sumv += v;
+                        sumy += y;
+                        sumvv += v*v;
+                        sumyy += y*y;
+                        sumvy += v*y;
+                }
+                printf("Cross Validation Mean squared error = %g\n",total_error/prob.l);
+                printf("Cross Validation Squared correlation coefficient = %g\n",
+                        ((prob.l*sumvy-sumv*sumy)*(prob.l*sumvy-sumv*sumy))/
+                        ((prob.l*sumvv-sumv*sumv)*(prob.l*sumyy-sumy*sumy))
+                        );
+	}
+	else
+	{
+		for(i=0;i<prob.l;i++)
+			if(target[i] == prob.y[i])
+				++total_correct;
+		printf("Cross Validation Accuracy = %g%%\n",100.0*total_correct/prob.l);
+	}
 
 	free(target);
 }
@@ -146,6 +180,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	param.solver_type = L2R_L2LOSS_SVC_DUAL;
 	param.C = 1;
 	param.eps = INF; // see setting below
+	param.p = 0.1;
 	param.nr_weight = 0;
 	param.weight_label = NULL;
 	param.weight = NULL;
@@ -166,6 +201,10 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 
 			case 'c':
 				param.C = atof(argv[i]);
+				break;
+
+			case 'p':
+				param.p = atof(argv[i]);
 				break;
 
 			case 'e':
@@ -228,12 +267,30 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 
 	if(param.eps == INF)
 	{
-		if(param.solver_type == L2R_LR || param.solver_type == L2R_L2LOSS_SVC)
-			param.eps = 0.01;
-		else if(param.solver_type == L2R_L2LOSS_SVC_DUAL || param.solver_type == L2R_L1LOSS_SVC_DUAL || param.solver_type == MCSVM_CS || param.solver_type == L2R_LR_DUAL)
-			param.eps = 0.1;
-		else if(param.solver_type == L1R_L2LOSS_SVC || param.solver_type == L1R_LR)
-			param.eps = 0.01;
+		switch(param.solver_type)
+		{
+			case L2R_LR: 
+			case L2R_L2LOSS_SVC:
+				param.eps = 0.01;
+				break;
+			case L2R_L2LOSS_SVR:
+				param.eps = 0.001;
+				break;
+			case L2R_L2LOSS_SVC_DUAL: 
+			case L2R_L1LOSS_SVC_DUAL: 
+			case MCSVM_CS: 
+			case L2R_LR_DUAL: 
+				param.eps = 0.1;
+				break;
+			case L1R_L2LOSS_SVC: 
+			case L1R_LR:
+				param.eps = 0.01;
+				break;
+			case L2R_L1LOSS_SVR_DUAL:
+			case L2R_L2LOSS_SVR_DUAL:
+				param.eps = 0.1;
+				break;
+		}
 	}
 }
 
@@ -275,7 +332,7 @@ void read_problem(const char *filename)
 
 	prob.bias=bias;
 
-	prob.y = Malloc(int,prob.l);
+	prob.y = Malloc(double,prob.l);
 	prob.x = Malloc(struct feature_node *,prob.l);
 	x_space = Malloc(struct feature_node,elements+prob.l);
 
@@ -290,7 +347,7 @@ void read_problem(const char *filename)
 		if(label == NULL) // empty line
 			exit_input_error(i+1);
 
-		prob.y[i] = (int) strtol(label,&endptr,10);
+		prob.y[i] = strtod(label,&endptr);
 		if(endptr == label || *endptr != '\0')
 			exit_input_error(i+1);
 
