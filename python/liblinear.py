@@ -20,8 +20,11 @@ else:
 
 # Construct constants
 SOLVER_TYPE = ['L2R_LR', 'L2R_L2LOSS_SVC_DUAL', 'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL',\
-		'MCSVM_CS', 'L1R_L2LOSS_SVC', 'L1R_LR', 'L2R_LR_DUAL']
-for i, s in enumerate(SOLVER_TYPE): exec("%s = %d" % (s , i))
+		'MCSVM_CS', 'L1R_L2LOSS_SVC', 'L1R_LR', 'L2R_LR_DUAL', \
+		None, None, None, \
+		'L2R_L2LOSS_SVR', 'L2R_L2LOSS_SVR_DUAL', 'L2R_L1LOSS_SVR_DUAL']
+for i, s in enumerate(SOLVER_TYPE): 
+	if s is not None: exec("%s = %d" % (s , i))
 
 PRINT_STRING_FUN = CFUNCTYPE(None, c_char_p)
 def print_null(s): 
@@ -68,7 +71,7 @@ def gen_feature_nodearray(xi, feature_max=None, issparse=True):
 
 class problem(Structure):
 	_names = ["l", "n", "y", "x", "bias"]
-	_types = [c_int, c_int, POINTER(c_int), POINTER(POINTER(feature_node)), c_double]
+	_types = [c_int, c_int, POINTER(c_double), POINTER(POINTER(feature_node)), c_double]
 	_fields_ = genFields(_names, _types)
 
 	def __init__(self, y, x, bias = -1):
@@ -85,7 +88,7 @@ class problem(Structure):
 			max_idx = max(max_idx, tmp_idx)
 		self.n = max_idx
 
-		self.y = (c_int * l)()
+		self.y = (c_double * l)()
 		for i, yi in enumerate(y): self.y[i] = y[i]
 
 		self.x = (POINTER(feature_node) * l)() 
@@ -109,8 +112,8 @@ class problem(Structure):
 
 
 class parameter(Structure):
-	_names = ["solver_type", "eps", "C", "nr_weight", "weight_label", "weight"]
-	_types = [c_int, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double)]
+	_names = ["solver_type", "eps", "C", "nr_weight", "weight_label", "weight", "p"]
+	_types = [c_int, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double), c_double]
 	_fields_ = genFields(_names, _types)
 
 	def __init__(self, options = None):
@@ -128,6 +131,7 @@ class parameter(Structure):
 		self.solver_type = L2R_L2LOSS_SVC_DUAL
 		self.eps = float('inf')
 		self.C = 1
+		self.p = 0.1
 		self.nr_weight = 0
 		self.weight_label = (c_int * 0)()
 		self.weight = (c_double * 0)()
@@ -151,6 +155,9 @@ class parameter(Structure):
 			elif argv[i] == "-c":
 				i = i + 1
 				self.C = float(argv[i])
+			elif argv[i] == "-p":
+				i = i + 1
+				self.p = float(argv[i])
 			elif argv[i] == "-e":
 				i = i + 1
 				self.eps = float(argv[i])
@@ -185,11 +192,14 @@ class parameter(Structure):
 		if self.eps == float('inf'):
 			if self.solver_type in [L2R_LR, L2R_L2LOSS_SVC]:
 				self.eps = 0.01
+			elif self.solver_type in [L2R_L2LOSS_SVR]:
+				self.eps = 0.001
 			elif self.solver_type in [L2R_L2LOSS_SVC_DUAL, L2R_L1LOSS_SVC_DUAL, MCSVM_CS, L2R_LR_DUAL]:
 				self.eps = 0.1
 			elif self.solver_type in [L1R_L2LOSS_SVC, L1R_LR]:
 				self.eps = 0.01
-
+			elif self.solver_type in [L2R_L2LOSS_SVR_DUAL, L2R_L1LOSS_SVR_DUAL]:
+				self.eps = 0.1
 
 class model(Structure):
 	_names = ["param", "nr_class", "nr_feature", "w", "label", "bias"]
@@ -212,7 +222,7 @@ class model(Structure):
 
 	def get_labels(self):
 		nr_class = self.get_nr_class()
-		labels = (c_int * nr_class)()
+		labels = (c_double * nr_class)()
 		liblinear.get_labels(self, labels)
 		return labels[:nr_class]
 
@@ -232,11 +242,11 @@ def toPyModel(model_ptr):
 	return m
 
 fillprototype(liblinear.train, POINTER(model), [POINTER(problem), POINTER(parameter)])
-fillprototype(liblinear.cross_validation, None, [POINTER(problem), POINTER(parameter), c_int, POINTER(c_int)])
+fillprototype(liblinear.cross_validation, None, [POINTER(problem), POINTER(parameter), c_int, POINTER(c_double)])
 
-fillprototype(liblinear.predict_values, c_int, [POINTER(model), POINTER(feature_node), POINTER(c_double)])
-fillprototype(liblinear.predict, c_int, [POINTER(model), POINTER(feature_node)])
-fillprototype(liblinear.predict_probability, c_int, [POINTER(model), POINTER(feature_node), POINTER(c_double)])
+fillprototype(liblinear.predict_values, c_double, [POINTER(model), POINTER(feature_node), POINTER(c_double)])
+fillprototype(liblinear.predict, c_double, [POINTER(model), POINTER(feature_node)])
+fillprototype(liblinear.predict_probability, c_double, [POINTER(model), POINTER(feature_node), POINTER(c_double)])
 
 fillprototype(liblinear.save_model, c_int, [c_char_p, POINTER(model)])
 fillprototype(liblinear.load_model, POINTER(model), [c_char_p])

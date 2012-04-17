@@ -63,7 +63,7 @@ in liblinearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 >>> save_model('heart_scale.model', m)
 >>> m = load_model('heart_scale.model')
 >>> p_label, p_acc, p_val = predict(y, x, m, '-b 1')
->>> ACC = evaluations(y, p_label)
+>>> ACC, MSE, SCC = evaluations(y, p_val)
 
 # Getting online help
 >>> help(train)
@@ -278,7 +278,9 @@ The above command loads
 
     p_labels: a list of predicted labels
 
-    p_acc: testing accuracy
+    p_acc: a tuple including accuracy (for classification), mean
+           squared error, and squared correlation coefficient (for
+           regression).
 
     p_vals: a list of decision values or probability estimates (if '-b 1' 
             is specified). If k is the number of classes, for decision values,
@@ -307,13 +309,17 @@ The above command loads
     Calculate some evaluations using the true values (ty) and predicted
     values (pv):
 
-    >>> ACC = evaluations(ty, pv)
+    >>> (ACC, MSE, SCC) = evaluations(ty, pv)
 
     ty: a list of true values.
 
     pv: a list of predict values.
 
     ACC: accuracy.
+
+    MSE: mean squared error.
+
+    SCC: squared correlation coefficient.
 
 
 Additional Information

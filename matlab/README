@@ -18,7 +18,7 @@ Introduction
 ============
 
 This tool provides a simple interface to LIBLINEAR, a library for
-large-scale regularized linear classification
+large-scale regularized linear classification and regression
 (http://www.csie.ntu.edu.tw/~cjlin/liblinear).  It is very easy to use
 as the usage and the way of specifying parameters are the same as that
 of LIBLINEAR.
@@ -117,11 +117,11 @@ prediction.  It is a structure and is organized as [Parameters, nr_class,
 nr_feature, bias, Label, w]:
 
         -Parameters: Parameters
-        -nr_class: number of classes
+        -nr_class: number of classes; = 2 for regression
         -nr_feature: number of features in training data (without including the bias term)
         -bias: If >= 0, we assume one additional feature is added to the end
             of each data instance.
-        -Label: label of each class
+        -Label: label of each class; empty for regression
         -w: a nr_w-by-n matrix for the weights, where n is nr_feature
             or nr_feature+1 depending on the existence of the bias term.
             nr_w is 1 if nr_class=2 and -s is not 4 (i.e., not
@@ -129,14 +129,16 @@ nr_feature, bias, Label, w]:
             nr_class otherwise.
 
 If the '-v' option is specified, cross validation is conducted and the
-returned model is just a scalar: cross-validation accuracy.
+returned model is just a scalar: cross-validation accuracy for 
+classification and mean-squared error for regression.
 
 Result of Prediction
 ====================
 
 The function 'predict' has three outputs. The first one,
-predicted_label, is a vector of predicted labels.
-The second output is a scalar meaning accuracy.
+predicted_label, is a vector of predicted labels. The second output,
+accuracy, is a vector including accuracy (for classification), mean
+squared error, and squared correlation coefficient (for regression).
 The third is a matrix containing decision values or probability
 estimates (if '-b 1' is specified). If k is the number of classes
 and k' is the number of classifiers (k'=1 if k=2, otherwise k'=k), for decision values,

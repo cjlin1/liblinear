@@ -30,7 +30,7 @@ def load_model(model_file_name):
 	
 	Load a LIBLINEAR model from model_file_name and return.
 	"""
-	model = liblinear.load_model(model_file_name.encode())
+	model = liblinear.load_model(model_file_name)
 	if not model: 
 		print("can't open model file %s" % model_file_name)
 		return None
@@ -47,19 +47,32 @@ def save_model(model_file_name, model):
 
 def evaluations(ty, pv):
 	"""
-	evaluations(ty, pv) -> ACC
+	evaluations(ty, pv) -> (ACC, MSE, SCC)
 
-	Calculate accuracy using the true values (ty) and predicted values (pv).
+	Calculate accuracy, mean squared error and squared correlation coefficient
+	using the true values (ty) and predicted values (pv).
 	"""
 	if len(ty) != len(pv):
 		raise ValueError("len(ty) must equal to len(pv)")
 	total_correct = total_error = 0
+	sumv = sumy = sumvv = sumyy = sumvy = 0
 	for v, y in zip(pv, ty):
 		if y == v: 
 			total_correct += 1
+		total_error += (v-y)*(v-y)
+		sumv += v
+		sumy += y
+		sumvv += v*v
+		sumyy += y*y
+		sumvy += v*y 
 	l = len(ty)
 	ACC = 100.0*total_correct/l
-	return ACC
+	MSE = total_error/l
+	try:
+		SCC = ((l*sumvy-sumv*sumy)*(l*sumvy-sumv*sumy))/((l*sumvv-sumv*sumv)*(l*sumyy-sumy*sumy))
+	except:
+		SCC = float('nan')
+	return (ACC, MSE, SCC)
 
 def train(arg1, arg2=None, arg3=None):
 	"""
@@ -70,28 +83,37 @@ def train(arg1, arg2=None, arg3=None):
 	Train a model from data (y, x) or a problem prob using
 	'options' or a parameter param. 
 	If '-v' is specified in 'options' (i.e., cross validation)
-	accuracy (ACC) is returned.
+	either accuracy (ACC) or mean-squared error (MSE) is returned.
 
 	'options':
 		-s type : set type of solver (default 1)
-			0 -- L2-regularized logistic regression (primal)
-			1 -- L2-regularized L2-loss support vector classification (dual)	
-			2 -- L2-regularized L2-loss support vector classification (primal)
-			3 -- L2-regularized L1-loss support vector classification (dual)
-			4 -- multi-class support vector classification by Crammer and Singer
-			5 -- L1-regularized L2-loss support vector classification
-			6 -- L1-regularized logistic regression
-			7 -- L2-regularized logistic regression (dual)
+			 0 -- L2-regularized logistic regression (primal)
+			 1 -- L2-regularized L2-loss support vector classification (dual)	
+			 2 -- L2-regularized L2-loss support vector classification (primal)
+			 3 -- L2-regularized L1-loss support vector classification (dual)
+			 4 -- multi-class support vector classification by Crammer and Singer
+			 5 -- L1-regularized L2-loss support vector classification
+			 6 -- L1-regularized logistic regression
+			 7 -- L2-regularized logistic regression (dual)
+			11 -- L2-regularized L2-loss epsilon support vector regression (primal)
+			12 -- L2-regularized L2-loss epsilon support vector regression (dual)
+			13 -- L2-regularized L1-loss epsilon support vector regression (dual)
 		-c cost : set the parameter C (default 1)
+		-p epsilon : set the epsilon in loss function of epsilon-SVR (default 0.1)
 		-e epsilon : set tolerance of termination criterion
 			-s 0 and 2 
 				|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2, 
 				where f is the primal function, (default 0.01)
+			-s 11
+				|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001) 
 			-s 1, 3, 4, and 7
 				Dual maximal violation <= eps; similar to liblinear (default 0.1)
 			-s 5 and 6
 				|f'(w)|_inf <= eps*min(pos,neg)/l*|f'(w0)|_inf,
 				where f is the primal function (default 0.01)
+			-s 12 and 13
+				|f'(alpha)|_1 <= eps |f'(alpha0)|,
+				where f is the dual function (default 0.1)
 		-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)
 		-wi weight: weights adjust the parameter C of different classes (see README for details)
 		-v n: n-fold cross validation mode
@@ -120,11 +142,16 @@ def train(arg1, arg2=None, arg3=None):
 
 	if param.cross_validation:
 		l, nr_fold = prob.l, param.nr_fold
-		target = (c_int * l)()
+		target = (c_double * l)()
 		liblinear.cross_validation(prob, param, nr_fold, target)
-		ACC = evaluations(prob.y[:l], target[:l])
-		print("Cross Validation Accuracy = %g%%" % ACC)
-		return ACC
+		ACC, MSE, SCC = evaluations(prob.y[:l], target[:l])
+		if param.solver_type in [L2R_L2LOSS_SVR, L2R_L2LOSS_SVR_DUAL, L2R_L1LOSS_SVR_DUAL]:
+			print("Cross Validation Mean squared error = %g" % MSE)
+			print("Cross Validation Squared correlation coefficient = %g" % SCC)
+			return MSE
+		else:
+			print("Cross Validation Accuracy = %g%%" % ACC)
+			return ACC
 	else :
 		m = liblinear.train(prob, param)
 		m = toPyModel(m)
@@ -143,7 +170,8 @@ def predict(y, x, m, options=""):
 
 	The return tuple contains
 	p_labels: a list of predicted labels
-	p_acc: testing accuracy. 
+	p_acc: a tuple including  accuracy (for classification), mean-squared 
+	       error, and squared correlation coefficient (for regression).
 	p_vals: a list of decision values or probability estimates (if '-b 1' 
 	        is specified). If k is the number of classes, for decision values,
 	        each element includes results of predicting k binary-class
@@ -164,6 +192,7 @@ def predict(y, x, m, options=""):
 			raise ValueError("Wrong options")
 		i+=1
 
+	solver_type = m.param.solver_type
 	nr_class = m.get_nr_class()
 	nr_feature = m.get_nr_feature()
 	is_prob_model = m.is_probability_model()
@@ -201,9 +230,12 @@ def predict(y, x, m, options=""):
 			pred_values += [values]
 	if len(y) == 0:
 		y = [0] * len(x)
-	ACC = evaluations(y, pred_labels)
+	ACC, MSE, SCC = evaluations(y, pred_labels)
 	l = len(y)
-	print("Accuracy = %g%% (%d/%d)" % (ACC, int(l*ACC//100), l))
+	if solver_type in [L2R_L2LOSS_SVR, L2R_L2LOSS_SVR_DUAL, L2R_L1LOSS_SVR_DUAL]:
+		print("Mean squared error = %g (regression)" % MSE)
+		print("Squared correlation coefficient = %g (regression)" % SCC)
+	else:
+		print("Accuracy = %g%% (%d/%d) (classification)" % (ACC, int(l*ACC/100), l))
 
-	return pred_labels, ACC, pred_values
-	
+	return pred_labels, (ACC, MSE, SCC), pred_values

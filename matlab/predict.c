@@ -58,13 +58,15 @@ void do_predict(mxArray *plhs[], const mxArray *prhs[], struct model *model_, co
 	int label_vector_row_num, label_vector_col_num;
 	int feature_number, testing_instance_number;
 	int instance_index;
-	double *ptr_instance, *ptr_label, *ptr_predict_label;
+	double *ptr_label, *ptr_predict_label;
 	double *ptr_prob_estimates, *ptr_dec_values, *ptr;
 	struct feature_node *x;
 	mxArray *pplhs[1]; // instance sparse matrix in row format
 
 	int correct = 0;
 	int total = 0;
+	double error = 0;
+	double sump = 0, sumt = 0, sumpp = 0, sumtt = 0, sumpt = 0;
 
 	int nr_class=get_nr_class(model_);
 	int nr_w;
@@ -100,7 +102,6 @@ void do_predict(mxArray *plhs[], const mxArray *prhs[], struct model *model_, co
 		return;
 	}
 
-	ptr_instance = mxGetPr(prhs[1]);
 	ptr_label    = mxGetPr(prhs[0]);
 
 	// transpose instance matrix
@@ -134,42 +135,63 @@ void do_predict(mxArray *plhs[], const mxArray *prhs[], struct model *model_, co
 	for(instance_index=0;instance_index<testing_instance_number;instance_index++)
 	{
 		int i;
-		double target,v;
+		double target_label, predict_label;
 
-		target = ptr_label[instance_index];
+		target_label = ptr_label[instance_index];
 
 		// prhs[1] and prhs[1]^T are sparse
 		read_sparse_instance(pplhs[0], instance_index, x, feature_number, model_->bias);
 
 		if(predict_probability_flag)
 		{
-			v = predict_probability(model_, x, prob_estimates);
-			ptr_predict_label[instance_index] = v;
+			predict_label = predict_probability(model_, x, prob_estimates);
+			ptr_predict_label[instance_index] = predict_label;
 			for(i=0;i<nr_class;i++)
 				ptr_prob_estimates[instance_index + i * testing_instance_number] = prob_estimates[i];
 		}
 		else
 		{
 			double *dec_values = Malloc(double, nr_class);
-			v = predict(model_, x);
-			ptr_predict_label[instance_index] = v;
+			predict_label = predict_values(model_, x, dec_values);
+			ptr_predict_label[instance_index] = predict_label;
 
-			predict_values(model_, x, dec_values);
 			for(i=0;i<nr_w;i++)
 				ptr_dec_values[instance_index + i * testing_instance_number] = dec_values[i];
 			free(dec_values);
 		}
 
-		if(v == target)
+		if(predict_label == target_label)
 			++correct;
+		error += (predict_label-target_label)*(predict_label-target_label);
+		sump += predict_label;
+		sumt += target_label;
+		sumpp += predict_label*predict_label;
+		sumtt += target_label*target_label;
+		sumpt += predict_label*target_label;
+
 		++total;
 	}
-	mexPrintf("Accuracy = %g%% (%d/%d)\n", (double) correct/total*100,correct,total);
+	
+	if(model_->param.solver_type==L2R_L2LOSS_SVR || 
+           model_->param.solver_type==L2R_L1LOSS_SVR_DUAL || 
+           model_->param.solver_type==L2R_L2LOSS_SVR_DUAL)
+        {
+                mexPrintf("Mean squared error = %g (regression)\n",error/total);
+                mexPrintf("Squared correlation coefficient = %g (regression)\n",
+                       ((total*sumpt-sump*sumt)*(total*sumpt-sump*sumt))/
+                       ((total*sumpp-sump*sump)*(total*sumtt-sumt*sumt))
+                       );
+        }
+	else
+		mexPrintf("Accuracy = %g%% (%d/%d)\n", (double) correct/total*100,correct,total);
 
 	// return accuracy, mean squared error, squared correlation coefficient
-	plhs[1] = mxCreateDoubleMatrix(1, 1, mxREAL);
+	plhs[1] = mxCreateDoubleMatrix(3, 1, mxREAL);
 	ptr = mxGetPr(plhs[1]);
-	ptr[0] = (double) correct/total*100;
+	ptr[0] = (double)correct/total*100;
+	ptr[1] = error/total;
+	ptr[2] = ((total*sumpt-sump*sumt)*(total*sumpt-sump*sumt))/
+				((total*sumpp-sump*sump)*(total*sumtt-sumt*sumt));
 
 	free(x);
 	if(prob_estimates != NULL)
@@ -182,7 +204,11 @@ void exit_with_help()
 			"Usage: [predicted_label, accuracy, decision_values/prob_estimates] = predict(testing_label_vector, testing_instance_matrix, model, 'liblinear_options','col')\n"
 			"liblinear_options:\n"
 			"-b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only\n"
-			"col: if 'col' is setted testing_instance_matrix is parsed in column format, otherwise is in row format"
+			"col: if 'col' is setted testing_instance_matrix is parsed in column format, otherwise is in row format\n"
+			"Returns:\n"
+			"  predicted_label: prediction output vector.\n"
+			"  accuracy: a vector with accuracy, mean squared error, squared correlation coefficient.\n"
+			"  prob_estimates: If selected, probability estimate vector.\n"
 			);
 }
 

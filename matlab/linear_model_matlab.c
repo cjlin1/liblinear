@@ -154,10 +154,14 @@ const char *matlab_matrix_to_model(struct model *model_, const mxArray *matlab_s
 		n=model_->nr_feature;
 	w_size = n;
 
-	ptr = mxGetPr(rhs[id]);
-	model_->label=Malloc(int, model_->nr_class);
-	for(i=0; i<model_->nr_class; i++)
-		model_->label[i]=(int)ptr[i];
+	// Label
+	if(mxIsEmpty(rhs[id]) == 0)
+	{
+		model_->label = Malloc(int, model_->nr_class);
+		ptr = mxGetPr(rhs[id]);
+		for(i=0;i<model_->nr_class;i++)
+			model_->label[i] = (int)ptr[i];
+	}
 	id++;
 
 	ptr = mxGetPr(rhs[id]);
