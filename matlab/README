@@ -179,7 +179,7 @@ matlab> [predict_label, accuracy, dec_values] = predict(heart_scale_label, heart
 
 Note that for testing, you can put anything in the testing_label_vector.
 
-For probability estimates, you need '-b 1' for training and testing:
+For probability estimates, you need '-b 1' only in the testing phase:
 
 matlab> [predict_label, accuracy, prob_estimates] = predict(heart_scale_label, heart_scale_inst, model, '-b 1');
 
