@@ -20,7 +20,7 @@ def svm_read_problem(data_file_name):
 		for e in features.split():
 			ind, val = e.split(":")
 			xi[int(ind)] = float(val)
-		prob_y += [int(label)]
+		prob_y += [float(label)]
 		prob_x += [xi]
 	return (prob_y, prob_x)
 
@@ -30,7 +30,7 @@ def load_model(model_file_name):
 	
 	Load a LIBLINEAR model from model_file_name and return.
 	"""
-	model = liblinear.load_model(model_file_name)
+	model = liblinear.load_model(model_file_name.encode())
 	if not model: 
 		print("can't open model file %s" % model_file_name)
 		return None
