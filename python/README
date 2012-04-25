@@ -197,7 +197,6 @@ LIBLINEAR shared library:
     Some interface functions to access LIBLINEAR models are wrapped as
     members of the class model:
 
-    >>> type = model_.get_type()
     >>> nr_feature =  model_.get_nr_feature()
     >>> nr_class = model_.get_nr_class()
     >>> class_labels = model_.get_labels()

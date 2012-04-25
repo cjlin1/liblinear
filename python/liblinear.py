@@ -222,7 +222,7 @@ class model(Structure):
 
 	def get_labels(self):
 		nr_class = self.get_nr_class()
-		labels = (c_double * nr_class)()
+		labels = (c_int * nr_class)()
 		liblinear.get_labels(self, labels)
 		return labels[:nr_class]
 
