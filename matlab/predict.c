@@ -16,6 +16,9 @@ typedef int mwIndex;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
+int print_null(const char *s,...) {}
+int (*info)(const char *fmt,...) = &mexPrintf;
+
 int col_format_flag;
 
 void read_sparse_instance(const mxArray *prhs, int index, struct feature_node *x, int feature_number, double bias)
@@ -171,19 +174,19 @@ void do_predict(mxArray *plhs[], const mxArray *prhs[], struct model *model_, co
 
 		++total;
 	}
-	
-	if(model_->param.solver_type==L2R_L2LOSS_SVR || 
-           model_->param.solver_type==L2R_L1LOSS_SVR_DUAL || 
-           model_->param.solver_type==L2R_L2LOSS_SVR_DUAL)
-        {
-                mexPrintf("Mean squared error = %g (regression)\n",error/total);
-                mexPrintf("Squared correlation coefficient = %g (regression)\n",
-                       ((total*sumpt-sump*sumt)*(total*sumpt-sump*sumt))/
-                       ((total*sumpp-sump*sump)*(total*sumtt-sumt*sumt))
-                       );
-        }
+
+	if(model_->param.solver_type==L2R_L2LOSS_SVR ||
+	   model_->param.solver_type==L2R_L1LOSS_SVR_DUAL ||
+	   model_->param.solver_type==L2R_L2LOSS_SVR_DUAL)
+	{
+		info("Mean squared error = %g (regression)\n",error/total);
+		info("Squared correlation coefficient = %g (regression)\n",
+			((total*sumpt-sump*sumt)*(total*sumpt-sump*sumt))/
+			((total*sumpp-sump*sump)*(total*sumtt-sumt*sumt))
+			);
+	}
 	else
-		mexPrintf("Accuracy = %g%% (%d/%d)\n", (double) correct/total*100,correct,total);
+		info("Accuracy = %g%% (%d/%d)\n", (double) correct/total*100,correct,total);
 
 	// return accuracy, mean squared error, squared correlation coefficient
 	plhs[1] = mxCreateDoubleMatrix(3, 1, mxREAL);
@@ -204,6 +207,7 @@ void exit_with_help()
 			"Usage: [predicted_label, accuracy, decision_values/prob_estimates] = predict(testing_label_vector, testing_instance_matrix, model, 'liblinear_options','col')\n"
 			"liblinear_options:\n"
 			"-b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only\n"
+			"-q quiet mode (no outputs)\n"
 			"col: if 'col' is setted testing_instance_matrix is parsed in column format, otherwise is in row format\n"
 			"Returns:\n"
 			"  predicted_label: prediction output vector.\n"
@@ -230,7 +234,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	{
 		mxGetString(prhs[4], cmd, mxGetN(prhs[4])+1);
 		if(strcmp(cmd, "col") == 0)
-		{			
+		{
 			col_format_flag = 1;
 		}
 	}
@@ -260,7 +264,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			for(i=1;i<argc;i++)
 			{
 				if(argv[i][0] != '-') break;
-				if(++i>=argc)
+				++i;
+				if(i>=argc && argv[i-1][1] != 'q')
 				{
 					exit_with_help();
 					fake_answer(plhs);
@@ -270,6 +275,10 @@ void mexFunction( int nlhs, mxArray *plhs[],
 				{
 					case 'b':
 						prob_estimate_flag = atoi(argv[i]);
+						break;
+					case 'q':
+						info = &print_null;
+						i--;
 						break;
 					default:
 						mexPrintf("unknown option\n");

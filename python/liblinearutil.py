@@ -27,11 +27,11 @@ def svm_read_problem(data_file_name):
 def load_model(model_file_name):
 	"""
 	load_model(model_file_name) -> model
-	
+
 	Load a LIBLINEAR model from model_file_name and return.
 	"""
 	model = liblinear.load_model(model_file_name.encode())
-	if not model: 
+	if not model:
 		print("can't open model file %s" % model_file_name)
 		return None
 	model = toPyModel(model)
@@ -57,14 +57,14 @@ def evaluations(ty, pv):
 	total_correct = total_error = 0
 	sumv = sumy = sumvv = sumyy = sumvy = 0
 	for v, y in zip(pv, ty):
-		if y == v: 
+		if y == v:
 			total_correct += 1
 		total_error += (v-y)*(v-y)
 		sumv += v
 		sumy += y
 		sumvv += v*v
 		sumyy += y*y
-		sumvy += v*y 
+		sumvy += v*y
 	l = len(ty)
 	ACC = 100.0*total_correct/l
 	MSE = total_error/l
@@ -76,38 +76,40 @@ def evaluations(ty, pv):
 
 def train(arg1, arg2=None, arg3=None):
 	"""
-	train(y, x [, 'options']) -> model | ACC 
+	train(y, x [, 'options']) -> model | ACC
 	train(prob, [, 'options']) -> model | ACC
 	train(prob, param) -> model | ACC
 
 	Train a model from data (y, x) or a problem prob using
-	'options' or a parameter param. 
+	'options' or a parameter param.
 	If '-v' is specified in 'options' (i.e., cross validation)
 	either accuracy (ACC) or mean-squared error (MSE) is returned.
 
 	'options':
 		-s type : set type of solver (default 1)
+		  for multi-class classification
 			 0 -- L2-regularized logistic regression (primal)
-			 1 -- L2-regularized L2-loss support vector classification (dual)	
+			 1 -- L2-regularized L2-loss support vector classification (dual)
 			 2 -- L2-regularized L2-loss support vector classification (primal)
 			 3 -- L2-regularized L1-loss support vector classification (dual)
-			 4 -- multi-class support vector classification by Crammer and Singer
+			 4 -- support vector classification by Crammer and Singer
 			 5 -- L1-regularized L2-loss support vector classification
 			 6 -- L1-regularized logistic regression
 			 7 -- L2-regularized logistic regression (dual)
-			11 -- L2-regularized L2-loss epsilon support vector regression (primal)
-			12 -- L2-regularized L2-loss epsilon support vector regression (dual)
-			13 -- L2-regularized L1-loss epsilon support vector regression (dual)
+		  for regression
+			11 -- L2-regularized L2-loss support vector regression (primal)
+			12 -- L2-regularized L2-loss support vector regression (dual)
+			13 -- L2-regularized L1-loss support vector regression (dual)
 		-c cost : set the parameter C (default 1)
-		-p epsilon : set the epsilon in loss function of epsilon-SVR (default 0.1)
+		-p epsilon : set the epsilon in loss function of SVR (default 0.1)
 		-e epsilon : set tolerance of termination criterion
-			-s 0 and 2 
-				|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2, 
+			-s 0 and 2
+				|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,
 				where f is the primal function, (default 0.01)
 			-s 11
-				|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001) 
+				|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)
 			-s 1, 3, 4, and 7
-				Dual maximal violation <= eps; similar to liblinear (default 0.1)
+				Dual maximal violation <= eps; similar to liblinear (default 0.)
 			-s 5 and 6
 				|f'(w)|_inf <= eps*min(pos,neg)/l*|f'(w0)|_inf,
 				where f is the primal function (default 0.01)
@@ -164,23 +166,28 @@ def predict(y, x, m, options=""):
 	"""
 	predict(y, x, m [, "options"]) -> (p_labels, p_acc, p_vals)
 
-	Predict data (y, x) with the SVM model m. 
-	"options": 
+	Predict data (y, x) with the SVM model m.
+	"options":
 	    -b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only
+	    -q quiet mode (no outputs)
 
 	The return tuple contains
 	p_labels: a list of predicted labels
-	p_acc: a tuple including  accuracy (for classification), mean-squared 
+	p_acc: a tuple including  accuracy (for classification), mean-squared
 	       error, and squared correlation coefficient (for regression).
-	p_vals: a list of decision values or probability estimates (if '-b 1' 
+	p_vals: a list of decision values or probability estimates (if '-b 1'
 	        is specified). If k is the number of classes, for decision values,
 	        each element includes results of predicting k binary-class
-	        SVMs. if k = 2 and solver is not MCSVM_CS, only one decision value 
-	        is returned. For probabilities, each element contains k values 
+	        SVMs. if k = 2 and solver is not MCSVM_CS, only one decision value
+	        is returned. For probabilities, each element contains k values
 	        indicating the probability that the testing instance is in each class.
 	        Note that the order of classes here is the same as 'model.label'
 	        field in the model structure.
 	"""
+
+	def info(s):
+		print(s)
+
 	predict_probability = 0
 	argv = options.split()
 	i = 0
@@ -188,6 +195,8 @@ def predict(y, x, m, options=""):
 		if argv[i] == '-b':
 			i += 1
 			predict_probability = int(argv[i])
+		elif argv[i] == '-q':
+			info = print_null
 		else:
 			raise ValueError("Wrong options")
 		i+=1
@@ -233,9 +242,9 @@ def predict(y, x, m, options=""):
 	ACC, MSE, SCC = evaluations(y, pred_labels)
 	l = len(y)
 	if solver_type in [L2R_L2LOSS_SVR, L2R_L2LOSS_SVR_DUAL, L2R_L1LOSS_SVR_DUAL]:
-		print("Mean squared error = %g (regression)" % MSE)
-		print("Squared correlation coefficient = %g (regression)" % SCC)
+		info("Mean squared error = %g (regression)" % MSE)
+		info("Squared correlation coefficient = %g (regression)" % SCC)
 	else:
-		print("Accuracy = %g%% (%d/%d) (classification)" % (ACC, int(l*ACC/100), l))
+		info("Accuracy = %g%% (%d/%d) (classification)" % (ACC, int(l*ACC/100), l))
 
 	return pred_labels, (ACC, MSE, SCC), pred_values

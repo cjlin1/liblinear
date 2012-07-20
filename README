@@ -1,4 +1,4 @@
-LIBLINEAR is a simple package for solving large-scale regularized linear 
+lIBLINEAR is a simple package for solving large-scale regularized linear 
 classification and regression. It currently supports 
 - L2-regularized logistic regression/L2-loss support vector classification/L1-loss support vector classification
 - L1-regularized L2-loss support vector classification/L1-regularized logistic regression
@@ -98,17 +98,19 @@ and mark
 Usage: train [options] training_set_file [model_file]
 options:
 -s type : set type of solver (default 1)
+  for multi-class classification
 	 0 -- L2-regularized logistic regression (primal)
 	 1 -- L2-regularized L2-loss support vector classification (dual)
 	 2 -- L2-regularized L2-loss support vector classification (primal)
 	 3 -- L2-regularized L1-loss support vector classification (dual)
-	 4 -- multi-class support vector classification by Crammer and Singer
+	 4 -- support vector classification by Crammer and Singer
 	 5 -- L1-regularized L2-loss support vector classification
 	 6 -- L1-regularized logistic regression
 	 7 -- L2-regularized logistic regression (dual)
-	11 -- L2-regularized L2-loss epsilon support vector regression (primal)
-	12 -- L2-regularized L2-loss epsilon support vector regression (dual)
-	13 -- L2-regularized L1-loss epsilon support vector regression (dual)
+  for regression
+	11 -- L2-regularized L2-loss support vector regression (primal)
+	12 -- L2-regularized L2-loss support vector regression (dual)
+	13 -- L2-regularized L1-loss support vector regression (dual)
 -c cost : set the parameter C (default 1)
 -p epsilon : set the epsilon in loss function of epsilon-SVR (default 0.1)
 -e epsilon : set tolerance of termination criterion
@@ -221,6 +223,7 @@ and C^m_i = C if m  = y_i,
 Usage: predict [options] test_file model_file output_file
 options:
 -b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only
+-q : quiet mode (no outputs)
 
 Note that -b is only needed in the prediction phase. This is different
 from the setting of LIBSVM.
@@ -328,15 +331,16 @@ Library Usage
         };
 
     solver_type can be one of L2R_LR, L2R_L2LOSS_SVC_DUAL, L2R_L2LOSS_SVC, L2R_L1LOSS_SVC_DUAL, MCSVM_CS, L1R_L2LOSS_SVC, L1R_LR, L2R_LR_DUAL, L2R_L2LOSS_SVR, L2R_L2LOSS_SVR_DUAL, L2R_L1LOSS_SVR_DUAL.
-
+  for classification
     L2R_LR                L2-regularized logistic regression (primal)
     L2R_L2LOSS_SVC_DUAL   L2-regularized L2-loss support vector classification (dual)
     L2R_L2LOSS_SVC        L2-regularized L2-loss support vector classification (primal)
     L2R_L1LOSS_SVC_DUAL   L2-regularized L1-loss support vector classification (dual)
-    MCSVM_CS              multi-class support vector classification by Crammer and Singer
+    MCSVM_CS              support vector classification by Crammer and Singer
     L1R_L2LOSS_SVC        L1-regularized L2-loss support vector classification
     L1R_LR                L1-regularized logistic regression
     L2R_LR_DUAL           L2-regularized logistic regression (dual)
+  for regression
     L2R_L2LOSS_SVR        L2-regularized L2-loss support vector regression (primal)
     L2R_L2LOSS_SVR_DUAL   L2-regularized L2-loss support vector regression (dual)
     L2R_L1LOSS_SVR_DUAL   L2-regularized L1-loss support vector regression (dual)

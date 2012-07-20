@@ -5,6 +5,10 @@
 #include <errno.h>
 #include "linear.h"
 
+int print_null(const char *s,...) {}
+
+static int (*info)(const char *fmt,...) = &printf;
+
 struct feature_node *x;
 int max_nr_attr = 64;
 
@@ -23,7 +27,7 @@ static int max_line_len;
 static char* readline(FILE *input)
 {
 	int len;
-	
+
 	if(fgets(line,max_line_len,input) == NULL)
 		return NULL;
 
@@ -67,7 +71,7 @@ void do_predict(FILE *input, FILE *output)
 		labels=(int *) malloc(nr_class*sizeof(int));
 		get_labels(model_,labels);
 		prob_estimates = (double *) malloc(nr_class*sizeof(double));
-		fprintf(output,"labels");		
+		fprintf(output,"labels");
 		for(j=0;j<nr_class;j++)
 			fprintf(output," %d",labels[j]);
 		fprintf(output,"\n");
@@ -147,25 +151,25 @@ void do_predict(FILE *input, FILE *output)
 		if(predict_label == target_label)
 			++correct;
 		error += (predict_label-target_label)*(predict_label-target_label);
-                sump += predict_label;
-                sumt += target_label;
-                sumpp += predict_label*predict_label;
-                sumtt += target_label*target_label;
-                sumpt += predict_label*target_label;
-                ++total;
-        }
-        if(model_->param.solver_type==L2R_L2LOSS_SVR || 
-           model_->param.solver_type==L2R_L1LOSS_SVR_DUAL || 
-           model_->param.solver_type==L2R_L2LOSS_SVR_DUAL)
-        {
-                printf("Mean squared error = %g (regression)\n",error/total);
-                printf("Squared correlation coefficient = %g (regression)\n",
-                       ((total*sumpt-sump*sumt)*(total*sumpt-sump*sumt))/
-                       ((total*sumpp-sump*sump)*(total*sumtt-sumt*sumt))
-                       );
+		sump += predict_label;
+		sumt += target_label;
+		sumpp += predict_label*predict_label;
+		sumtt += target_label*target_label;
+		sumpt += predict_label*target_label;
+		++total;
+	}
+	if(model_->param.solver_type==L2R_L2LOSS_SVR ||
+	   model_->param.solver_type==L2R_L1LOSS_SVR_DUAL ||
+	   model_->param.solver_type==L2R_L2LOSS_SVR_DUAL)
+	{
+		info("Mean squared error = %g (regression)\n",error/total);
+		info("Squared correlation coefficient = %g (regression)\n",
+			((total*sumpt-sump*sumt)*(total*sumpt-sump*sumt))/
+			((total*sumpp-sump*sump)*(total*sumtt-sumt*sumt))
+			);
         }
 	else
-		printf("Accuracy = %g%% (%d/%d)\n",(double) correct/total*100,correct,total);
+		info("Accuracy = %g%% (%d/%d)\n",(double) correct/total*100,correct,total);
 	if(flag_predict_probability)
 		free(prob_estimates);
 }
@@ -176,6 +180,7 @@ void exit_with_help()
 	"Usage: predict [options] test_file model_file output_file\n"
 	"options:\n"
 	"-b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only\n"
+	"-q : quiet mode (no outputs)\n"
 	);
 	exit(1);
 }
@@ -195,7 +200,10 @@ int main(int argc, char **argv)
 			case 'b':
 				flag_predict_probability = atoi(argv[i]);
 				break;
-
+			case 'q':
+				info = &print_null;
+				i--;
+				break;
 			default:
 				fprintf(stderr,"unknown option: -%c\n", argv[i-1][1]);
 				exit_with_help();
