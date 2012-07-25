@@ -17,7 +17,7 @@ typedef int mwIndex;
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
 int print_null(const char *s,...) {}
-int (*info)(const char *fmt,...) = &mexPrintf;
+int (*info)(const char *fmt,...);
 
 int col_format_flag;
 
@@ -220,6 +220,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		int nrhs, const mxArray *prhs[] )
 {
 	int prob_estimate_flag = 0;
+	info = &mexPrintf;
 	struct model *model_;
 	char cmd[CMD_LEN];
 	col_format_flag = 0;
