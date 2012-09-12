@@ -4,7 +4,7 @@
 #nmake -f Makefile.win
 
 ##########################################
-CXXC = cl.exe
+CXX = cl.exe
 CFLAGS = -nologo -O2 -EHsc -I. -D __WIN32__ -D _CRT_SECURE_NO_DEPRECATE
 TARGET = windows
 
