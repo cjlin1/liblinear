@@ -220,9 +220,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		int nrhs, const mxArray *prhs[] )
 {
 	int prob_estimate_flag = 0;
-	info = &mexPrintf;
 	struct model *model_;
 	char cmd[CMD_LEN];
+	info = &mexPrintf;
 	col_format_flag = 0;
 
 	if(nrhs > 5 || nrhs < 3)

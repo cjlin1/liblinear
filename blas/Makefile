@@ -1,7 +1,7 @@
 AR     = ar rcv
 RANLIB = ranlib 
 
-HEADERS = blas.h blas.h blasp.h
+HEADERS = blas.h blasp.h
 FILES = dnrm2.o daxpy.o ddot.o dscal.o 
 
 CFLAGS = $(OPTFLAGS) 
