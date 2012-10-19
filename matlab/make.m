@@ -17,5 +17,5 @@ try
 		mex CFLAGS="\$CFLAGS -std=c99" -largeArrayDims predict.c linear_model_matlab.c ../linear.cpp ../tron.cpp "../blas/*.c"
 	end
 catch
-	fprintf('If make.m failes, please check README about detailed instructions.\n');
+	fprintf('If make.m fails, please check README about detailed instructions.\n');
 end
