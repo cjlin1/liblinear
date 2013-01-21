@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+import os, sys
+sys.path = [os.path.dirname(os.path.abspath(__file__))] + sys.path 
 from liblinear import *
 
 def svm_read_problem(data_file_name):
@@ -76,8 +78,8 @@ def evaluations(ty, pv):
 
 def train(arg1, arg2=None, arg3=None):
 	"""
-	train(y, x [, 'options']) -> model | ACC
-	train(prob, [, 'options']) -> model | ACC
+	train(y, x [, options]) -> model | ACC
+	train(prob [, options]) -> model | ACC
 	train(prob, param) -> model | ACC
 
 	Train a model from data (y, x) or a problem prob using
@@ -85,7 +87,7 @@ def train(arg1, arg2=None, arg3=None):
 	If '-v' is specified in 'options' (i.e., cross validation)
 	either accuracy (ACC) or mean-squared error (MSE) is returned.
 
-	'options':
+	options:
 		-s type : set type of solver (default 1)
 		  for multi-class classification
 			 0 -- L2-regularized logistic regression (primal)
@@ -158,16 +160,14 @@ def train(arg1, arg2=None, arg3=None):
 		m = liblinear.train(prob, param)
 		m = toPyModel(m)
 
-		# If prob is destroyed, data including SVs pointed by m can remain.
-		m.x_space = prob.x_space
 		return m
 
 def predict(y, x, m, options=""):
 	"""
-	predict(y, x, m [, "options"]) -> (p_labels, p_acc, p_vals)
+	predict(y, x, m [, options]) -> (p_labels, p_acc, p_vals)
 
 	Predict data (y, x) with the SVM model m.
-	"options":
+	options:
 	    -b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only
 	    -q quiet mode (no outputs)
 

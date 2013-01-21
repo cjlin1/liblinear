@@ -2,21 +2,23 @@
 
 from ctypes import *
 from ctypes.util import find_library
+from os import path
 import sys
-import os
 
-# For unix the prefix 'lib' is not considered.
-if find_library('linear'):
-	liblinear = CDLL(find_library('linear'))
-elif find_library('liblinear'):
-	liblinear = CDLL(find_library('liblinear'))
-else:
+try:
+	dirname = path.dirname(path.abspath(__file__))
 	if sys.platform == 'win32':
-		liblinear = CDLL(os.path.join(os.path.dirname(__file__),\
-				'../windows/liblinear.dll'))
+		liblinear = CDLL(path.join(dirname, r'..\windows\liblinear.dll'))
 	else:
-		liblinear = CDLL(os.path.join(os.path.dirname(__file__),\
-				'../liblinear.so.1'))
+		liblinear = CDLL(path.join(dirname, '../liblinear.so.1'))
+except:
+# For unix the prefix 'lib' is not considered.
+	if find_library('linear'):
+		liblinear = CDLL(find_library('linear'))
+	elif find_library('liblinear'):
+		liblinear = CDLL(find_library('liblinear'))
+	else:
+		raise Exception('LIBLINEAR library not found.')
 
 # Construct constants
 SOLVER_TYPE = ['L2R_LR', 'L2R_L2LOSS_SVC_DUAL', 'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL',\
@@ -41,6 +43,9 @@ class feature_node(Structure):
 	_names = ["index", "value"]
 	_types = [c_int, c_double]
 	_fields_ = genFields(_names, _types)
+
+	def __str__(self):
+		return '%d:%g' % (self.index, self.value)
 
 def gen_feature_nodearray(xi, feature_max=None, issparse=True):
 	if isinstance(xi, dict):
@@ -121,11 +126,15 @@ class parameter(Structure):
 			options = ''
 		self.parse_options(options)
 
-	def show(self):
-		attrs = parameter._names + self.__dict__.keys()
+	def __str__(self):
+		s = ''
+		attrs = parameter._names + list(self.__dict__.keys())
 		values = map(lambda attr: getattr(self, attr), attrs) 
 		for attr, val in zip(attrs, values):
-			print(' %s: %s' % (attr, val))
+			s += (' %s: %s\n' % (attr, val))
+		s = s.strip()
+
+		return s
 
 	def set_to_default_values(self):
 		self.solver_type = L2R_L2LOSS_SVC_DUAL
@@ -141,7 +150,12 @@ class parameter(Structure):
 		self.print_func = None
 
 	def parse_options(self, options):
-		argv = options.split()
+		if isinstance(options, list):
+			argv = options
+		elif isinstance(options, str):
+			argv = options.split()
+		else:
+			raise TypeError("arg 1 should be a list or a str.")
 		self.set_to_default_values()
 		self.print_func = cast(None, PRINT_STRING_FUN)
 		weight_label = []
@@ -261,5 +275,3 @@ fillprototype(liblinear.destroy_param, None, [POINTER(parameter)])
 fillprototype(liblinear.check_parameter, c_char_p, [POINTER(problem), POINTER(parameter)])
 fillprototype(liblinear.check_probability_model, c_int, [POINTER(model)])
 fillprototype(liblinear.set_print_string_function, None, [CFUNCTYPE(None, c_char_p)])
-
-

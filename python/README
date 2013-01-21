@@ -118,6 +118,10 @@ LIBLINEAR shared library:
 
     val: a float indicates the feature value.
 
+    Show the index and the value of a node.
+
+    >>> print(node) 
+
 - Function: gen_feature_nodearray(xi [,feature_max=None [,issparse=True]])
 
     Generate a feature vector from a Python list/tuple or a dictionary:
@@ -173,7 +177,7 @@ LIBLINEAR shared library:
 
     Show values of parameters.
 
-    >>> param.show()
+    >>> print(param)
 
 - class model:
 
