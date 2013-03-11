@@ -95,6 +95,7 @@ matlab> model = train(training_label_vector, training_instance_matrix [,'libline
             if 'col' is set, each column of training_instance_matrix is a data instance. Otherwise each row is a data instance.
 
 matlab> [predicted_label, accuracy, decision_values/prob_estimates] = predict(testing_label_vector, testing_instance_matrix, model [, 'liblinear_options', 'col']);
+matlab> [predicted_label] = predict(testing_label_vector, testing_instance_matrix, model [, 'liblinear_options', 'col']);
 
         -testing_label_vector:
             An m by 1 vector of prediction labels. If labels of test

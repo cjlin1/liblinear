@@ -243,9 +243,11 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	return 0;
 }
 
-static void fake_answer(mxArray *plhs[])
+static void fake_answer(int nlhs, mxArray *plhs[])
 {
-	plhs[0] = mxCreateDoubleMatrix(0, 0, mxREAL);
+	int i;
+	for(i=0;i<nlhs;i++)
+		plhs[i] = mxCreateDoubleMatrix(0, 0, mxREAL);
 }
 
 int read_problem_sparse(const mxArray *label_vec, const mxArray *instance_mat)
@@ -342,6 +344,13 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	// (for cross validation)
 	srand(1);
 
+	if(nlhs > 1)
+	{
+		exit_with_help();
+		fake_answer(nlhs, plhs);
+		return;
+	}
+
 	// Transform the input Matrix to libsvm format
 	if(nrhs > 1 && nrhs < 5)
 	{
@@ -349,7 +358,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 
 		if(!mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1])) {
 			mexPrintf("Error: label vector and instance matrix must be double\n");
-			fake_answer(plhs);
+			fake_answer(nlhs, plhs);
 			return;
 		}
 
@@ -357,7 +366,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		{
 			exit_with_help();
 			destroy_param(&param);
-			fake_answer(plhs);
+			fake_answer(nlhs, plhs);
 			return;
 		}
 
@@ -368,7 +377,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			mexPrintf("Training_instance_matrix must be sparse; "
 				"use sparse(Training_instance_matrix) first\n");
 			destroy_param(&param);
-			fake_answer(plhs);
+			fake_answer(nlhs, plhs);
 			return;
 		}
 
@@ -383,7 +392,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			free(prob.y);
 			free(prob.x);
 			free(x_space);
-			fake_answer(plhs);
+			fake_answer(nlhs, plhs);
 			return;
 		}
 
@@ -412,7 +421,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	else
 	{
 		exit_with_help();
-		fake_answer(plhs);
+		fake_answer(nlhs, plhs);
 		return;
 	}
 }
