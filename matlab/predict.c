@@ -201,11 +201,14 @@ void do_predict(int nlhs, mxArray *plhs[], const mxArray *prhs[], struct model *
 	if(prob_estimates != NULL)
 		free(prob_estimates);
 
-	switch(nlhs){
-		case 3:	plhs[2] = tplhs[2];
-				plhs[1] = tplhs[1];
+	switch(nlhs)
+	{
+		case 3:
+			plhs[2] = tplhs[2];
+			plhs[1] = tplhs[1];
 		case 1:
-		case 0:	plhs[0] = tplhs[0];
+		case 0:
+			plhs[0] = tplhs[0];
 	}
 }
 
