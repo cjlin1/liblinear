@@ -1,1 +1,1 @@
-/home/faculty/cjlin/software/svm/libsvm/libsvm/trunk/matlab/libsvmread.c
+/home/faculty/cjlin/software/svm/libsvm/libsvm/master/matlab/libsvmread.c

@@ -1,1 +1,1 @@
-/home/faculty/cjlin/software/svm/libsvm/libsvm/trunk/matlab/libsvmwrite.c
+/home/faculty/cjlin/software/svm/libsvm/libsvm/master/matlab/libsvmwrite.c
