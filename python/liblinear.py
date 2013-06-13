@@ -147,7 +147,7 @@ class parameter(Structure):
 		self.bias = -1
 		self.cross_validation = False
 		self.nr_fold = 0
-		self.print_func = None
+		self.print_func = cast(None, PRINT_STRING_FUN)
 
 	def parse_options(self, options):
 		if isinstance(options, list):
