@@ -4,6 +4,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <unistd.h>
+#include <time.h>
+#include <omp.h>
 #include "linear.h"
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
@@ -92,6 +95,7 @@ struct model* model_;
 int flag_cross_validation;
 int nr_fold;
 double bias;
+int nr_threads;
 
 int main(int argc, char **argv)
 {
@@ -115,7 +119,12 @@ int main(int argc, char **argv)
 	}
 	else
 	{
+        time_t start,end;
+        time(&start);
 		model_=train(&prob, &param);
+        time(&end);
+        double diff = difftime(end,start);
+        printf("training time: %.2lf\n",diff);
 		if(save_model(model_file_name, model_))
 		{
 			fprintf(stderr,"can't save model to file %s\n",model_file_name);
@@ -188,6 +197,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	param.weight = NULL;
 	flag_cross_validation = 0;
 	bias = -1;
+    nr_threads = 2;
 
 	// parse options
 	for(i=1;i<argc;i++)
@@ -238,6 +248,11 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 			case 'q':
 				print_func = &print_null;
 				i--;
+
+			case 't':
+				nr_threads = atoi(argv[i]);
+				break;
+
 				break;
 
 			default:

@@ -11,6 +11,7 @@ static int (*info)(const char *fmt,...) = &printf;
 
 struct feature_node *x;
 int max_nr_attr = 64;
+int nr_threads;
 
 struct model* model_;
 int flag_predict_probability=0;

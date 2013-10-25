@@ -4,6 +4,8 @@
 #include <string.h>
 #include <stdarg.h>
 #include <locale.h>
+#include <unistd.h>
+#include <time.h>
 #include "linear.h"
 #include "tron.h"
 typedef signed char schar;
@@ -44,6 +46,8 @@ static void info(const char *fmt,...)
 static void info(const char *fmt,...) {}
 #endif
 
+extern int nr_threads;
+
 class l2r_lr_fun: public function
 {
 public:
@@ -64,6 +68,8 @@ private:
 	double *z;
 	double *D;
 	const problem *prob;
+    double **XTv_sub;
+	double *wa;
 };
 
 l2r_lr_fun::l2r_lr_fun(const problem *prob, double *C)
@@ -75,12 +81,19 @@ l2r_lr_fun::l2r_lr_fun(const problem *prob, double *C)
 	z = new double[l];
 	D = new double[l];
 	this->C = C;
+
+    XTv_sub = new double*[nr_threads];
+    for(int ti=0;ti<nr_threads;ti++)
+        XTv_sub[ti] = new double[prob->n];
+
+    wa = new double[l];
 }
 
 l2r_lr_fun::~l2r_lr_fun()
 {
 	delete[] z;
 	delete[] D;
+    delete[] wa;
 }
 
 
@@ -97,6 +110,7 @@ double l2r_lr_fun::fun(double *w)
 	for(i=0;i<w_size;i++)
 		f += w[i]*w[i];
 	f /= 2.0;
+//#pragma omp parallel for  private(i) reduction(+:f)
 	for(i=0;i<l;i++)
 	{
 		double yz = y[i]*z[i];
@@ -116,6 +130,7 @@ void l2r_lr_fun::grad(double *w, double *g)
 	int l=prob->l;
 	int w_size=get_nr_variable();
 
+//#pragma omp parallel for private(i)
 	for(i=0;i<l;i++)
 	{
 		z[i] = 1/(1 + exp(-y[i]*z[i]));
@@ -138,24 +153,31 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	int i;
 	int l=prob->l;
 	int w_size=get_nr_variable();
-	double *wa = new double[l];
+
+    for(i=0; i<l; ++i)
+        wa[i] = 0;
 
 	Xv(s, wa);
+//#pragma omp parallel for private(i)
 	for(i=0;i<l;i++)
 		wa[i] = C[i]*D[i]*wa[i];
 
 	XTv(wa, Hs);
+//#pragma omp parallel for private(i)
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + Hs[i];
-	delete[] wa;
 }
 
 void l2r_lr_fun::Xv(double *v, double *Xv)
 {
+    time_t start,end;
+    time(&start);
+
 	int i;
 	int l=prob->l;
 	feature_node **x=prob->x;
 
+#pragma omp parallel for private(i)
 	for(i=0;i<l;i++)
 	{
 		feature_node *s=x[i];
@@ -166,26 +188,45 @@ void l2r_lr_fun::Xv(double *v, double *Xv)
 			s++;
 		}
 	}
+
+    time(&end);
+    double diff = difftime(end,start);
+    //printf("Xv time: %.2lf\n",diff);
 }
 
 void l2r_lr_fun::XTv(double *v, double *XTv)
 {
+    time_t start,end;
+    time(&start);
+
 	int i;
 	int l=prob->l;
 	int w_size=get_nr_variable();
 	feature_node **x=prob->x;
 
+    for(int ti=0;ti<nr_threads;ti++)
+        for(i=0;i<w_size;i++)
+            XTv_sub[ti][i]=0;
 	for(i=0;i<w_size;i++)
 		XTv[i]=0;
-	for(i=0;i<l;i++)
-	{
-		feature_node *s=x[i];
-		while(s->index!=-1)
-		{
-			XTv[s->index-1]+=v[i]*s->value;
-			s++;
-		}
-	}
+#pragma omp parallel for private(i)
+    for(int ti=0; ti<nr_threads; ti++) 
+        for(i=ti*(l/nr_threads);i<(ti+1)*(l/nr_threads);i++)
+        {
+            feature_node *s=x[i];
+            while(s->index!=-1)
+            {
+                XTv_sub[ti][s->index-1]+=v[i]*s->value;
+                s++;
+            }
+        }
+    for(int ti=0; ti<nr_threads; ti++) 
+        for(i=0;i<w_size;i++)
+            XTv[i] += XTv_sub[ti][i];
+
+    time(&end);
+    double diff = difftime(end,start);
+    //printf("XTv time: %.2lf\n",diff);
 }
 
 class l2r_l2_svc_fun: public function
