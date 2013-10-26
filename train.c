@@ -104,6 +104,7 @@ int main(int argc, char **argv)
 	const char *error_msg;
 
 	parse_command_line(argc, argv, input_file_name, model_file_name);
+    omp_set_num_threads(nr_threads);
 	read_problem(input_file_name);
 	error_msg = check_parameter(&prob,&param);
 
@@ -251,8 +252,6 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 
 			case 't':
 				nr_threads = atoi(argv[i]);
-				break;
-
 				break;
 
 			default:

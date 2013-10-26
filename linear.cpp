@@ -110,7 +110,7 @@ double l2r_lr_fun::fun(double *w)
 	for(i=0;i<w_size;i++)
 		f += w[i]*w[i];
 	f /= 2.0;
-//#pragma omp parallel for  private(i) reduction(+:f)
+#pragma omp parallel for  private(i) reduction(+:f)
 	for(i=0;i<l;i++)
 	{
 		double yz = y[i]*z[i];
@@ -130,7 +130,7 @@ void l2r_lr_fun::grad(double *w, double *g)
 	int l=prob->l;
 	int w_size=get_nr_variable();
 
-//#pragma omp parallel for private(i)
+#pragma omp parallel for private(i)
 	for(i=0;i<l;i++)
 	{
 		z[i] = 1/(1 + exp(-y[i]*z[i]));
@@ -158,7 +158,7 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
         wa[i] = 0;
 
 	Xv(s, wa);
-//#pragma omp parallel for private(i)
+#pragma omp parallel for private(i)
 	for(i=0;i<l;i++)
 		wa[i] = C[i]*D[i]*wa[i];
 
@@ -170,8 +170,6 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 
 void l2r_lr_fun::Xv(double *v, double *Xv)
 {
-    time_t start,end;
-    time(&start);
 
 	int i;
 	int l=prob->l;
@@ -189,9 +187,6 @@ void l2r_lr_fun::Xv(double *v, double *Xv)
 		}
 	}
 
-    time(&end);
-    double diff = difftime(end,start);
-    //printf("Xv time: %.2lf\n",diff);
 }
 
 void l2r_lr_fun::XTv(double *v, double *XTv)
