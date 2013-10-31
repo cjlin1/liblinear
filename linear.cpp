@@ -2051,8 +2051,8 @@ static void transpose(const problem *prob, feature_node **x_space_ret, problem *
 	int i;
 	int l = prob->l;
 	int n = prob->n;
-	int nnz = 0;
-	int *col_ptr = new int[n+1];
+	long nnz = 0;
+	long *col_ptr = new long[n+1];
 	feature_node *x_space;
 	prob_col->l = l;
 	prob_col->n = n;
