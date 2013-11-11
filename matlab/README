@@ -19,7 +19,7 @@ Introduction
 
 This tool provides a simple interface to LIBLINEAR, a library for
 large-scale regularized linear classification and regression
-(http://www.csie.ntu.edu.tw/~cjlin/liblinear).  It is very easy to use
+(http://www.csie.ntu.edu.tw/~cjlin/liblinear). It is very easy to use
 as the usage and the way of specifying parameters are the same as that
 of LIBLINEAR.
 
