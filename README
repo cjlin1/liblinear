@@ -504,6 +504,9 @@ VC++ or where it is installed.
 
 nmake -f Makefile.win clean all
 
+2. (Optional) To build 64-bit windows binaries, you must
+	(1) Setup vcvars64.bat instead of vcvars32.bat
+	(2) Change CFLAGS in Makefile.win: /D _WIN32 to /D _WIN64
 
 MATLAB/OCTAVE Interface
 =======================
