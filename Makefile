@@ -16,6 +16,7 @@
 
 
 
+
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
   case $${target_option-} in \
@@ -77,15 +78,15 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-build_triplet = x86_64-unknown-linux-gnu
-host_triplet = x86_64-unknown-linux-gnu
+build_triplet = x86_64-redhat-linux-gnu
+host_triplet = x86_64-w64-mingw32
 bin_PROGRAMS = train$(EXEEXT) predict$(EXEEXT)
 subdir = .
 DIST_COMMON = INSTALL NEWS README AUTHORS ChangeLog \
 	$(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
-	$(srcdir)/config.h.in depcomp COPYING compile config.guess \
-	config.sub install-sh missing ltmain.sh
+	$(srcdir)/config.h.in depcomp $(include_HEADERS) COPYING \
+	compile config.guess config.sub install-sh missing ltmain.sh
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -126,7 +127,8 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" \
+	"$(DESTDIR)$(includedir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
 liblinear_la_LIBADD =
 am_liblinear_la_OBJECTS = tron.lo linear.lo daxpy.lo ddot.lo dnrm2.lo \
@@ -205,6 +207,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+HEADERS = $(include_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) \
 	$(LISP)config.h.in
 # Read a list of newline-separated strings from the standard input,
@@ -247,31 +250,31 @@ distcleancheck_listfiles = find . -type f -print
 ACLOCAL = ${SHELL} /home/simsong/gits/liblinear/missing aclocal-1.13
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
-AR = ar
+AR = /usr/bin/x86_64-w64-mingw32-ar
 AUTOCONF = ${SHELL} /home/simsong/gits/liblinear/missing autoconf
 AUTOHEADER = ${SHELL} /home/simsong/gits/liblinear/missing autoheader
 AUTOMAKE = ${SHELL} /home/simsong/gits/liblinear/missing automake-1.13
 AWK = gawk
-CC = gcc
+CC = x86_64-w64-mingw32-gcc
 CCDEPMODE = depmode=gcc3
-CFLAGS = -g -O2 -fopenmp -fPIC
-CPP = gcc -E
-CPPFLAGS = 
-CXX = g++
-CXXCPP = g++ -E
+CFLAGS =  -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4 --static -static-libgcc -static-libstdc++ 
+CPP = /usr/bin/x86_64-w64-mingw32-cpp
+CPPFLAGS = -DUNICODE -D_UNICODE -D__MSVCRT_VERSION__=0x0601 -DWINVER=0x0500 -D_WIN32_WINNT=0x0500 -g  --static 
+CXX = x86_64-w64-mingw32-g++
+CXXCPP = x86_64-w64-mingw32-g++ -E
 CXXDEPMODE = depmode=gcc3
-CXXFLAGS = -g -O2 -fopenmp -fPIC
+CXXFLAGS =  -O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions --param=ssp-buffer-size=4 -Wno-format  --static -static-libgcc -static-libstdc++ 
 CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
-DLLTOOL = false
+DLLTOOL = /usr/bin/x86_64-w64-mingw32-dlltool
 DSYMUTIL = 
 DUMPBIN = 
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
 EGREP = /usr/bin/grep -E
-EXEEXT = 
+EXEEXT = .exe
 FGREP = /usr/bin/grep -F
 GREP = /usr/bin/grep
 INSTALL = /usr/bin/install -c
@@ -279,10 +282,10 @@ INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
-LD = /usr/bin/ld -m elf_x86_64
-LDFLAGS = 
+LD = /usr/bin/x86_64-w64-mingw32-ld
+LDFLAGS =  --static
 LIBOBJS = 
-LIBS = -lm 
+LIBS = -lm  -lpsapi -lws2_32 -lgdi32 -lgdi32
 LIBTOOL = $(SHELL) $(top_builddir)/libtool
 LIPO = 
 LN_S = ln -s
@@ -291,9 +294,9 @@ MAINT = #
 MAKEINFO = ${SHELL} /home/simsong/gits/liblinear/missing makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /usr/bin/mkdir -p
-NM = /usr/bin/nm -B
+NM = /usr/bin/x86_64-w64-mingw32-nm
 NMEDIT = 
-OBJDUMP = objdump
+OBJDUMP = /usr/bin/x86_64-w64-mingw32-objdump
 OBJEXT = o
 OTOOL = 
 OTOOL64 = 
@@ -305,19 +308,19 @@ PACKAGE_TARNAME = liblinear
 PACKAGE_URL = 
 PACKAGE_VERSION = 1.2.1
 PATH_SEPARATOR = :
-RANLIB = ranlib
+RANLIB = /usr/bin/x86_64-w64-mingw32-ranlib
 SED = /usr/bin/sed
 SET_MAKE = 
 SHELL = /bin/sh
-STRIP = strip
+STRIP = /usr/bin/x86_64-w64-mingw32-strip
 VERSION = 1.2.1
 abs_builddir = /home/simsong/gits/liblinear
 abs_srcdir = /home/simsong/gits/liblinear
 abs_top_builddir = /home/simsong/gits/liblinear
 abs_top_srcdir = /home/simsong/gits/liblinear
-ac_ct_AR = ar
-ac_ct_CC = gcc
-ac_ct_CXX = g++
+ac_ct_AR = 
+ac_ct_CC = 
+ac_ct_CXX = 
 ac_ct_DUMPBIN = 
 ac_prefix_program = 
 am__include = include
@@ -325,44 +328,44 @@ am__leading_dot = .
 am__quote = 
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
-bindir = ${exec_prefix}/bin
-build = x86_64-unknown-linux-gnu
-build_alias = 
+bindir = /usr/x86_64-w64-mingw32/sys-root/mingw/bin
+build = x86_64-redhat-linux-gnu
+build_alias = x86_64-redhat-linux-gnu
 build_cpu = x86_64
 build_os = linux-gnu
-build_vendor = unknown
+build_vendor = redhat
 builddir = .
-datadir = ${datarootdir}
+datadir = /usr/x86_64-w64-mingw32/sys-root/mingw/share
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
-exec_prefix = ${prefix}
+exec_prefix = /usr/x86_64-w64-mingw32/sys-root/mingw
 has_libtool = true
-host = x86_64-unknown-linux-gnu
-host_alias = 
+host = x86_64-w64-mingw32
+host_alias = x86_64-w64-mingw32
 host_cpu = x86_64
-host_os = linux-gnu
-host_vendor = unknown
+host_os = mingw32
+host_vendor = w64
 htmldir = ${docdir}
-includedir = ${prefix}/include
-infodir = ${datarootdir}/info
+includedir = /usr/x86_64-w64-mingw32/sys-root/mingw/include
+infodir = /usr/x86_64-w64-mingw32/sys-root/mingw/share/info
 install_sh = ${SHELL} /home/simsong/gits/liblinear/install-sh
-libdir = ${exec_prefix}/lib
-libexecdir = ${exec_prefix}/libexec
+libdir = /usr/x86_64-w64-mingw32/sys-root/mingw/lib
+libexecdir = /usr/x86_64-w64-mingw32/sys-root/mingw/libexec
 localedir = ${datarootdir}/locale
-localstatedir = ${prefix}/var
-mandir = ${datarootdir}/man
+localstatedir = /usr/x86_64-w64-mingw32/sys-root/mingw/var
+mandir = /usr/x86_64-w64-mingw32/sys-root/mingw/share/man
 mkdir_p = $(MKDIR_P)
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = /usr/local
+prefix = /usr/x86_64-w64-mingw32/sys-root/mingw
 program_transform_name = s,x,x,
 psdir = ${docdir}
-sbindir = ${exec_prefix}/sbin
-sharedstatedir = ${prefix}/com
+sbindir = /usr/x86_64-w64-mingw32/sys-root/mingw/sbin
+sharedstatedir = /usr/x86_64-w64-mingw32/sys-root/mingw/com
 srcdir = .
-sysconfdir = ${prefix}/etc
-target_alias = 
+sysconfdir = /usr/x86_64-w64-mingw32/sys-root/mingw/etc
+target_alias = x86_64-w64-mingw32
 top_build_prefix = 
 top_builddir = .
 top_srcdir = .
@@ -370,6 +373,7 @@ ACLOCAL_AMFLAGS = -I m4
 lib_LTLIBRARIES = liblinear.la
 liblinear_la_SOURCES = tron.cpp linear.cpp blas/blasp.h 	blas/daxpy.c 	blas/ddot.c 	blas/dnrm2.c blas/dscal.c
 liblinear_la_LDFLAGS = -static -avoid-version
+include_HEADERS = linear.h
 train_SOURCES = train.cpp
 train_LDADD = liblinear.la -lstdc++ 
 predict_SOUCES = predict.cpp
@@ -617,6 +621,27 @@ clean-libtool:
 
 distclean-libtool:
 	-rm -f libtool config.lt
+install-includeHEADERS: $(include_HEADERS)
+	@$(NORMAL_INSTALL)
+	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(includedir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(includedir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
+	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
+	done
+
+uninstall-includeHEADERS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -835,11 +860,11 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) config.h
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(HEADERS) config.h
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -896,7 +921,7 @@ info: info-am
 
 info-am:
 
-install-data-am:
+install-data-am: install-includeHEADERS
 
 install-dvi: install-dvi-am
 
@@ -944,7 +969,8 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
+uninstall-am: uninstall-binPROGRAMS uninstall-includeHEADERS \
+	uninstall-libLTLIBRARIES
 
 .MAKE: all install-am install-strip
 
@@ -958,14 +984,15 @@ uninstall-am: uninstall-binPROGRAMS uninstall-libLTLIBRARIES
 	distuninstallcheck dvi dvi-am html html-am info info-am \
 	install install-am install-binPROGRAMS install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-libLTLIBRARIES install-man install-pdf \
-	install-pdf-am install-ps install-ps-am install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
+	install-exec-am install-html install-html-am \
+	install-includeHEADERS install-info install-info-am \
+	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-compile \
 	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
 	tags tags-am uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-libLTLIBRARIES
+	uninstall-includeHEADERS uninstall-libLTLIBRARIES
 
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

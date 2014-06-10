@@ -23,3 +23,9 @@ missing
 stamp-h
 stamp-h1
 autom4te.cache
+*.o
+*.lo
+*~
+*.la
+*.exe
+.libs/
