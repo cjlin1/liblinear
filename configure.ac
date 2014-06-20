@@ -50,12 +50,6 @@ AC_HEADER_STDC
 
 m4_include([m4/ax_openmp.m4])
 
-#
-# OpenMP
-AX_OPENMP([AC_MSG_NOTICE([OpenMP Found])])
-CFLAGS="$CFLAGS $OPENMP_CFLAGS"
-CXXFLAGS="$CXXFLAGS $OPENMP_CFLAGS"
-
 # -lm
 AC_CHECK_HEADERS([math.h],,AC_MSG_ERROR([missing math.h]))
 AC_CHECK_LIB([m],[fmax],,AC_MSG_ERROR([missing -lm]))
@@ -75,6 +69,12 @@ if test x"$mingw" = x"yes" ; then
 else
   CFLAGS="$CFLAGS -fPIC"
   CXXFLAGS="$CXXFLAGS -fPIC"
+
+  #
+  # Check for OpenMP if we are not using MINGW
+  AX_OPENMP([AC_MSG_NOTICE([OpenMP Found])])
+  CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+  CXXFLAGS="$CXXFLAGS $OPENMP_CFLAGS"
 fi
 
 
