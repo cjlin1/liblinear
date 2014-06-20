@@ -32,3 +32,4 @@ autom4te.cache
 blas/blas.a
 predict
 train
+Makefile
