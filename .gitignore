@@ -29,3 +29,6 @@ autom4te.cache
 *.la
 *.exe
 .libs/
+blas/blas.a
+predict
+train
