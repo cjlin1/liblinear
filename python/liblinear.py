@@ -5,6 +5,12 @@ from ctypes.util import find_library
 from os import path
 import sys
 
+__all__ = ['liblinear', 'feature_node', 'gen_feature_nodearray', 'problem',
+           'parameter', 'model', 'toPyModel', 'L2R_LR', 'L2R_L2LOSS_SVC_DUAL',
+           'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL', 'MCSVM_CS', 
+           'L1R_L2LOSS_SVC', 'L1R_LR', 'L2R_LR_DUAL', 'L2R_L2LOSS_SVR', 
+           'L2R_L2LOSS_SVR_DUAL', 'L2R_L1LOSS_SVR_DUAL', 'print_null']
+
 try:
 	dirname = path.dirname(path.abspath(__file__))
 	if sys.platform == 'win32':
@@ -20,13 +26,17 @@ except:
 	else:
 		raise Exception('LIBLINEAR library not found.')
 
-# Construct constants
-SOLVER_TYPE = ['L2R_LR', 'L2R_L2LOSS_SVC_DUAL', 'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL',\
-		'MCSVM_CS', 'L1R_L2LOSS_SVC', 'L1R_LR', 'L2R_LR_DUAL', \
-		None, None, None, \
-		'L2R_L2LOSS_SVR', 'L2R_L2LOSS_SVR_DUAL', 'L2R_L1LOSS_SVR_DUAL']
-for i, s in enumerate(SOLVER_TYPE): 
-	if s is not None: exec("%s = %d" % (s , i))
+L2R_LR = 0
+L2R_L2LOSS_SVC_DUAL = 1 
+L2R_L2LOSS_SVC = 2 
+L2R_L1LOSS_SVC_DUAL = 3
+MCSVM_CS = 4 
+L1R_L2LOSS_SVC = 5 
+L1R_LR = 6 
+L2R_LR_DUAL = 7  
+L2R_L2LOSS_SVR = 11
+L2R_L2LOSS_SVR_DUAL = 12
+L2R_L1LOSS_SVR_DUAL = 13
 
 PRINT_STRING_FUN = CFUNCTYPE(None, c_char_p)
 def print_null(s): 

@@ -3,6 +3,11 @@
 import os, sys
 sys.path = [os.path.dirname(os.path.abspath(__file__))] + sys.path 
 from liblinear import *
+from ctypes import c_double
+
+__all__ = ['svm_read_problem', 'load_model', 'save_model', 'evaluations',
+           'train', 'predict']
+
 
 def svm_read_problem(data_file_name):
 	"""
