@@ -205,6 +205,36 @@ LIBLINEAR shared library:
     >>> nr_class = model_.get_nr_class()
     >>> class_labels = model_.get_labels()
     >>> is_prob_model = model_.is_probability_model()
+    >>> is_regression_model = model_.is_regression_model()
+
+    The decision function is W*x + b, where
+        W is an nr_class-by-nr_feature matrix, and
+        b is a vector of size nr_class.
+    To access W_kj (i.e., coefficient for the k-th class and the j-th feature)
+    and b_k (i.e., bias for the k-th class), use the following functions.
+
+    >>> W_kj = model_.get_decfun_coef(feat_idx=j, label_idx=k)
+    >>> b_k = model_.get_decfun_bias(label_idx=k)
+
+    We also provide a function to extract w_k (i.e., the k-th row of W) and
+    b_k directly as follows.
+
+    >>> [w_k, b_k] = model_.get_decfun(label_idx=k)
+
+    Note that w_k is a Python list of length nr_feature, which means that
+        w_k[0] = W_k1.
+    For regression models, W is just a vector of length nr_feature. Either
+	set label_idx=0 or omit the label_idx parameter to access the coefficients.
+
+    >>> W_j = model_.get_decfun_coef(feat_idx=j)
+    >>> b = model_.get_decfun_bias()
+    >>> [W, b] = model_.get_decfun()
+
+    Note that in get_decfun_coef, get_decfun_bias, and get_decfun, feat_idx
+    starts from 1, while label_idx starts from 0. If label_idx is not in the
+    valid range (0 to nr_class-1), then a NaN will be returned; and if feat_idx
+    is not in the valid range (1 to nr_feature), then a zero value will be
+    returned. For regression models, label_idx is ignored.
 
 Utility Functions
 =================

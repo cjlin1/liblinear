@@ -158,9 +158,7 @@ void do_predict(FILE *input, FILE *output)
 		sumpt += predict_label*target_label;
 		++total;
 	}
-	if(model_->param.solver_type==L2R_L2LOSS_SVR ||
-	   model_->param.solver_type==L2R_L1LOSS_SVR_DUAL ||
-	   model_->param.solver_type==L2R_L2LOSS_SVR_DUAL)
+	if(check_regression_model(model_))
 	{
 		info("Mean squared error = %g (regression)\n",error/total);
 		info("Squared correlation coefficient = %g (regression)\n",

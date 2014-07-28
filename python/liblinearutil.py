@@ -3,10 +3,11 @@
 import os, sys
 sys.path = [os.path.dirname(os.path.abspath(__file__))] + sys.path 
 from liblinear import *
+from liblinear import __all__ as liblinear_all
 from ctypes import c_double
 
 __all__ = ['svm_read_problem', 'load_model', 'save_model', 'evaluations',
-           'train', 'predict']
+           'train', 'predict'] + liblinear_all
 
 
 def svm_read_problem(data_file_name):
@@ -246,7 +247,7 @@ def predict(y, x, m, options=""):
 		y = [0] * len(x)
 	ACC, MSE, SCC = evaluations(y, pred_labels)
 	l = len(y)
-	if solver_type in [L2R_L2LOSS_SVR, L2R_L2LOSS_SVR_DUAL, L2R_L1LOSS_SVR_DUAL]:
+	if m.is_regression_model():
 		info("Mean squared error = %g (regression)" % MSE)
 		info("Squared correlation coefficient = %g (regression)" % SCC)
 	else:

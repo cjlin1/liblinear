@@ -250,8 +250,22 @@ class model(Structure):
 		liblinear.get_labels(self, labels)
 		return labels[:nr_class]
 
+	def get_decfun_coef(self, feat_idx, label_idx=0):
+		return liblinear.get_decfun_coef(self, feat_idx, label_idx)
+
+	def get_decfun_bias(self, label_idx=0):
+		return liblinear.get_decfun_bias(self, label_idx)
+
+	def get_decfun(self, label_idx=0):
+		w = [liblinear.get_decfun_coef(self, feat_idx, label_idx) for feat_idx in range(1, self.nr_feature+1)]
+		b = liblinear.get_decfun_bias(self, label_idx)
+		return (w, b)
+
 	def is_probability_model(self):
 		return (liblinear.check_probability_model(self) == 1)
+
+	def is_regression_model(self):
+		return (liblinear.check_regression_model(self) == 1)
 
 def toPyModel(model_ptr):
 	"""
@@ -278,10 +292,13 @@ fillprototype(liblinear.load_model, POINTER(model), [c_char_p])
 fillprototype(liblinear.get_nr_feature, c_int, [POINTER(model)])
 fillprototype(liblinear.get_nr_class, c_int, [POINTER(model)])
 fillprototype(liblinear.get_labels, None, [POINTER(model), POINTER(c_int)])
+fillprototype(liblinear.get_decfun_coef, c_double, [POINTER(model), c_int, c_int])
+fillprototype(liblinear.get_decfun_bias, c_double, [POINTER(model), c_int])
 
 fillprototype(liblinear.free_model_content, None, [POINTER(model)])
 fillprototype(liblinear.free_and_destroy_model, None, [POINTER(POINTER(model))])
 fillprototype(liblinear.destroy_param, None, [POINTER(parameter)])
 fillprototype(liblinear.check_parameter, c_char_p, [POINTER(problem), POINTER(parameter)])
 fillprototype(liblinear.check_probability_model, c_int, [POINTER(model)])
+fillprototype(liblinear.check_regression_model, c_int, [POINTER(model)])
 fillprototype(liblinear.set_print_string_function, None, [CFUNCTYPE(None, c_char_p)])
