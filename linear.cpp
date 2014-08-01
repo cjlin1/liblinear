@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <locale.h>
+#include <vector>
 #include "linear.h"
 #include "tron.h"
 typedef signed char schar;
@@ -14,11 +15,6 @@ template <class T> static inline T min(T x,T y) { return (x<y)?x:y; }
 #ifndef max
 template <class T> static inline T max(T x,T y) { return (x>y)?x:y; }
 #endif
-template <class S, class T> static inline void clone(T*& dst, S* src, int n)
-{
-	dst = new T[n];
-	memcpy((void *)dst,(void *)src,sizeof(T)*n);
-}
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
 
@@ -138,16 +134,15 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	int i;
 	int l=prob->l;
 	int w_size=get_nr_variable();
-	double *wa = new double[l];
+	std::vector<double> wa(l);
 
-	Xv(s, wa);
+	Xv(s, &wa[0]);
 	for(i=0;i<l;i++)
 		wa[i] = C[i]*D[i]*wa[i];
 
-	XTv(wa, Hs);
+	XTv(&wa[0], Hs);
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + Hs[i];
-	delete[] wa;
 }
 
 void l2r_lr_fun::Xv(double *v, double *Xv)
@@ -286,16 +281,15 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 {
 	int i;
 	int w_size=get_nr_variable();
-	double *wa = new double[sizeI];
+	std::vector<double> wa(sizeI);
 
-	subXv(s, wa);
+	subXv(s, &wa[0]);
 	for(i=0;i<sizeI;i++)
 		wa[i] = C[I[i]]*wa[i];
 
-	subXTv(wa, Hs);
+	subXTv(&wa[0], Hs);
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + 2*Hs[i];
-	delete[] wa;
 }
 
 void l2r_l2_svc_fun::Xv(double *v, double *Xv)
@@ -501,12 +495,11 @@ int compare_double(const void *a, const void *b)
 void Solver_MCSVM_CS::solve_sub_problem(double A_i, int yi, double C_yi, int active_i, double *alpha_new)
 {
 	int r;
-	double *D;
+	std::vector<double> D(B, B + active_i);
 
-	clone(D, B, active_i);
 	if(yi < active_i)
 		D[yi] += A_i*C_yi;
-	qsort(D, active_i, sizeof(double), compare_double);
+	qsort(&D[0], active_i, sizeof(double), compare_double);
 
 	double beta = D[0] - A_i*C_yi;
 	for(r=1;r<active_i && beta<r*D[r];r++)
@@ -520,7 +513,6 @@ void Solver_MCSVM_CS::solve_sub_problem(double A_i, int yi, double C_yi, int act
 		else
 			alpha_new[r] = min((double)0, (beta - B[r])/A_i);
 	}
-	delete[] D;
 }
 
 bool Solver_MCSVM_CS::be_shrunk(int i, int m, int yi, double alpha_i, double minG)
@@ -537,14 +529,14 @@ void Solver_MCSVM_CS::Solve(double *w)
 {
 	int i, m, s;
 	int iter = 0;
-	double *alpha =  new double[l*nr_class];
-	double *alpha_new = new double[nr_class];
-	int *index = new int[l];
-	double *QD = new double[l];
-	int *d_ind = new int[nr_class];
-	double *d_val = new double[nr_class];
-	int *alpha_index = new int[nr_class*l];
-	int *y_index = new int[l];
+	std::vector<double> alpha(l * nr_class);
+	std::vector<double> alpha_new(nr_class);
+	std::vector<int> index(l);
+	std::vector<double> QD(l);
+	std::vector<int> d_ind(nr_class);
+	std::vector<double> d_val(nr_class);
+	std::vector<int> alpha_index(nr_class * l);
+	std::vector<int> y_index(l);
 	int active_size = l;
 	int *active_size_i = new int[l];
 	double eps_shrink = max(10.0*eps, 1.0); // stopping tolerance for shrinking
@@ -664,7 +656,8 @@ void Solver_MCSVM_CS::Solve(double *w)
 				for(m=0;m<active_size_i[i];m++)
 					B[m] = G[m] - Ai*alpha_i[alpha_index_i[m]] ;
 
-				solve_sub_problem(Ai, y_index[i], C[GETI(i)], active_size_i[i], alpha_new);
+				solve_sub_problem(Ai, y_index[i], C[GETI(i)], active_size_i[i],
+						  &alpha_new[0]);
 				int nz_d = 0;
 				for(m=0;m<active_size_i[i];m++)
 				{
@@ -733,16 +726,6 @@ void Solver_MCSVM_CS::Solve(double *w)
 		v -= alpha[i*nr_class+(int)prob->y[i]];
 	info("Objective value = %lf\n",v);
 	info("nSV = %d\n",nSV);
-
-	delete [] alpha;
-	delete [] alpha_new;
-	delete [] index;
-	delete [] QD;
-	delete [] d_ind;
-	delete [] d_val;
-	delete [] alpha_index;
-	delete [] y_index;
-	delete [] active_size_i;
 }
 
 // A coordinate descent algorithm for 
@@ -783,11 +766,11 @@ static void solve_l2r_l1l2_svc(
 	int w_size = prob->n;
 	int i, s, iter = 0;
 	double C, d, G;
-	double *QD = new double[l];
+	std::vector<double> QD(l);
 	int max_iter = 1000;
-	int *index = new int[l];
-	double *alpha = new double[l];
-	schar *y = new schar[l];
+	std::vector<int> index(l);
+	std::vector<double> alpha(l);
+	std::vector<schar> y(l);
 	int active_size = l;
 
 	// PG: projected gradient, for shrinking and stopping
@@ -957,11 +940,6 @@ static void solve_l2r_l1l2_svc(
 	}
 	info("Objective value = %lf\n",v/2);
 	info("nSV = %d\n",nSV);
-
-	delete [] QD;
-	delete [] alpha;
-	delete [] y;
-	delete [] index;
 }
 
 
@@ -1005,14 +983,14 @@ static void solve_l2r_l1l2_svr(
 	int i, s, iter = 0;
 	int max_iter = 1000;
 	int active_size = l;
-	int *index = new int[l];
+	std::vector<int> index(l);
 
 	double d, G, H;
 	double Gmax_old = INF;
 	double Gmax_new, Gnorm1_new;
 	double Gnorm1_init;
-	double *beta = new double[l];
-	double *QD = new double[l];
+	std::vector<double> beta(l);
+	std::vector<double> QD(l);
 	double *y = prob->y;
 
 	// L2R_L2LOSS_SVR_DUAL
@@ -1191,10 +1169,6 @@ static void solve_l2r_l1l2_svr(
 
 	info("Objective value = %lf\n", v);
 	info("nSV = %d\n",nSV);
-
-	delete [] beta;
-	delete [] QD;
-	delete [] index;
 }
 
 
@@ -1225,11 +1199,11 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 	int l = prob->l;
 	int w_size = prob->n;
 	int i, s, iter = 0;
-	double *xTx = new double[l];
+	std::vector<double> xTx(l);
 	int max_iter = 1000;
-	int *index = new int[l];	
-	double *alpha = new double[2*l]; // store alpha and C - alpha
-	schar *y = new schar[l];
+	std::vector<int> index(l);
+	std::vector<double> alpha(2 * l); // store alpha and C - alpha
+	std::vector<schar> y(l);
 	int max_inner_iter = 100; // for inner Newton
 	double innereps = 1e-2;
 	double innereps_min = min(1e-8, eps);
@@ -1370,11 +1344,6 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 		v += alpha[2*i] * log(alpha[2*i]) + alpha[2*i+1] * log(alpha[2*i+1])
 			- upper_bound[GETI(i)] * log(upper_bound[GETI(i)]);
 	info("Objective value = %lf\n", v);
-
-	delete [] xTx;
-	delete [] alpha;
-	delete [] y;
-	delete [] index;
 }
 
 // A coordinate descent algorithm for 
@@ -1414,10 +1383,10 @@ static void solve_l1r_l2_svc(
 	double loss_old, loss_new;
 	double appxcond, cond;
 
-	int *index = new int[w_size];
-	schar *y = new schar[l];
-	double *b = new double[l]; // b = 1-ywTx
-	double *xj_sq = new double[w_size];
+	std::vector<int> index(w_size);
+	std::vector<schar> y(l);
+	std::vector<double> b(l); // b = 1-ywTx
+	std::vector<double> xj_sq(w_size);
 	feature_node *x;
 
 	double C[3] = {Cn,0,Cp};
@@ -1657,11 +1626,6 @@ static void solve_l1r_l2_svc(
 
 	info("Objective value = %lf\n", v);
 	info("#nonzeros/#features = %d/%d\n", nnz, w_size);
-
-	delete [] index;
-	delete [] y;
-	delete [] b;
-	delete [] xj_sq;
 }
 
 // A coordinate descent algorithm for 
