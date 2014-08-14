@@ -2620,6 +2620,8 @@ int save_model(const char *model_file_name, const struct model *model_)
 
 	fprintf(fp, "bias %.16g\n", model_->bias);
 
+	fprintf(fp, "normalization %d\n", model_->normal);
+
 	fprintf(fp, "w\n");
 	for(i=0; i<w_size; i++)
 	{
@@ -2645,6 +2647,7 @@ struct model *load_model(const char *model_file_name)
 	int nr_feature;
 	int n;
 	int nr_class;
+	int normalfac;
 	double bias;
 	model *model_ = Malloc(model,1);
 	parameter& param = model_->param;
@@ -2685,6 +2688,11 @@ struct model *load_model(const char *model_file_name)
 		{
 			fscanf(fp,"%d",&nr_class);
 			model_->nr_class=nr_class;
+		}
+		else if(strcmp(cmd,"normalization")==0)
+		{
+			fscanf(fp,"%d",&normalfac);
+			model_->normal=normalfac;
 		}
 		else if(strcmp(cmd,"nr_feature")==0)
 		{
