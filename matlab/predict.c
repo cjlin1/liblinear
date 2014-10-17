@@ -23,8 +23,8 @@ int col_format_flag;
 
 void read_sparse_instance(const mxArray *prhs, int index, struct feature_node *x, int feature_number, double bias)
 {
-	int i, j, low, high;
-	mwIndex *ir, *jc;
+	int j;
+	mwIndex *ir, *jc, low, high, i;
 	double *samples;
 
 	ir = mxGetIr(prhs);
@@ -33,7 +33,7 @@ void read_sparse_instance(const mxArray *prhs, int index, struct feature_node *x
 
 	// each column is one instance
 	j = 0;
-	low = (int) jc[index], high = (int) jc[index+1];
+	low = jc[index], high = jc[index+1];
 	for(i=low; i<high && (int) (ir[i])<feature_number; i++)
 	{
 		x[j].index = (int) ir[i]+1;
