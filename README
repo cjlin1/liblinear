@@ -453,15 +453,18 @@ Library Usage
 
     This function gives the coefficient for the feature with feature index =
     feat_idx and the class with label index = label_idx. Note that feat_idx
-    starts from 1, while label_idx starts from 0. If label_idx is not in the
-    valid range (0 to nr_class-1), then a NaN will be returned; and if feat_idx
-    is not in the valid range (1 to nr_feature), then a zero value will be
-    returned. For regression models, label_idx is ignored.
+    starts from 1, while label_idx starts from 0. If feat_idx is not in the
+    valid range (1 to nr_feature), then a zero value will be returned. For
+    classification models, if label_idx is not in the valid range (0 to
+    nr_class-1), then a zero value will be returned; for regression models,
+    label_idx is ignored.
 
 - Function: double get_decfun_bias(const struct model *model_, int label_idx);
 
-    This function gives the bias term corresponding to the class with the 
-    label_idx. For regression models, label_idx is ignored.
+    This function gives the bias term corresponding to the class with the
+    label_idx. For classification models, if label_idx is not in a valid range
+    (0 to nr_class-1), then a zero value will be returned; for regression
+    models, label_idx is ignored.
 
 - Function: const char *check_parameter(const struct problem *prob,
             const struct parameter *param);
