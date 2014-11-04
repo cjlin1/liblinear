@@ -6,6 +6,6 @@ touch NEWS README AUTHORS ChangeLog
 touch stamp-h
 aclocal -I m4
 autoconf -f
-libtoolize
+libtoolize || glibtoolize
 automake --add-missing --copy
 echo be sure to run ./configure
