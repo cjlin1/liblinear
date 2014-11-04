@@ -1,5 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
+AUTOMAKE_OPTIONS = subdir-objects
+
 bin_PROGRAMS = train predict 
 lib_LTLIBRARIES = liblinear.la
 
