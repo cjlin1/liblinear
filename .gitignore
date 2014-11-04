@@ -33,3 +33,5 @@ blas/blas.a
 predict
 train
 Makefile
+.dirstamp
+blas/.dirstamp
