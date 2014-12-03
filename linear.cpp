@@ -2592,7 +2592,10 @@ int save_model(const char *model_file_name, const struct model *model_)
 	FILE *fp = fopen(model_file_name,"w");
 	if(fp==NULL) return -1;
 
-	char *old_locale = strdup(setlocale(LC_ALL, NULL));
+	char *old_locale = setlocale(LC_ALL, NULL);
+	if (old_locale) {
+		old_locale = strdup(old_locale);
+	}
 	setlocale(LC_ALL, "C");
 
 	int nr_w;
@@ -2647,7 +2650,10 @@ struct model *load_model(const char *model_file_name)
 
 	model_->label = NULL;
 
-	char *old_locale = strdup(setlocale(LC_ALL, NULL));
+	char *old_locale = setlocale(LC_ALL, NULL);
+	if (old_locale) {
+		old_locale = strdup(old_locale);
+	}
 	setlocale(LC_ALL, "C");
 
 	char cmd[81];
