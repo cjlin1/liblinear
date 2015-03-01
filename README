@@ -523,7 +523,7 @@ Visual C++, use the following steps:
 1. Open a dos command box and change to liblinear directory. If
 environment variables of VC++ have not been set, type
 
-"C:\Program Files\Microsoft Visual Studio 10.0\VC\bin\vcvars32.bat"
+""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat""
 
 You may have to modify the above command according which version of
 VC++ or where it is installed.
@@ -532,9 +532,9 @@ VC++ or where it is installed.
 
 nmake -f Makefile.win clean all
 
-2. (Optional) To build 64-bit windows binaries, you must
-	(1) Setup vcvars64.bat instead of vcvars32.bat
-	(2) Change CFLAGS in Makefile.win: /D _WIN32 to /D _WIN64
+2. (Optional) To build 32-bit windows binaries, you must
+	(1) Setup "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\vcvars32.bat" instead of vcvars64.bat
+	(2) Change CFLAGS in Makefile.win: /D _WIN64 to /D _WIN32
 
 MATLAB/OCTAVE Interface
 =======================
