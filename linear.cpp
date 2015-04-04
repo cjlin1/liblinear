@@ -2593,7 +2593,8 @@ int save_model(const char *model_file_name, const struct model *model_)
 	if(fp==NULL) return -1;
 
 	char *old_locale = setlocale(LC_ALL, NULL);
-	if (old_locale) {
+	if (old_locale)
+	{
 		old_locale = strdup(old_locale);
 	}
 	setlocale(LC_ALL, "C");
@@ -2651,7 +2652,8 @@ struct model *load_model(const char *model_file_name)
 	model_->label = NULL;
 
 	char *old_locale = setlocale(LC_ALL, NULL);
-	if (old_locale) {
+	if (old_locale)
+	{
 		old_locale = strdup(old_locale);
 	}
 	setlocale(LC_ALL, "C");
