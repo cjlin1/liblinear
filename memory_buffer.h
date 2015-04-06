@@ -58,7 +58,7 @@ inline TItemType* CBuffer<TItemType>::Detach()
 	TItemType* tmp = ptr;
 	ptr = 0;
 	count = 0;
-	return ptr;
+	return tmp;
 }
 
 template<typename TItemType>
