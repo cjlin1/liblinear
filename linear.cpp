@@ -30,13 +30,17 @@ static void print_string_stdout(const char *s)
 
 static void (*liblinear_print_string) (const char *) = &print_string_stdout;
 
+#ifdef _MSC_VER
+#pragma warning (disable:4996) // 'vsnprintf': This function or variable may be unsafe.
+#endif // _MSC_VER
+
 #if 1
 static void info(const char *fmt,...)
 {
 	char buf[BUFSIZ];
 	va_list ap;
 	va_start(ap,fmt);
-	vsprintf(buf,fmt,ap);
+	vsnprintf(buf,BUFSIZ,fmt,ap);
 	va_end(ap);
 	(*liblinear_print_string)(buf);
 }

@@ -12,6 +12,10 @@ template <class T> static inline T min(T x,T y) { return (x<y)?x:y; }
 template <class T> static inline T max(T x,T y) { return (x>y)?x:y; }
 #endif
 
+#ifdef _MSC_VER
+#pragma warning (disable:4996) // 'vsnprintf': This function or variable may be unsafe.
+#endif // _MSC_VER
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,7 +40,7 @@ void TRON::info(const char *fmt,...)
 	char buf[BUFSIZ];
 	va_list ap;
 	va_start(ap,fmt);
-	vsprintf(buf,fmt,ap);
+	vsnprintf(buf,BUFSIZ,fmt,ap);
 	va_end(ap);
 	(*tron_print_string)(buf);
 }
