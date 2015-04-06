@@ -6,6 +6,8 @@
 #include <locale.h>
 #include "linear.h"
 #include "tron.h"
+#include "memory_buffer.h"
+
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
 #ifndef min
@@ -19,8 +21,21 @@ template <class S, class T> static inline void clone(T*& dst, S* src, int n)
 	dst = new T[n];
 	memcpy((void *)dst,(void *)src,sizeof(T)*n);
 }
-#define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
+
+model::model()
+{
+	::memset( this, 0, sizeof( *this ) );
+}
+model::~model()
+{
+	delete[] w;
+	delete[] label;
+
+	w = 0;
+	label = 0;
+}
+
 
 static void print_string_stdout(const char *s)
 {
@@ -65,8 +80,8 @@ private:
 	void XTv(double *v, double *XTv);
 
 	double *C;
-	double *z;
-	double *D;
+	CBuffer<double> z;
+	CBuffer<double> D;
 	const problem *prob;
 };
 
@@ -76,15 +91,13 @@ l2r_lr_fun::l2r_lr_fun(const problem *prob, double *C)
 
 	this->prob = prob;
 
-	z = new double[l];
-	D = new double[l];
+	z.Realloc(l);
+	D.Realloc(l);
 	this->C = C;
 }
 
 l2r_lr_fun::~l2r_lr_fun()
 {
-	delete[] z;
-	delete[] D;
 }
 
 
@@ -142,7 +155,7 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	int i;
 	int l=prob->l;
 	int w_size=get_nr_variable();
-	double *wa = new double[l];
+	CBuffer<double> wa(l);
 
 	Xv(s, wa);
 	for(i=0;i<l;i++)
@@ -151,7 +164,6 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	XTv(wa, Hs);
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + Hs[i];
-	delete[] wa;
 }
 
 void l2r_lr_fun::Xv(double *v, double *Xv)
@@ -210,9 +222,9 @@ protected:
 	void subXTv(double *v, double *XTv);
 
 	double *C;
-	double *z;
-	double *D;
-	int *I;
+	CBuffer<double> z;
+	CBuffer<double> D;
+	CBuffer<int> I;
 	int sizeI;
 	const problem *prob;
 };
@@ -223,17 +235,14 @@ l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, double *C)
 
 	this->prob = prob;
 
-	z = new double[l];
-	D = new double[l];
-	I = new int[l];
+	z.Realloc(l);
+	D.Realloc(l);
+	I.Realloc(l);
 	this->C = C;
 }
 
 l2r_l2_svc_fun::~l2r_l2_svc_fun()
 {
-	delete[] z;
-	delete[] D;
-	delete[] I;
 }
 
 double l2r_l2_svc_fun::fun(double *w)
@@ -290,7 +299,7 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 {
 	int i;
 	int w_size=get_nr_variable();
-	double *wa = new double[sizeI];
+	CBuffer<double> wa(sizeI);
 
 	subXv(s, wa);
 	for(i=0;i<sizeI;i++)
@@ -299,7 +308,6 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 	subXTv(wa, Hs);
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + 2*Hs[i];
-	delete[] wa;
 }
 
 void l2r_l2_svc_fun::Xv(double *v, double *Xv)
@@ -466,7 +474,9 @@ class Solver_MCSVM_CS
 	private:
 		void solve_sub_problem(double A_i, int yi, double C_yi, int active_i, double *alpha_new);
 		bool be_shrunk(int i, int m, int yi, double alpha_i, double minG);
-		double *B, *C, *G;
+		CBuffer<double> B;
+		double *C;
+		CBuffer<double> G;
 		int w_size, l;
 		int nr_class;
 		int max_iter;
@@ -482,15 +492,13 @@ Solver_MCSVM_CS::Solver_MCSVM_CS(const problem *prob, int nr_class, double *weig
 	this->eps = eps;
 	this->max_iter = max_iter;
 	this->prob = prob;
-	this->B = new double[nr_class];
-	this->G = new double[nr_class];
+	this->B.Realloc(nr_class);
+	this->G.Realloc(nr_class);
 	this->C = weighted_C;
 }
 
 Solver_MCSVM_CS::~Solver_MCSVM_CS()
 {
-	delete[] B;
-	delete[] G;
 }
 
 int compare_double(const void *a, const void *b)
@@ -507,7 +515,7 @@ void Solver_MCSVM_CS::solve_sub_problem(double A_i, int yi, double C_yi, int act
 	int r;
 	double *D;
 
-	clone(D, B, active_i);
+	clone(D, B.Ptr(), active_i);
 	if(yi < active_i)
 		D[yi] += A_i*C_yi;
 	qsort(D, active_i, sizeof(double), compare_double);
@@ -541,16 +549,16 @@ void Solver_MCSVM_CS::Solve(double *w)
 {
 	int i, m, s;
 	int iter = 0;
-	double *alpha =  new double[l*nr_class];
-	double *alpha_new = new double[nr_class];
-	int *index = new int[l];
-	double *QD = new double[l];
-	int *d_ind = new int[nr_class];
-	double *d_val = new double[nr_class];
-	int *alpha_index = new int[nr_class*l];
-	int *y_index = new int[l];
+	CBuffer<double> alpha(l*nr_class);
+	CBuffer<double> alpha_new(nr_class);
+	CBuffer<int> index(l);
+	CBuffer<double> QD(l);
+	CBuffer<int> d_ind(nr_class);
+	CBuffer<double> d_val(nr_class);
+	CBuffer<int> alpha_index(nr_class*l);
+	CBuffer<int> y_index(l);
 	int active_size = l;
-	int *active_size_i = new int[l];
+	CBuffer<int> active_size_i(l);
 	double eps_shrink = max(10.0*eps, 1.0); // stopping tolerance for shrinking
 	bool start_from_all = true;
 
@@ -737,16 +745,6 @@ void Solver_MCSVM_CS::Solve(double *w)
 		v -= alpha[i*nr_class+(int)prob->y[i]];
 	info("Objective value = %lf\n",v);
 	info("nSV = %d\n",nSV);
-
-	delete [] alpha;
-	delete [] alpha_new;
-	delete [] index;
-	delete [] QD;
-	delete [] d_ind;
-	delete [] d_val;
-	delete [] alpha_index;
-	delete [] y_index;
-	delete [] active_size_i;
 }
 
 // A coordinate descent algorithm for 
@@ -787,11 +785,11 @@ static void solve_l2r_l1l2_svc(
 	int w_size = prob->n;
 	int i, s, iter = 0;
 	double C, d, G;
-	double *QD = new double[l];
+	CBuffer<double> QD(l);
 	int max_iter = 1000;
-	int *index = new int[l];
-	double *alpha = new double[l];
-	schar *y = new schar[l];
+	CBuffer<int> index(l);
+	CBuffer<double> alpha(l);
+	CBuffer<schar> y(l);
 	int active_size = l;
 
 	// PG: projected gradient, for shrinking and stopping
@@ -961,11 +959,6 @@ static void solve_l2r_l1l2_svc(
 	}
 	info("Objective value = %lf\n",v/2);
 	info("nSV = %d\n",nSV);
-
-	delete [] QD;
-	delete [] alpha;
-	delete [] y;
-	delete [] index;
 }
 
 
@@ -1009,14 +1002,14 @@ static void solve_l2r_l1l2_svr(
 	int i, s, iter = 0;
 	int max_iter = 1000;
 	int active_size = l;
-	int *index = new int[l];
+	CBuffer<int> index(l);
 
 	double d, G, H;
 	double Gmax_old = INF;
 	double Gmax_new, Gnorm1_new;
 	double Gnorm1_init = -1.0; // Gnorm1_init is initialized at the first iteration
-	double *beta = new double[l];
-	double *QD = new double[l];
+	CBuffer<double> beta(l);
+	CBuffer<double> QD(l);
 	double *y = prob->y;
 
 	// L2R_L2LOSS_SVR_DUAL
@@ -1195,10 +1188,6 @@ static void solve_l2r_l1l2_svr(
 
 	info("Objective value = %lf\n", v);
 	info("nSV = %d\n",nSV);
-
-	delete [] beta;
-	delete [] QD;
-	delete [] index;
 }
 
 
@@ -1229,11 +1218,11 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 	int l = prob->l;
 	int w_size = prob->n;
 	int i, s, iter = 0;
-	double *xTx = new double[l];
+	CBuffer<double> xTx(l);
 	int max_iter = 1000;
-	int *index = new int[l];	
-	double *alpha = new double[2*l]; // store alpha and C - alpha
-	schar *y = new schar[l];
+	CBuffer<int> index(l);	
+	CBuffer<double> alpha(2*l); // store alpha and C - alpha
+	CBuffer<schar> y(l);
 	int max_inner_iter = 100; // for inner Newton
 	double innereps = 1e-2;
 	double innereps_min = min(1e-8, eps);
@@ -1374,11 +1363,6 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 		v += alpha[2*i] * log(alpha[2*i]) + alpha[2*i+1] * log(alpha[2*i+1])
 			- upper_bound[GETI(i)] * log(upper_bound[GETI(i)]);
 	info("Objective value = %lf\n", v);
-
-	delete [] xTx;
-	delete [] alpha;
-	delete [] y;
-	delete [] index;
 }
 
 // A coordinate descent algorithm for 
@@ -1418,10 +1402,10 @@ static void solve_l1r_l2_svc(
 	double loss_old, loss_new;
 	double appxcond, cond;
 
-	int *index = new int[w_size];
-	schar *y = new schar[l];
-	double *b = new double[l]; // b = 1-ywTx
-	double *xj_sq = new double[w_size];
+	CBuffer<int> index(w_size);
+	CBuffer<schar> y(l);
+	CBuffer<double> b(l); // b = 1-ywTx
+	CBuffer<double> xj_sq(w_size);
 	feature_node *x;
 
 	double C[3] = {Cn,0,Cp};
@@ -1661,11 +1645,6 @@ static void solve_l1r_l2_svc(
 
 	info("Objective value = %lf\n", v);
 	info("#nonzeros/#features = %d/%d\n", nnz, w_size);
-
-	delete [] index;
-	delete [] y;
-	delete [] b;
-	delete [] xj_sq;
 }
 
 // A coordinate descent algorithm for 
@@ -1710,17 +1689,17 @@ static void solve_l1r_lr(
 	double QP_Gmax_new, QP_Gnorm1_new;
 	double delta, negsum_xTd, cond;
 
-	int *index = new int[w_size];
-	schar *y = new schar[l];
-	double *Hdiag = new double[w_size];
-	double *Grad = new double[w_size];
-	double *wpd = new double[w_size];
-	double *xjneg_sum = new double[w_size];
-	double *xTd = new double[l];
-	double *exp_wTx = new double[l];
-	double *exp_wTx_new = new double[l];
-	double *tau = new double[l];
-	double *D = new double[l];
+	CBuffer<int> index(w_size);
+	CBuffer<schar> y(l);
+	CBuffer<double> Hdiag(w_size);
+	CBuffer<double> Grad(w_size);
+	CBuffer<double> wpd(w_size);
+	CBuffer<double> xjneg_sum(w_size);
+	CBuffer<double> xTd(l);
+	CBuffer<double> exp_wTx(l);
+	CBuffer<double> exp_wTx_new(l);
+	CBuffer<double> tau(l);
+	CBuffer<double> D(l);
 	feature_node *x;
 
 	double C[3] = {Cn,0,Cp};
@@ -2035,18 +2014,6 @@ static void solve_l1r_lr(
 
 	info("Objective value = %lf\n", v);
 	info("#nonzeros/#features = %d/%d\n", nnz, w_size);
-
-	delete [] index;
-	delete [] y;
-	delete [] Hdiag;
-	delete [] Grad;
-	delete [] wpd;
-	delete [] xjneg_sum;
-	delete [] xTd;
-	delete [] exp_wTx;
-	delete [] exp_wTx_new;
-	delete [] tau;
-	delete [] D;
 }
 
 // transpose matrix X from row format to column format
@@ -2056,7 +2023,7 @@ static void transpose(const problem *prob, feature_node **x_space_ret, problem *
 	int l = prob->l;
 	int n = prob->n;
 	size_t nnz = 0;
-	size_t *col_ptr = new size_t [n+1];
+	CBuffer<size_t> col_ptr(n+1);
 	feature_node *x_space;
 	prob_col->l = l;
 	prob_col->n = n;
@@ -2101,20 +2068,19 @@ static void transpose(const problem *prob, feature_node **x_space_ret, problem *
 		x_space[col_ptr[i]].index = -1;
 
 	*x_space_ret = x_space;
-
-	delete [] col_ptr;
 }
 
 // label: label name, start: begin of each class, count: #data of classes, perm: indices to the original data
 // perm, length l, must be allocated before calling this subroutine
-static void group_classes(const problem *prob, int *nr_class_ret, int **label_ret, int **start_ret, int **count_ret, int *perm)
+static void group_classes(const problem *prob, int *nr_class_ret,
+	CBuffer<int>& label, CBuffer<int>& start, CBuffer<int>& count, int *perm)
 {
 	int l = prob->l;
 	int max_nr_class = 16;
 	int nr_class = 0;
-	int *label = Malloc(int,max_nr_class);
-	int *count = Malloc(int,max_nr_class);
-	int *data_label = Malloc(int,l);
+	label.Realloc(max_nr_class);
+	count.Realloc(max_nr_class);
+	CBuffer<int> data_label(l);
 	int i;
 
 	for(i=0;i<l;i++)
@@ -2135,8 +2101,8 @@ static void group_classes(const problem *prob, int *nr_class_ret, int **label_re
 			if(nr_class == max_nr_class)
 			{
 				max_nr_class *= 2;
-				label = (int *)realloc(label,max_nr_class*sizeof(int));
-				count = (int *)realloc(count,max_nr_class*sizeof(int));
+				label.Realloc(max_nr_class);
+				count.Realloc(max_nr_class);
 			}
 			label[nr_class] = this_label;
 			count[nr_class] = 1;
@@ -2162,7 +2128,7 @@ static void group_classes(const problem *prob, int *nr_class_ret, int **label_re
 		}
 	}
 
-	int *start = Malloc(int,nr_class);
+	start.Realloc(nr_class);
 	start[0] = 0;
 	for(i=1;i<nr_class;i++)
 		start[i] = start[i-1]+count[i-1];
@@ -2176,10 +2142,6 @@ static void group_classes(const problem *prob, int *nr_class_ret, int **label_re
 		start[i] = start[i-1]+count[i-1];
 
 	*nr_class_ret = nr_class;
-	*label_ret = label;
-	*start_ret = start;
-	*count_ret = count;
-	free(data_label);
 }
 
 static void train_one(const problem *prob, const parameter *param, double *w, double Cp, double Cn)
@@ -2194,12 +2156,11 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 
 	double primal_solver_tol = eps*max(min(pos,neg), 1)/prob->l;
 
-	function *fun_obj=NULL;
 	switch(param->solver_type)
 	{
 		case L2R_LR:
 		{
-			double *C = new double[prob->l];
+			CBuffer<double> C(prob->l);
 			for(int i = 0; i < prob->l; i++)
 			{
 				if(prob->y[i] > 0)
@@ -2207,17 +2168,15 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 				else
 					C[i] = Cn;
 			}
-			fun_obj=new l2r_lr_fun(prob, C);
-			TRON tron_obj(fun_obj, primal_solver_tol);
+			l2r_lr_fun fun_obj(prob, C);
+			TRON tron_obj(&fun_obj, primal_solver_tol);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
-			delete fun_obj;
-			delete[] C;
 			break;
 		}
 		case L2R_L2LOSS_SVC:
 		{
-			double *C = new double[prob->l];
+			CBuffer<double> C(prob->l);
 			for(int i = 0; i < prob->l; i++)
 			{
 				if(prob->y[i] > 0)
@@ -2225,12 +2184,10 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 				else
 					C[i] = Cn;
 			}
-			fun_obj=new l2r_l2_svc_fun(prob, C);
-			TRON tron_obj(fun_obj, primal_solver_tol);
+			l2r_l2_svc_fun fun_obj(prob, C);
+			TRON tron_obj(&fun_obj, primal_solver_tol);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
-			delete fun_obj;
-			delete[] C;
 			break;
 		}
 		case L2R_L2LOSS_SVC_DUAL:
@@ -2266,16 +2223,14 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			break;
 		case L2R_L2LOSS_SVR:
 		{
-			double *C = new double[prob->l];
+			CBuffer<double> C(prob->l);
 			for(int i = 0; i < prob->l; i++)
 				C[i] = param->C;
 
-			fun_obj=new l2r_l2_svr_fun(prob, C, param->p);
-			TRON tron_obj(fun_obj, param->eps);
+			l2r_l2_svr_fun fun_obj(prob, C, param->p);
+			TRON tron_obj(&fun_obj, param->eps);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
-			delete fun_obj;
-			delete[] C;
 			break;
 
 		}
@@ -2300,7 +2255,7 @@ model* train(const problem *prob, const parameter *param)
 	int l = prob->l;
 	int n = prob->n;
 	int w_size = prob->n;
-	model *model_ = Malloc(model,1);
+	CBuffer<model> model_(1);
 
 	if(prob->bias>=0)
 		model_->nr_feature=n-1;
@@ -2311,7 +2266,7 @@ model* train(const problem *prob, const parameter *param)
 
 	if(check_regression_model(model_))
 	{
-		model_->w = Malloc(double, w_size);
+		model_->w = CBuffer<double>(w_size).Detach();
 		model_->nr_class = 2;
 		model_->label = NULL;
 		train_one(prob, param, &model_->w[0], 0, 0);
@@ -2319,21 +2274,21 @@ model* train(const problem *prob, const parameter *param)
 	else
 	{
 		int nr_class;
-		int *label = NULL;
-		int *start = NULL;
-		int *count = NULL;
-		int *perm = Malloc(int,l);
+		CBuffer<int> label;
+		CBuffer<int> start;
+		CBuffer<int> count;
+		CBuffer<int> perm(l);
 
 		// group training data of the same class
-		group_classes(prob,&nr_class,&label,&start,&count,perm);
+		group_classes(prob,&nr_class,label,start,count,perm);
 
 		model_->nr_class=nr_class;
-		model_->label = Malloc(int,nr_class);
+		model_->label = CBuffer<int>(nr_class).Detach();
 		for(i=0;i<nr_class;i++)
 			model_->label[i] = label[i];
 
 		// calculate weighted C
-		double *weighted_C = Malloc(double, nr_class);
+		CBuffer<double> weighted_C(nr_class);
 		for(i=0;i<nr_class;i++)
 			weighted_C[i] = param->C;
 		for(i=0;i<param->nr_weight;i++)
@@ -2348,16 +2303,18 @@ model* train(const problem *prob, const parameter *param)
 		}
 
 		// constructing the subproblem
-		feature_node **x = Malloc(feature_node *,l);
+		CBuffer<feature_node*> x(l);
 		for(i=0;i<l;i++)
 			x[i] = prob->x[perm[i]];
 
 		int k;
+		CBuffer<feature_node*> sub_prob_x_buffer(l);
+		CBuffer<double> sub_prob_y_buffer(l);
 		problem sub_prob;
 		sub_prob.l = l;
 		sub_prob.n = n;
-		sub_prob.x = Malloc(feature_node *,sub_prob.l);
-		sub_prob.y = Malloc(double,sub_prob.l);
+		sub_prob.x = sub_prob_x_buffer;
+		sub_prob.y = sub_prob_y_buffer;
 
 		for(k=0; k<sub_prob.l; k++)
 			sub_prob.x[k] = x[k];
@@ -2365,7 +2322,7 @@ model* train(const problem *prob, const parameter *param)
 		// multi-class svm by Crammer and Singer
 		if(param->solver_type == MCSVM_CS)
 		{
-			model_->w=Malloc(double, n*nr_class);
+			model_->w=CBuffer<double>(n*nr_class).Detach();
 			for(i=0;i<nr_class;i++)
 				for(j=start[i];j<start[i]+count[i];j++)
 					sub_prob.y[j] = i;
@@ -2376,7 +2333,7 @@ model* train(const problem *prob, const parameter *param)
 		{
 			if(nr_class == 2)
 			{
-				model_->w=Malloc(double, w_size);
+				model_->w=CBuffer<double>(w_size).Detach();
 
 				int e0 = start[0]+count[0];
 				k=0;
@@ -2389,8 +2346,8 @@ model* train(const problem *prob, const parameter *param)
 			}
 			else
 			{
-				model_->w=Malloc(double, w_size*nr_class);
-				double *w=Malloc(double, w_size);
+				model_->w=CBuffer<double>(w_size*nr_class).Detach();
+				CBuffer<double> w(w_size);
 				for(i=0;i<nr_class;i++)
 				{
 					int si = start[i];
@@ -2409,35 +2366,26 @@ model* train(const problem *prob, const parameter *param)
 					for(int j=0;j<w_size;j++)
 						model_->w[j*nr_class+i] = w[j];
 				}
-				free(w);
 			}
 
 		}
 
-		free(x);
-		free(label);
-		free(start);
-		free(count);
-		free(perm);
-		free(sub_prob.x);
-		free(sub_prob.y);
-		free(weighted_C);
 	}
-	return model_;
+	return model_.Detach();
 }
 
 void cross_validation(const problem *prob, const parameter *param, int nr_fold, double *target)
 {
 	int i;
-	int *fold_start;
+	CBuffer<int> fold_start;
 	int l = prob->l;
-	int *perm = Malloc(int,l);
+	CBuffer<int> perm(l);
 	if (nr_fold > l)
 	{
 		nr_fold = l;
 		fprintf(stderr,"WARNING: # folds > # data. Will use # folds = # data instead (i.e., leave-one-out cross validation)\n");
 	}
-	fold_start = Malloc(int,nr_fold+1);
+	fold_start.Realloc(nr_fold+1);
 	for(i=0;i<l;i++) perm[i]=i;
 	for(i=0;i<l;i++)
 	{
@@ -2453,12 +2401,15 @@ void cross_validation(const problem *prob, const parameter *param, int nr_fold, 
 		int end = fold_start[i+1];
 		int j,k;
 		struct problem subprob;
+		int examples_count = l-(end-begin);
+		CBuffer<feature_node*> subprob_x_buffer(examples_count);
+		CBuffer<double> subprob_y_buffer(examples_count);
 
 		subprob.bias = prob->bias;
 		subprob.n = prob->n;
-		subprob.l = l-(end-begin);
-		subprob.x = Malloc(struct feature_node*,subprob.l);
-		subprob.y = Malloc(double,subprob.l);
+		subprob.l = examples_count;
+		subprob.x = subprob_x_buffer;
+		subprob.y = subprob_y_buffer;
 
 		k=0;
 		for(j=0;j<begin;j++)
@@ -2477,11 +2428,7 @@ void cross_validation(const problem *prob, const parameter *param, int nr_fold, 
 		for(j=begin;j<end;j++)
 			target[perm[j]] = predict(submodel,prob->x[perm[j]]);
 		free_and_destroy_model(&submodel);
-		free(subprob.x);
-		free(subprob.y);
 	}
-	free(fold_start);
-	free(perm);
 }
 
 double predict_values(const struct model *model_, const struct feature_node *x, double *dec_values)
@@ -2533,9 +2480,8 @@ double predict_values(const struct model *model_, const struct feature_node *x, 
 
 double predict(const model *model_, const feature_node *x)
 {
-	double *dec_values = Malloc(double, model_->nr_class);
+	CBuffer<double> dec_values(model_->nr_class);
 	double label=predict_values(model_, x, dec_values);
-	free(dec_values);
 	return label;
 }
 
@@ -2646,7 +2592,7 @@ struct model *load_model(const char *model_file_name)
 	int n;
 	int nr_class;
 	double bias;
-	model *model_ = Malloc(model,1);
+	CBuffer<model> model_(1);
 	parameter& param = model_->param;
 
 	model_->label = NULL;
@@ -2675,8 +2621,6 @@ struct model *load_model(const char *model_file_name)
 				fprintf(stderr,"unknown solver type.\n");
 
 				setlocale(LC_ALL, old_locale);
-				free(model_->label);
-				free(model_);
 				free(old_locale);
 				return NULL;
 			}
@@ -2703,7 +2647,7 @@ struct model *load_model(const char *model_file_name)
 		else if(strcmp(cmd,"label")==0)
 		{
 			int nr_class = model_->nr_class;
-			model_->label = Malloc(int,nr_class);
+			model_->label = CBuffer<int>(nr_class).Detach();
 			for(int i=0;i<nr_class;i++)
 				fscanf(fp,"%d",&model_->label[i]);
 		}
@@ -2711,8 +2655,6 @@ struct model *load_model(const char *model_file_name)
 		{
 			fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
 			setlocale(LC_ALL, old_locale);
-			free(model_->label);
-			free(model_);
 			free(old_locale);
 			return NULL;
 		}
@@ -2730,7 +2672,7 @@ struct model *load_model(const char *model_file_name)
 	else
 		nr_w = nr_class;
 
-	model_->w=Malloc(double, w_size*nr_w);
+	model_->w=CBuffer<double>(w_size*nr_w).Detach();
 	for(i=0; i<w_size; i++)
 	{
 		int j;
@@ -2744,7 +2686,7 @@ struct model *load_model(const char *model_file_name)
 
 	if (ferror(fp) != 0 || fclose(fp) != 0) return NULL;
 
-	return model_;
+	return model_.Detach();
 }
 
 int get_nr_feature(const model *model_)
@@ -2813,10 +2755,14 @@ double get_decfun_bias(const struct model *model_, int label_idx)
 
 void free_model_content(struct model *model_ptr)
 {
-	if(model_ptr->w != NULL)
-		free(model_ptr->w);
-	if(model_ptr->label != NULL)
-		free(model_ptr->label);
+	if(model_ptr->w != NULL) {
+		delete[] model_ptr->w;
+		model_ptr->w = 0;
+	}
+	if(model_ptr->label != NULL) {
+		delete[] model_ptr->label;
+		model_ptr->label = 0;
+	}
 }
 
 void free_and_destroy_model(struct model **model_ptr_ptr)
@@ -2825,7 +2771,8 @@ void free_and_destroy_model(struct model **model_ptr_ptr)
 	if(model_ptr != NULL)
 	{
 		free_model_content(model_ptr);
-		free(model_ptr);
+		delete model_ptr;
+		*model_ptr_ptr = 0;
 	}
 }
 
