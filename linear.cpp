@@ -2771,7 +2771,7 @@ void free_and_destroy_model(struct model **model_ptr_ptr)
 	if(model_ptr != NULL)
 	{
 		free_model_content(model_ptr);
-		delete model_ptr;
+		delete[] model_ptr;
 		*model_ptr_ptr = 0;
 	}
 }
