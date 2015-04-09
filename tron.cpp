@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "tron.h"
+#include "memory_buffer.h"
 
 #ifndef min
 template <class T> static inline T min(T x,T y) { return (x<y)?x:y; }
@@ -11,6 +12,10 @@ template <class T> static inline T min(T x,T y) { return (x<y)?x:y; }
 #ifndef max
 template <class T> static inline T max(T x,T y) { return (x>y)?x:y; }
 #endif
+
+#ifdef _MSC_VER
+#pragma warning (disable:4996) // 'vsnprintf': This function or variable may be unsafe.
+#endif // _MSC_VER
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,7 +41,7 @@ void TRON::info(const char *fmt,...)
 	char buf[BUFSIZ];
 	va_list ap;
 	va_start(ap,fmt);
-	vsprintf(buf,fmt,ap);
+	vsnprintf(buf,BUFSIZ,fmt,ap);
 	va_end(ap);
 	(*tron_print_string)(buf);
 }
@@ -66,10 +71,10 @@ void TRON::tron(double *w)
 	double delta, snorm, one=1.0;
 	double alpha, f, fnew, prered, actred, gs;
 	int search = 1, iter = 1, inc = 1;
-	double *s = new double[n];
-	double *r = new double[n];
-	double *w_new = new double[n];
-	double *g = new double[n];
+	CBuffer<double> s(n);
+	CBuffer<double> r(n);
+	CBuffer<double> w_new(n);
+	CBuffer<double> g(n);
 
 	for (i=0; i<n; i++)
 		w[i] = 0;
@@ -150,11 +155,6 @@ void TRON::tron(double *w)
 			break;
 		}
 	}
-
-	delete[] g;
-	delete[] r;
-	delete[] w_new;
-	delete[] s;
 }
 
 int TRON::trcg(double delta, double *g, double *s, double *r)
@@ -162,8 +162,8 @@ int TRON::trcg(double delta, double *g, double *s, double *r)
 	int i, inc = 1;
 	int n = fun_obj->get_nr_variable();
 	double one = 1;
-	double *d = new double[n];
-	double *Hd = new double[n];
+	CBuffer<double> d(n);
+	CBuffer<double> Hd(n);
 	double rTr, rnewTrnew, alpha, beta, cgtol;
 
 	for (i=0; i<n; i++)
@@ -213,9 +213,6 @@ int TRON::trcg(double delta, double *g, double *s, double *r)
 		daxpy_(&n, &one, r, &inc, d, &inc);
 		rTr = rnewTrnew;
 	}
-
-	delete[] d;
-	delete[] Hd;
 
 	return(cg_iter);
 }
