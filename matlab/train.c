@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "../linear.h"
+#include "linear.h"
 
 #include "mex.h"
 #include "linear_model_matlab.h"

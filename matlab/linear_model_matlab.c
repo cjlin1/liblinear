@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
-#include "../linear.h"
+#include "linear.h"
 
 #include "mex.h"
 
