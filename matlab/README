@@ -117,7 +117,7 @@ The 'train' function returns a model which can be used for future
 prediction.  It is a structure and is organized as [Parameters, nr_class,
 nr_feature, bias, Label, w]:
 
-        -Parameters: Parameters
+        -Parameters: Parameters (now only solver type is provided)
         -nr_class: number of classes; = 2 for regression
         -nr_feature: number of features in training data (without including the bias term)
         -bias: If >= 0, we assume one additional feature is added to the end
