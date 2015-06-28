@@ -41,10 +41,11 @@ void TRON::info(const char *fmt,...)
 	(*tron_print_string)(buf);
 }
 
-TRON::TRON(const function *fun_obj, double eps, int max_iter)
+TRON::TRON(const function *fun_obj, double eps, double eps_cg, int max_iter)
 {
 	this->fun_obj=const_cast<function *>(fun_obj);
 	this->eps=eps;
+	this->eps_cg=eps_cg;
 	this->max_iter=max_iter;
 	tron_print_string = default_print;
 }
@@ -71,16 +72,21 @@ void TRON::tron(double *w)
 	double *w_new = new double[n];
 	double *g = new double[n];
 
+	// calculate gradient norm at w=0 for stopping condition.
+	double *w0 = new double[n];
 	for (i=0; i<n; i++)
-		w[i] = 0;
+		w0[i] = 0;
+	fun_obj->fun(w0);
+	fun_obj->grad(w0, g);
+	double gnorm0 = dnrm2_(&n, g, &inc);
+	delete [] w0;
 
 	f = fun_obj->fun(w);
 	fun_obj->grad(w, g);
 	delta = dnrm2_(&n, g, &inc);
-	double gnorm1 = delta;
-	double gnorm = gnorm1;
+	double gnorm = delta;
 
-	if (gnorm <= eps*gnorm1)
+	if (gnorm <= eps*gnorm0)
 		search = 0;
 
 	iter = 1;
@@ -130,7 +136,7 @@ void TRON::tron(double *w)
 			fun_obj->grad(w, g);
 
 			gnorm = dnrm2_(&n, g, &inc);
-			if (gnorm <= eps*gnorm1)
+			if (gnorm <= eps*gnorm0)
 				break;
 		}
 		if (f < -1.0e+32)
@@ -172,7 +178,7 @@ int TRON::trcg(double delta, double *g, double *s, double *r)
 		r[i] = -g[i];
 		d[i] = r[i];
 	}
-	cgtol = 0.1*dnrm2_(&n, g, &inc);
+	cgtol = eps_cg*dnrm2_(&n, g, &inc);
 
 	int cg_iter = 0;
 	rTr = ddot_(&n, r, &inc, r, &inc);

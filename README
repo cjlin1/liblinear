@@ -131,10 +131,15 @@ options:
 -B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)
 -wi weight: weights adjust the parameter C of different classes (see README for details)
 -v n: n-fold cross validation mode
+-C : find parameter C (only for -s 0 and 2)
 -q : quiet mode (no outputs)
 
 Option -v randomly splits the data into n parts and calculates cross
 validation accuracy on them.
+
+Option -C conducts cross validation under different C values and finds
+the best one. This options is supported only by -s 0 and -s 2. If
+the solver is not specified, -s 2 is used.
 
 Formulations:
 
@@ -244,6 +249,12 @@ Train a logistic regression model.
 Do five-fold cross-validation using L2-loss svm.
 Use a smaller stopping tolerance 0.001 than the default
 0.1 if you want more accurate solutions.
+
+> train -C -s 0 data_file
+
+Conduct cross validation many times by logistic regression
+and finds the parameter C which achieves the best cross 
+validation accuracy.
 
 > train -c 10 -w1 2 -w2 5 -w3 2 four_class_data_file
 
@@ -406,6 +417,22 @@ Library Usage
     target.
 
     The format of prob is same as that for train().
+
+- Function: void find_parameter_C(const struct problem *prob, 
+            const struct parameter *param, int nr_fold, double start_C, 
+	    double max_C, double *best_C, double *best_rate);
+
+    This function is similar to cross_validation. However, instead of
+    conducting cross validation under a specified parameter C, it 
+    conducts cross validation many times under parameters C = start_C, 
+    2*start_C, 4*start_C, 8*start_C, ..., and finds the best one with
+    the highest cross validation accuracy.
+    
+    If start_C <= 0, then this procedure calculates a small enough C 
+    for prob as the start_C. The procedure stops when the models of 
+    all folds become stable or C reaches max_C. The best C and the 
+    corresponding accuracy are assigned to *best_C and *best_rate,
+    respectively.
 
 - Function: double predict(const model *model_, const feature_node *x);
 

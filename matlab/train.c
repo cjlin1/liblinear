@@ -1,4 +1,3 @@
-#include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,6 +59,7 @@ void exit_with_help()
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
+	"-C : find parameter C (only for -s 0 and 2)\n"
 	"-q : quiet mode (no outputs)\n"
 	"col:\n"
 	"	if 'col' is setted, training_instance_matrix is parsed in column format, otherwise is in row format\n"
@@ -71,10 +71,27 @@ struct parameter param;		// set by parse_command_line
 struct problem prob;		// set by read_problem
 struct model *model_;
 struct feature_node *x_space;
-int cross_validation_flag;
+int flag_cross_validation;
+int flag_find_C;
+int flag_C_specified;
+int flag_solver_specified;
 int col_format_flag;
 int nr_fold;
 double bias;
+
+
+void do_find_parameter_C(double *best_C, double *best_rate)
+{
+	double start_C;
+	double max_C = 1024;
+	if (flag_C_specified)
+		start_C = param.C;
+	else
+		start_C = -1.0;
+	find_parameter_C(&prob, &param, nr_fold, start_C, max_C, best_C, best_rate);
+	mexPrintf("Best C = %lf  CV accuracy = %g%%\n", *best_C, 100.0**best_rate);	
+}
+
 
 double do_cross_validation()
 {
@@ -101,8 +118,8 @@ double do_cross_validation()
                         sumyy += y*y;
                         sumvy += v*y;
                 }
-                printf("Cross Validation Mean squared error = %g\n",total_error/prob.l);
-                printf("Cross Validation Squared correlation coefficient = %g\n",
+                mexPrintf("Cross Validation Mean squared error = %g\n",total_error/prob.l);
+                mexPrintf("Cross Validation Squared correlation coefficient = %g\n",
                         ((prob.l*sumvy-sumv*sumy)*(prob.l*sumvy-sumv*sumy))/
                         ((prob.l*sumvv-sumv*sumv)*(prob.l*sumyy-sumy*sumy))
                         );
@@ -113,7 +130,7 @@ double do_cross_validation()
 		for(i=0;i<prob.l;i++)
 			if(target[i] == prob.y[i])
 				++total_correct;
-		printf("Cross Validation Accuracy = %g%%\n",100.0*total_correct/prob.l);
+		mexPrintf("Cross Validation Accuracy = %g%%\n",100.0*total_correct/prob.l);
 		retval = 100.0*total_correct/prob.l;
 	}
 
@@ -137,8 +154,12 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	param.nr_weight = 0;
 	param.weight_label = NULL;
 	param.weight = NULL;
-	cross_validation_flag = 0;
+	param.init_sol = NULL;
+	flag_cross_validation = 0;
 	col_format_flag = 0;
+	flag_C_specified = 0;
+	flag_solver_specified = 0;
+	flag_find_C = 0;
 	bias = -1;
 
 
@@ -166,15 +187,17 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	{
 		if(argv[i][0] != '-') break;
 		++i;
-		if(i>=argc && argv[i-1][1] != 'q') // since option -q has no parameter
+		if(i>=argc && argv[i-1][1] != 'q' && argv[i-1][1] != 'C') // since options -q and -C have no parameter
 			return 1;
 		switch(argv[i-1][1])
 		{
 			case 's':
 				param.solver_type = atoi(argv[i]);
+				flag_solver_specified = 1;
 				break;
 			case 'c':
 				param.C = atof(argv[i]);
+				flag_C_specified = 1;
 				break;
 			case 'p':
 				param.p = atof(argv[i]);
@@ -186,7 +209,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				bias = atof(argv[i]);
 				break;
 			case 'v':
-				cross_validation_flag = 1;
+				flag_cross_validation = 1;
 				nr_fold = atoi(argv[i]);
 				if(nr_fold < 2)
 				{
@@ -205,6 +228,10 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				print_func = &print_null;
 				i--;
 				break;
+			case 'C':
+				flag_find_C = 1;
+				i--;
+				break;
 			default:
 				mexPrintf("unknown option\n");
 				return 1;
@@ -212,6 +239,23 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	}
 
 	set_print_string_function(print_func);
+
+	// default solver for parameter selection is L2R_L2LOSS_SVC
+	if(flag_find_C)
+	{
+		if(!flag_cross_validation)
+			nr_fold = 5;
+		if(!flag_solver_specified)
+		{
+			mexPrintf("Solver not specified. Using -s 2\n");
+			param.solver_type = L2R_L2LOSS_SVC;
+		}
+		else if(param.solver_type != L2R_LR && param.solver_type != L2R_L2LOSS_SVC)
+		{
+			mexPrintf("Warm-start parameter search only available for -s 0 and -s 2\n");
+			return 1;
+		}
+	}
 
 	if(param.eps == INF)
 	{
@@ -406,7 +450,18 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			return;
 		}
 
-		if(cross_validation_flag)
+		if (flag_find_C)
+		{
+			double best_C, best_rate, *ptr;
+			
+			do_find_parameter_C(&best_C, &best_rate);	
+			
+			plhs[0] = mxCreateDoubleMatrix(2, 1, mxREAL);
+			ptr = mxGetPr(plhs[0]);
+			ptr[0] = best_C;
+			ptr[1] = best_rate;
+		}
+		else if(flag_cross_validation)
 		{
 			double *ptr;
 			plhs[0] = mxCreateDoubleMatrix(1, 1, mxREAL);

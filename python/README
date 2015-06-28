@@ -277,6 +277,11 @@ The above command loads
            structure. If '-v' is specified, cross validation is
            conducted and the returned model is just a scalar: cross-validation
            accuracy for classification and mean-squared error for regression.
+           If the '-C' option is specified, the best parameter C is found 
+	   by cross validation. The returned model is a tuple of the best C 
+	   and the corresponding cross-validation accuracy. The parameter 
+	   selection utility is supported by only -s 0 and -s 2.
+
 
     To train the same data many times with different
     parameters, the second and the third ways should be faster..
@@ -290,6 +295,8 @@ The above command loads
     >>> m = train(prob, '-w1 5 -c 5')
     >>> m = train(prob, param)
     >>> CV_ACC = train(y, x, '-v 3')
+    >>> best_C, best_rate = train(y, x, '-C -s 0')
+    >>> m = train(y, x, '-c {0} -s 0'.format(best_C)) # use the same solver: -s 0
 
 - Function: predict
 

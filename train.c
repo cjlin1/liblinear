@@ -49,6 +49,7 @@ void exit_with_help()
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
+	"-C : find parameter C (only for -s 0 and 2)\n"
 	"-q : quiet mode (no outputs)\n"
 	);
 	exit(1);
@@ -84,12 +85,16 @@ static char* readline(FILE *input)
 void parse_command_line(int argc, char **argv, char *input_file_name, char *model_file_name);
 void read_problem(const char *filename);
 void do_cross_validation();
+void do_find_parameter_C();
 
 struct feature_node *x_space;
 struct parameter param;
 struct problem prob;
 struct model* model_;
 int flag_cross_validation;
+int flag_find_C;
+int flag_C_specified;
+int flag_solver_specified;
 int nr_fold;
 double bias;
 
@@ -109,7 +114,11 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if(flag_cross_validation)
+	if (flag_find_C)
+	{
+		do_find_parameter_C();
+	}
+	else if(flag_cross_validation)
 	{
 		do_cross_validation();
 	}
@@ -130,6 +139,18 @@ int main(int argc, char **argv)
 	free(line);
 
 	return 0;
+}
+
+void do_find_parameter_C()
+{
+	double start_C, best_C, best_rate;
+	double max_C = 1024;
+	if (flag_C_specified)
+		start_C = param.C;
+	else
+		start_C = -1.0;
+	find_parameter_C(&prob, &param, nr_fold, start_C, max_C, &best_C, &best_rate);
+	printf("Best C = %lf  CV accuracy = %g%%\n", best_C, 100.0*best_rate);
 }
 
 void do_cross_validation()
@@ -186,7 +207,11 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	param.nr_weight = 0;
 	param.weight_label = NULL;
 	param.weight = NULL;
+	param.init_sol = NULL;
 	flag_cross_validation = 0;
+	flag_C_specified = 0;
+	flag_solver_specified = 0;
+	flag_find_C = 0;
 	bias = -1;
 
 	// parse options
@@ -199,10 +224,12 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 		{
 			case 's':
 				param.solver_type = atoi(argv[i]);
+				flag_solver_specified = 1;
 				break;
 
 			case 'c':
 				param.C = atof(argv[i]);
+				flag_C_specified = 1;
 				break;
 
 			case 'p':
@@ -240,6 +267,11 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 				i--;
 				break;
 
+			case 'C':
+				flag_find_C = 1;
+				i--;
+				break;
+
 			default:
 				fprintf(stderr,"unknown option: -%c\n", argv[i-1][1]);
 				exit_with_help();
@@ -265,6 +297,23 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 		else
 			++p;
 		sprintf(model_file_name,"%s.model",p);
+	}
+
+	// default solver for parameter selection is L2R_L2LOSS_SVC
+	if(flag_find_C)
+	{
+		if(!flag_cross_validation)
+			nr_fold = 5;
+		if(!flag_solver_specified)
+		{
+			fprintf(stderr, "Solver not specified. Using -s 2\n");
+			param.solver_type = L2R_L2LOSS_SVC;
+		}
+		else if(param.solver_type != L2R_LR && param.solver_type != L2R_L2LOSS_SVC)
+		{
+			fprintf(stderr, "Warm-start parameter search only available for -s 0 and -s 2\n");
+			exit_with_help();
+		}
 	}
 
 	if(param.eps == INF)
