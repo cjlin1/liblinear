@@ -150,7 +150,21 @@ def train(arg1, arg2=None, arg3=None):
 	if err_msg :
 		raise ValueError('Error: %s' % err_msg)
 
-	if param.cross_validation:
+	if param.flag_find_C:
+		nr_fold = param.nr_fold
+		best_C = c_double()
+		best_rate = c_double()		
+		max_C = 1024
+		if param.flag_C_specified:
+			start_C = param.C
+		else:
+			start_C = -1.0
+		liblinear.find_parameter_C(prob, param, nr_fold, start_C, max_C, best_C, best_rate)
+		print("Best C = %lf  CV accuracy = %g%%\n"% (best_C.value, 100.0*best_rate.value))
+		return best_C.value,best_rate.value
+
+
+	elif param.flag_cross_validation:
 		l, nr_fold = prob.l, param.nr_fold
 		target = (c_double * l)()
 		liblinear.cross_validation(prob, param, nr_fold, target)

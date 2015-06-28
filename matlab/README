@@ -131,7 +131,12 @@ nr_feature, bias, Label, w]:
 
 If the '-v' option is specified, cross validation is conducted and the
 returned model is just a scalar: cross-validation accuracy for 
-classification and mean-squared error for regression.
+classification and mean-squared error for regression. If the '-C' option
+is specified, the best parameter C is found by cross validation. The 
+returned model is a two dimensional vector, where the first value is 
+the best C and the second value is the corresponding cross-validation 
+accuracy. The parameter selection utility is supported by only -s 0
+and -s 2.
 
 Result of Prediction
 ====================
@@ -183,6 +188,11 @@ Note that for testing, you can put anything in the testing_label_vector.
 For probability estimates, you need '-b 1' only in the testing phase:
 
 matlab> [predict_label, accuracy, prob_estimates] = predict(heart_scale_label, heart_scale_inst, model, '-b 1');
+
+Use the best parameter to train (only supported by -s 0 and -s 2):
+
+matlab> best = train(heart_scale_label, heart_scale_inst, '-C -s 0');
+matlab> model = train(heart_scale_label, heart_scale_inst, sprintf('-c %f -s 0', best(1))); % use the same solver: -s 0 
 
 Additional Information
 ======================

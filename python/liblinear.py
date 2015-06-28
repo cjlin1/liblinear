@@ -16,7 +16,7 @@ try:
 	if sys.platform == 'win32':
 		liblinear = CDLL(path.join(dirname, r'..\windows\liblinear.dll'))
 	else:
-		liblinear = CDLL(path.join(dirname, '../liblinear.so.2'))
+		liblinear = CDLL(path.join(dirname, '../liblinear.so.3'))
 except:
 # For unix the prefix 'lib' is not considered.
 	if find_library('linear'):
@@ -127,8 +127,8 @@ class problem(Structure):
 
 
 class parameter(Structure):
-	_names = ["solver_type", "eps", "C", "nr_weight", "weight_label", "weight", "p"]
-	_types = [c_int, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double), c_double]
+	_names = ["solver_type", "eps", "C", "nr_weight", "weight_label", "weight", "p", "init_sol"]
+	_types = [c_int, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double), c_double, POINTER(c_double)]
 	_fields_ = genFields(_names, _types)
 
 	def __init__(self, options = None):
@@ -152,10 +152,14 @@ class parameter(Structure):
 		self.C = 1
 		self.p = 0.1
 		self.nr_weight = 0
-		self.weight_label = (c_int * 0)()
-		self.weight = (c_double * 0)()
+		self.weight_label = None
+		self.weight = None
+		self.init_sol = None
 		self.bias = -1
-		self.cross_validation = False
+		self.flag_cross_validation = False
+		self.flag_C_specified = False
+		self.flag_solver_specified = False
+		self.flag_find_C = False
 		self.nr_fold = 0
 		self.print_func = cast(None, PRINT_STRING_FUN)
 
@@ -176,9 +180,11 @@ class parameter(Structure):
 			if argv[i] == "-s":
 				i = i + 1
 				self.solver_type = int(argv[i])
+				self.flag_solver_specified = True
 			elif argv[i] == "-c":
 				i = i + 1
 				self.C = float(argv[i])
+				self.flag_C_specified = True
 			elif argv[i] == "-p":
 				i = i + 1
 				self.p = float(argv[i])
@@ -190,18 +196,20 @@ class parameter(Structure):
 				self.bias = float(argv[i])
 			elif argv[i] == "-v":
 				i = i + 1
-				self.cross_validation = 1
+				self.flag_cross_validation = 1
 				self.nr_fold = int(argv[i])
 				if self.nr_fold < 2 :
 					raise ValueError("n-fold cross validation: n must >= 2")
 			elif argv[i].startswith("-w"):
 				i = i + 1
 				self.nr_weight += 1
-				nr_weight = self.nr_weight
 				weight_label += [int(argv[i-1][2:])]
 				weight += [float(argv[i])]
 			elif argv[i] == "-q":
 				self.print_func = PRINT_STRING_FUN(print_null)
+			elif argv[i] == "-C":
+				self.flag_find_C = True
+
 			else :
 				raise ValueError("Wrong options")
 			i += 1
@@ -212,6 +220,16 @@ class parameter(Structure):
 		for i in range(self.nr_weight): 
 			self.weight[i] = weight[i]
 			self.weight_label[i] = weight_label[i]
+
+		# default solver for parameter selection is L2R_L2LOSS_SVC
+		if self.flag_find_C:
+			if not self.flag_cross_validation:
+				self.nr_fold = 5
+			if not self.flag_solver_specified:
+				self.solver_type = L2R_L2LOSS_SVC
+				self.flag_solver_specified = True
+			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC]:
+				raise ValueError("Warm-start parameter search only available for -s 0 and -s 2")
 
 		if self.eps == float('inf'):
 			if self.solver_type in [L2R_LR, L2R_L2LOSS_SVC]:
@@ -280,6 +298,7 @@ def toPyModel(model_ptr):
 	return m
 
 fillprototype(liblinear.train, POINTER(model), [POINTER(problem), POINTER(parameter)])
+fillprototype(liblinear.find_parameter_C, None, [POINTER(problem), POINTER(parameter), c_int, c_double, c_double, POINTER(c_double), POINTER(c_double)])
 fillprototype(liblinear.cross_validation, None, [POINTER(problem), POINTER(parameter), c_int, POINTER(c_double)])
 
 fillprototype(liblinear.predict_values, c_double, [POINTER(model), POINTER(feature_node), POINTER(c_double)])
