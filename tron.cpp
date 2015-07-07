@@ -69,7 +69,6 @@ void TRON::tron(double *w)
 	int search = 1, iter = 1, inc = 1;
 	double *s = new double[n];
 	double *r = new double[n];
-	double *w_new = new double[n];
 	double *g = new double[n];
 
 	// calculate gradient norm at w=0 for stopping condition.
@@ -91,6 +90,7 @@ void TRON::tron(double *w)
 
 	iter = 1;
 
+	double *w_new = new double[n];
 	while (iter <= max_iter && search)
 	{
 		cg_iter = trcg(delta, g, s, r);

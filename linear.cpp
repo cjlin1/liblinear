@@ -2343,6 +2343,8 @@ model* train(const problem *prob, const parameter *param)
 	if(check_regression_model(model_))
 	{
 		model_->w = Malloc(double, w_size);
+		for(i=0; i<w_size; i++)
+			model_->w[i] = 0;
 		model_->nr_class = 2;
 		model_->label = NULL;
 		train_one(prob, param, model_->w, 0, 0);
@@ -2616,7 +2618,13 @@ void find_parameter_C(const problem *prob, const parameter *param, int nr_fold, 
 			else
 				total_w_size = subprob[i].n * submodel->nr_class;
 
-			if(prev_w[i] != NULL && num_unchanged_w >= 0)
+			if(prev_w[i] == NULL)
+			{
+				prev_w[i] = Malloc(double, total_w_size);
+				for(j=0; j<total_w_size; j++)
+					prev_w[i][j] = submodel->w[j];
+			}
+			else if(num_unchanged_w >= 0)
 			{
 				double norm_w_diff = 0;
 				for(j=0; j<total_w_size; j++)
@@ -2631,7 +2639,6 @@ void find_parameter_C(const problem *prob, const parameter *param, int nr_fold, 
 			}
 			else
 			{
-				prev_w[i] = Malloc(double, total_w_size);
 				for(j=0; j<total_w_size; j++)
 					prev_w[i][j] = submodel->w[j];
 			}
@@ -2667,8 +2674,13 @@ void find_parameter_C(const problem *prob, const parameter *param, int nr_fold, 
 	free(perm);
 	free(target);
 	for(i=0; i<nr_fold; i++)
+	{
+		free(subprob[i].x);
+		free(subprob[i].y);
 		free(prev_w[i]);
+	}
 	free(prev_w);
+	free(subprob);
 }
 
 double predict_values(const struct model *model_, const struct feature_node *x, double *dec_values)
