@@ -246,15 +246,26 @@ Train a logistic regression model.
 
 > train -v 5 -e 0.001 data_file
 
-Do five-fold cross-validation using L2-loss svm.
+Do five-fold cross-validation using L2-loss SVM.
 Use a smaller stopping tolerance 0.001 than the default
 0.1 if you want more accurate solutions.
 
-> train -C -s 0 data_file
+> train -C data_file
 
-Conduct cross validation many times by logistic regression
-and finds the parameter C which achieves the best cross 
+Conduct cross validation many times by L2-loss SVM 
+and find the parameter C which achieves the best cross 
 validation accuracy.
+
+> train -C -s 0 -v 3 -c 0.5 -e 0.0001 data_file
+
+For parameter selection by -C, users can specify other 
+solvers (currently -s 0 and -s 2 are supported) and 
+different number of CV folds. Further, users can use 
+the -c option to specify the smallest C value of the 
+search range. This setting is useful when users want 
+to rerun the parameter selection procedure from a 
+specified C under a different setting, such as a stricter 
+stopping tolerance -e 0.0001 in the above example.
 
 > train -c 10 -w1 2 -w2 5 -w3 2 four_class_data_file
 
@@ -445,11 +456,11 @@ Library Usage
 
     This function gives nr_w decision values in the array dec_values. 
     nr_w=1 if regression is applied or the number of classes is two. An exception is
-    multi-class svm by Crammer and Singer (-s 4), where nr_w = 2 if there are two classes. For all other situations, nr_w is the 
+    multi-class SVM by Crammer and Singer (-s 4), where nr_w = 2 if there are two classes. For all other situations, nr_w is the 
     number of classes.
 
     We implement one-vs-the rest multi-class strategy (-s 0,1,2,3,5,6,7) 
-    and multi-class svm by Crammer and Singer (-s 4) for multi-class SVM.
+    and multi-class SVM by Crammer and Singer (-s 4) for multi-class SVM.
     The class with the highest decision value is returned.
 
 - Function: double predict_probability(const struct model *model_,
