@@ -2839,6 +2839,30 @@ int save_model(const char *model_file_name, const struct model *model_)
 	else return 0;
 }
 
+//
+// FSCANF helps to handle fscanf failures.
+// Its do-while block avoids the ambiguity when
+// if (...)
+//    FSCANF();
+// is used
+//
+#define FSCANF(_stream, _format, _var)do\
+{\
+	if (fscanf(_stream, _format, _var) != 1)\
+	{\
+		fprintf(stderr, "ERROR: fscanf failed to read the model\n");\
+		EXIT_LOAD_MODEL()\
+	}\
+}while(0)
+// EXIT_LOAD_MODEL should NOT end with a semicolon.
+#define EXIT_LOAD_MODEL()\
+{\
+	setlocale(LC_ALL, old_locale);\
+	free(model_->label);\
+	free(model_);\
+	free(old_locale);\
+	return NULL;\
+}
 struct model *load_model(const char *model_file_name)
 {
 	FILE *fp = fopen(model_file_name,"r");
@@ -2864,10 +2888,10 @@ struct model *load_model(const char *model_file_name)
 	char cmd[81];
 	while(1)
 	{
-		fscanf(fp,"%80s",cmd);
+		FSCANF(fp,"%80s",cmd);
 		if(strcmp(cmd,"solver_type")==0)
 		{
-			fscanf(fp,"%80s",cmd);
+			FSCANF(fp,"%80s",cmd);
 			int i;
 			for(i=0;solver_type_table[i];i++)
 			{
@@ -2880,27 +2904,22 @@ struct model *load_model(const char *model_file_name)
 			if(solver_type_table[i] == NULL)
 			{
 				fprintf(stderr,"unknown solver type.\n");
-
-				setlocale(LC_ALL, old_locale);
-				free(model_->label);
-				free(model_);
-				free(old_locale);
-				return NULL;
+				EXIT_LOAD_MODEL()
 			}
 		}
 		else if(strcmp(cmd,"nr_class")==0)
 		{
-			fscanf(fp,"%d",&nr_class);
+			FSCANF(fp,"%d",&nr_class);
 			model_->nr_class=nr_class;
 		}
 		else if(strcmp(cmd,"nr_feature")==0)
 		{
-			fscanf(fp,"%d",&nr_feature);
+			FSCANF(fp,"%d",&nr_feature);
 			model_->nr_feature=nr_feature;
 		}
 		else if(strcmp(cmd,"bias")==0)
 		{
-			fscanf(fp,"%lf",&bias);
+			FSCANF(fp,"%lf",&bias);
 			model_->bias=bias;
 		}
 		else if(strcmp(cmd,"w")==0)
@@ -2912,16 +2931,12 @@ struct model *load_model(const char *model_file_name)
 			int nr_class = model_->nr_class;
 			model_->label = Malloc(int,nr_class);
 			for(int i=0;i<nr_class;i++)
-				fscanf(fp,"%d",&model_->label[i]);
+				FSCANF(fp,"%d",&model_->label[i]);
 		}
 		else
 		{
 			fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
-			setlocale(LC_ALL, old_locale);
-			free(model_->label);
-			free(model_);
-			free(old_locale);
-			return NULL;
+			EXIT_LOAD_MODEL()
 		}
 	}
 
@@ -2942,8 +2957,12 @@ struct model *load_model(const char *model_file_name)
 	{
 		int j;
 		for(j=0; j<nr_w; j++)
-			fscanf(fp, "%lf ", &model_->w[i*nr_w+j]);
-		fscanf(fp, "\n");
+			FSCANF(fp, "%lf ", &model_->w[i*nr_w+j]);
+		if (fscanf(fp, "\n") !=0)
+		{
+			fprintf(stderr, "ERROR: fscanf failed to read the model\n");
+			EXIT_LOAD_MODEL()
+		}
 	}
 
 	setlocale(LC_ALL, old_locale);
