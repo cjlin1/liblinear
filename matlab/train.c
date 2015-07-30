@@ -60,6 +60,7 @@ void exit_with_help()
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
 	"-C : find parameter C (only for -s 0 and 2)\n"
+	"-n nr_thread : parallel version with [nr_thread] threads (default 1; only for -s 0, 2, 11)\n"
 	"-q : quiet mode (no outputs)\n"
 	"col:\n"
 	"	if 'col' is setted, training_instance_matrix is parsed in column format, otherwise is in row format\n"
@@ -73,6 +74,7 @@ struct model *model_;
 struct feature_node *x_space;
 int flag_cross_validation;
 int flag_find_C;
+int flag_omp;
 int flag_C_specified;
 int flag_solver_specified;
 int col_format_flag;
@@ -151,6 +153,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	param.C = 1;
 	param.eps = INF; // see setting below
 	param.p = 0.1;
+	param.nr_thread = 1;
 	param.nr_weight = 0;
 	param.weight_label = NULL;
 	param.weight = NULL;
@@ -160,6 +163,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	flag_C_specified = 0;
 	flag_solver_specified = 0;
 	flag_find_C = 0;
+	flag_omp = 0;
 	bias = -1;
 
 
@@ -207,6 +211,10 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				break;
 			case 'B':
 				bias = atof(argv[i]);
+				break;
+			case 'n':
+				flag_omp = 1;
+				param.nr_thread = atoi(argv[i]);
 				break;
 			case 'v':
 				flag_cross_validation = 1;
@@ -256,6 +264,22 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 			return 1;
 		}
 	}
+
+	//default solver for parallel execution is L2R_L2LOSS_SVC
+	if(flag_omp)
+	{
+		if(!flag_solver_specified)
+		{
+			mexPrintf("Solver not specified. Using -s 2\n");
+			param.solver_type = L2R_L2LOSS_SVC;
+		}
+		else if(param.solver_type != L2R_LR && param.solver_type != L2R_L2LOSS_SVC && param.solver_type != L2R_L2LOSS_SVR)
+		{
+			mexPrintf("Parallel LIBLINEAR is only available for -s 0, 2, 11 now.\n");
+			return 1;
+		}
+	}
+
 
 	if(param.eps == INF)
 	{
