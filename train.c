@@ -16,7 +16,7 @@ void exit_with_help()
 	printf(
 	"Usage: train [options] training_set_file [model_file]\n"
 	"options:\n"
-	"-s type : set type of solver (default 1)\n"
+	"-s type : set type of solver (default 2)\n"
 	"  for multi-class classification\n"
 	"	 0 -- L2-regularized logistic regression (primal)\n"
 	"	 1 -- L2-regularized L2-loss support vector classification (dual)\n"
