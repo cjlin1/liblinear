@@ -1,4 +1,4 @@
-PROJECT(predict_stream)
+# predict_stream
 
 ADD_EXECUTABLE(predict_stream
     predict_stream.cpp

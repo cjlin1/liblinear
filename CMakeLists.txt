@@ -56,9 +56,11 @@ SET(BLAS_INCLUDE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib/blas)
 SET(BLAS_LIBRARIES blas)
 INCLUDE_DIRECTORIES(${BLAS_INCLUDE_PATH})
 
-# add lib subdirecoty with libraries
-add_subdirectory(lib)
+# add lib subdirecory with libraries
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
-# add apps subdirecoty with applications
-add_subdirectory(apps)
+# add apps subdirecories with applications
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/apps/train)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/apps/predict)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/apps/predict_stream)
 

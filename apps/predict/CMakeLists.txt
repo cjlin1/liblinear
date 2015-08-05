@@ -1,4 +1,4 @@
-PROJECT(predict)
+# predict
 
 ADD_EXECUTABLE(predict
     predict.c

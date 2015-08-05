@@ -1,4 +1,4 @@
-PROJECT(train)
+# train
 
 ADD_EXECUTABLE(train
     train.c
