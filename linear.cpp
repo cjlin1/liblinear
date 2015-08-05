@@ -2600,7 +2600,7 @@ void find_parameter_C(const problem *prob, const parameter *param, int nr_fold, 
 
 	while(param1.C <= max_C)
 	{
-		//Output diabled for running CV at a particular C
+		//Output disabled for running CV at a particular C
 		set_print_string_function(&print_null);
 
 		for(i=0; i<nr_fold; i++)
