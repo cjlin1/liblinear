@@ -4,9 +4,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include <locale.h>
-#include "linear.h"
-#include "tron.h"
+#include <linear.h>
+#include <tron.h>
 #include <omp.h>
+
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
 #ifndef min
