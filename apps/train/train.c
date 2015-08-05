@@ -57,9 +57,9 @@ void exit_with_help()
 	exit(1);
 }
 
-void exit_input_error(int line_num)
+void exit_input_error(size_t lineno, int line_num)
 {
-	fprintf(stderr,"Wrong input format at line %d\n", line_num);
+	fprintf(stderr,"Wrong input format at line %lu : %d\n", lineno, line_num);
 	exit(1);
 }
 
@@ -428,12 +428,14 @@ void read_problem(const char *filename)
 		readline(fp);
 		prob.x[i] = &x_space[j];
 		label = strtok(line," \t\n");
-		if(label == NULL) // empty line
-			exit_input_error(i+1);
+		if(label == NULL) { // empty line
+			exit_input_error(__LINE__, i+1);
+		}
 
 		prob.y[i] = strtod(label,&endptr);
-		if(endptr == label || *endptr != '\0')
-			exit_input_error(i+1);
+		if(endptr == label || *endptr != '\0') {
+			exit_input_error(__LINE__, i+1);
+		}
 
 		while(1)
 		{
@@ -445,15 +447,20 @@ void read_problem(const char *filename)
 
 			errno = 0;
 			x_space[j].index = (int) strtol(idx,&endptr,10);
-			if(endptr == idx || errno != 0 || *endptr != '\0' || x_space[j].index <= inst_max_index)
-				exit_input_error(i+1);
+			if(x_space[j].index <= inst_max_index) {
+				printf("Error: column index must be ordered : x_space[j].index(%d) inst_max_index(%d)\n", x_space[j].index, inst_max_index) ;
+				exit_input_error(__LINE__, i+1);
+			} else if(endptr == idx || errno != 0 || *endptr != '\0') {
+				exit_input_error(__LINE__, i+1);
+			}
 			else
 				inst_max_index = x_space[j].index;
 
 			errno = 0;
 			x_space[j].value = strtod(val,&endptr);
-			if(endptr == val || errno != 0 || (*endptr != '\0' && !isspace(*endptr)))
-				exit_input_error(i+1);
+			if(endptr == val || errno != 0 || (*endptr != '\0' && !isspace(*endptr))) {
+				exit_input_error(__LINE__, i+1);
+			}
 
 			++j;
 		}
