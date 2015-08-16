@@ -5,7 +5,11 @@
 #include <ctype.h>
 #include <errno.h>
 #include "linear.h"
+
+#ifdef ENABLED_OPENMP
 #include <omp.h>
+#endif
+
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
 

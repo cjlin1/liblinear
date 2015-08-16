@@ -6,7 +6,11 @@
 #include <locale.h>
 #include <linear.h>
 #include <tron.h>
+
+#ifdef ENABLED_OPENMP
 #include <omp.h>
+#endif
+
 
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
@@ -65,7 +69,11 @@ private:
 
 Reduce_Vectors::Reduce_Vectors(int size)
 {
+#ifdef ENABLED_OPENMP
 	nr_thread = omp_get_max_threads();
+#else
+	nr_thread = 1 ;
+#endif
 	this->size = size;
 	tmp_array = new double*[nr_thread];
 	for(int i = 0; i < nr_thread; i++)
@@ -81,7 +89,9 @@ Reduce_Vectors::~Reduce_Vectors(void)
 
 void Reduce_Vectors::init(void)
 {
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for schedule(static)
+#endif
 	for(int i = 0; i < size; i++)
 		for(int j = 0; j < nr_thread; j++)
 			tmp_array[j][i] = 0.0;
@@ -89,7 +99,11 @@ void Reduce_Vectors::init(void)
 
 void Reduce_Vectors::sum_scale_x(double scalar, feature_node *x)
 {
+#ifdef ENABLED_OPENMP
 	int thread_id = omp_get_thread_num();
+#else
+	int thread_id = 1 ;
+#endif
 
 	while(x->index!=-1)
 	{
@@ -100,7 +114,9 @@ void Reduce_Vectors::sum_scale_x(double scalar, feature_node *x)
 
 void Reduce_Vectors::reduce_sum(double* v)
 {
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for schedule(static)
+#endif
 	for(int i = 0; i < size; i++)
 	{
 		v[i] = 0;
@@ -213,7 +229,9 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 
 	reduce_vectors->init();
 
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for private(i) schedule(guided)
+#endif
 	for(i=0;i<l;i++)
 	{
 		feature_node *xi=prob->x[i];
@@ -240,7 +258,9 @@ void l2r_lr_fun::Xv(double *v, double *Xv)
 	int l=prob->l;
 	feature_node **x=prob->x;
 
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for private (i) schedule(guided)
+#endif
 	for(i=0;i<l;i++)
 	{
 		feature_node *s=x[i];
@@ -261,7 +281,9 @@ void l2r_lr_fun::XTv(double *v, double *XTv)
 
 	reduce_vectors->init();
 
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for private(i) schedule(guided)
+#endif
 	for(i=0;i<l;i++)
 		reduce_vectors->sum_scale_x(v[i], x[i]);
 	
@@ -377,7 +399,9 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 
 	reduce_vectors->init();
 
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for private(i) schedule(guided)
+#endif
 	for(i=0;i<sizeI;i++)
 	{
 		feature_node *xi = x[I[i]];
@@ -404,7 +428,9 @@ void l2r_l2_svc_fun::Xv(double *v, double *Xv)
 	int l=prob->l;
 	feature_node **x=prob->x;
 
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for private(i) schedule(guided)
+#endif
 	for(i=0;i<l;i++)
 	{
 		feature_node *s=x[i];
@@ -422,7 +448,9 @@ void l2r_l2_svc_fun::subXv(double *v, double *Xv)
 	int i;
 	feature_node **x=prob->x;
 
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for private(i) schedule(guided)
+#endif
 	for(i=0;i<sizeI;i++)
 	{
 		feature_node *s=x[I[i]];
@@ -442,7 +470,9 @@ void l2r_l2_svc_fun::subXTv(double *v, double *XTv)
 
 	reduce_vectors->init();
 
+#ifdef ENABLED_OPENMP
 #pragma omp parallel for private(i) schedule(guided)
+#endif
 	for(i=0;i<sizeI;i++)
 		reduce_vectors->sum_scale_x(v[i], x[I[i]]);
 
@@ -2436,7 +2466,9 @@ model* train(const problem *prob, const parameter *param)
 	model_->param = *param;
 	model_->bias = prob->bias;
 
+#ifdef ENABLED_OPENMP
 	omp_set_num_threads(param->nr_thread);
+#endif
 
 	if(check_regression_model(model_))
 	{
