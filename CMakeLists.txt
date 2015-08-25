@@ -28,7 +28,6 @@ if (OPENMP_FOUND)
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 endif()
 
-
 FIND_PACKAGE(Boost REQUIRED)
 FIND_PACKAGE(Boost COMPONENTS regex REQUIRED)
 FIND_PACKAGE(Boost COMPONENTS program_options REQUIRED)
@@ -63,5 +62,4 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/lib)
 # add apps subdirecories with applications
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/apps/train)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/apps/predict)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/apps/predict_stream)
 
