@@ -15,9 +15,9 @@ MESSAGE("Linking mode: ${LINKING_MODE}")
 #	-std=c++11
 #)
 
-SET( CMAKE_CXX_FLAGS_RELEASE " -fPIC -O3 -ffast-math -funroll-all-loops -fpeel-loops -ftracer -funswitch-loops -funit-at-a-time" CACHE STRING "" FORCE)
+SET( CMAKE_CXX_FLAGS_RELEASE " -fPIC -Ofast -ffast-math -funroll-all-loops -fpeel-loops -ftracer -funswitch-loops -funit-at-a-time" CACHE STRING "" FORCE)
 SET( CMAKE_CXX_FLAGS_DEBUG "${GOP_WARNING_FLAGS} -fPIC -g3 -O0" CACHE STRING "" FORCE )
-SET( CMAKE_C_FLAGS_RELEASE " -fPIC -O3 -ffast-math -funroll-all-loops -fpeel-loops -ftracer -funswitch-loops -funit-at-a-time" CACHE STRING "" FORCE)
+SET( CMAKE_C_FLAGS_RELEASE " -fPIC -Ofast -ffast-math -funroll-all-loops -fpeel-loops -ftracer -funswitch-loops -funit-at-a-time" CACHE STRING "" FORCE)
 SET( CMAKE_C_FLAGS_DEBUG "${GOP_WARNING_FLAGS} -fPIC -g3 -O0" CACHE STRING "" FORCE )
 
 find_package(OpenMP)
