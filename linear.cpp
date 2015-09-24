@@ -44,6 +44,40 @@ static void info(const char *fmt,...)
 #else
 static void info(const char *fmt,...) {}
 #endif
+class sparse_operator
+{
+public:
+	static double nrm2_sq(const feature_node *x)
+	{
+		double ret = 0;
+		while(x->index != -1)
+		{
+			ret += x->value*x->value;
+			x++;
+		}
+		return (ret);
+	}
+
+	static double dot(const double *s, const feature_node *x)
+	{
+		double ret = 0;
+		while(x->index != -1)
+		{
+			ret += s[x->index-1]*x->value;
+			x++;
+		}
+		return (ret);
+	}
+
+	static void axpy(const double a, const feature_node *x, double *y)
+	{
+		while(x->index != -1)
+		{
+			y[x->index-1] += a*x->value;
+			x++;
+		}
+	}
+};
 
 class l2r_lr_fun: public function
 {
@@ -140,12 +174,19 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	int l=prob->l;
 	int w_size=get_nr_variable();
 	double *wa = new double[l];
+	feature_node **x=prob->x;
 
-	Xv(s, wa);
+	for(i=0;i<w_size;i++)
+		Hs[i] = 0;
 	for(i=0;i<l;i++)
+	{
+		feature_node * const xi=x[i];
+		wa[i] = sparse_operator::dot(s, xi);
+		
 		wa[i] = C[i]*D[i]*wa[i];
 
-	XTv(wa, Hs);
+		sparse_operator::axpy(wa[i], xi, Hs);
+	}
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + Hs[i];
 	delete[] wa;
@@ -158,15 +199,7 @@ void l2r_lr_fun::Xv(double *v, double *Xv)
 	feature_node **x=prob->x;
 
 	for(i=0;i<l;i++)
-	{
-		feature_node *s=x[i];
-		Xv[i]=0;
-		while(s->index!=-1)
-		{
-			Xv[i]+=v[s->index-1]*s->value;
-			s++;
-		}
-	}
+		Xv[i]=sparse_operator::dot(v, x[i]);
 }
 
 void l2r_lr_fun::XTv(double *v, double *XTv)
@@ -179,14 +212,7 @@ void l2r_lr_fun::XTv(double *v, double *XTv)
 	for(i=0;i<w_size;i++)
 		XTv[i]=0;
 	for(i=0;i<l;i++)
-	{
-		feature_node *s=x[i];
-		while(s->index!=-1)
-		{
-			XTv[s->index-1]+=v[i]*s->value;
-			s++;
-		}
-	}
+		sparse_operator::axpy(v[i], x[i], XTv);
 }
 
 class l2r_l2_svc_fun: public function
@@ -203,7 +229,6 @@ public:
 
 protected:
 	void Xv(double *v, double *Xv);
-	void subXv(double *v, double *Xv);
 	void subXTv(double *v, double *XTv);
 
 	double *C;
@@ -288,12 +313,19 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 	int i;
 	int w_size=get_nr_variable();
 	double *wa = new double[sizeI];
+	feature_node **x=prob->x;
 
-	subXv(s, wa);
+	for(i=0;i<w_size;i++)
+		Hs[i]=0;
 	for(i=0;i<sizeI;i++)
+	{
+		feature_node * const xi=x[I[i]];
+		wa[i] = sparse_operator::dot(s, xi);
+		
 		wa[i] = C[I[i]]*wa[i];
 
-	subXTv(wa, Hs);
+		sparse_operator::axpy(wa[i], xi, Hs);
+	}
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + 2*Hs[i];
 	delete[] wa;
@@ -306,32 +338,7 @@ void l2r_l2_svc_fun::Xv(double *v, double *Xv)
 	feature_node **x=prob->x;
 
 	for(i=0;i<l;i++)
-	{
-		feature_node *s=x[i];
-		Xv[i]=0;
-		while(s->index!=-1)
-		{
-			Xv[i]+=v[s->index-1]*s->value;
-			s++;
-		}
-	}
-}
-
-void l2r_l2_svc_fun::subXv(double *v, double *Xv)
-{
-	int i;
-	feature_node **x=prob->x;
-
-	for(i=0;i<sizeI;i++)
-	{
-		feature_node *s=x[I[i]];
-		Xv[i]=0;
-		while(s->index!=-1)
-		{
-			Xv[i]+=v[s->index-1]*s->value;
-			s++;
-		}
-	}
+		Xv[i]=sparse_operator::dot(v, x[i]);
 }
 
 void l2r_l2_svc_fun::subXTv(double *v, double *XTv)
@@ -343,14 +350,7 @@ void l2r_l2_svc_fun::subXTv(double *v, double *XTv)
 	for(i=0;i<w_size;i++)
 		XTv[i]=0;
 	for(i=0;i<sizeI;i++)
-	{
-		feature_node *s=x[I[i]];
-		while(s->index!=-1)
-		{
-			XTv[s->index-1]+=v[i]*s->value;
-			s++;
-		}
-	}
+		sparse_operator::axpy(v[i], x[I[i]], XTv);
 }
 
 class l2r_l2_svr_fun: public l2r_l2_svc_fun
@@ -831,14 +831,10 @@ static void solve_l2r_l1l2_svc(
 	{
 		QD[i] = diag[GETI(i)];
 
-		feature_node *xi = prob->x[i];
-		while (xi->index != -1)
-		{
-			double val = xi->value;
-			QD[i] += val*val;
-			w[xi->index-1] += y[i]*alpha[i]*val;
-			xi++;
-		}
+		feature_node * const xi = prob->x[i];
+		QD[i] += sparse_operator::nrm2_sq(xi);
+		sparse_operator::axpy(y[i]*alpha[i], xi, w);
+
 		index[i] = i;
 	}
 
@@ -856,16 +852,10 @@ static void solve_l2r_l1l2_svc(
 		for (s=0; s<active_size; s++)
 		{
 			i = index[s];
-			G = 0;
-			schar yi = y[i];
+			const schar yi = y[i];
+			feature_node * const xi = prob->x[i];
 
-			feature_node *xi = prob->x[i];
-			while(xi->index!= -1)
-			{
-				G += w[xi->index-1]*(xi->value);
-				xi++;
-			}
-			G = G*yi-1;
+			G = yi*sparse_operator::dot(w, xi)-1;
 
 			C = upper_bound[GETI(i)];
 			G += alpha[i]*diag[GETI(i)];
@@ -906,12 +896,7 @@ static void solve_l2r_l1l2_svc(
 				double alpha_old = alpha[i];
 				alpha[i] = min(max(alpha[i] - G/QD[i], 0.0), C);
 				d = (alpha[i] - alpha_old)*yi;
-				xi = prob->x[i];
-				while (xi->index != -1)
-				{
-					w[xi->index-1] += d*xi->value;
-					xi++;
-				}
+				sparse_operator::axpy(d, xi, w);
 			}
 		}
 
@@ -1036,15 +1021,9 @@ static void solve_l2r_l1l2_svr(
 		w[i] = 0;
 	for(i=0; i<l; i++)
 	{
-		QD[i] = 0;
-		feature_node *xi = prob->x[i];
-		while(xi->index != -1)
-		{
-			double val = xi->value;
-			QD[i] += val*val;
-			w[xi->index-1] += beta[i]*val;
-			xi++;
-		}
+		feature_node * const xi = prob->x[i];
+		QD[i] = sparse_operator::nrm2_sq(xi);
+		sparse_operator::axpy(beta[i], xi, w);
 
 		index[i] = i;
 	}
@@ -1067,14 +1046,8 @@ static void solve_l2r_l1l2_svr(
 			G = -y[i] + lambda[GETI(i)]*beta[i];
 			H = QD[i] + lambda[GETI(i)];
 
-			feature_node *xi = prob->x[i];
-			while(xi->index != -1)
-			{
-				int ind = xi->index-1;
-				double val = xi->value;
-				G += val*w[ind];
-				xi++;
-			}
+			feature_node * const xi = prob->x[i];
+			G += sparse_operator::dot(w, xi);
 
 			double Gp = G+p;
 			double Gn = G-p;
@@ -1141,14 +1114,7 @@ static void solve_l2r_l1l2_svr(
 			d = beta[i]-beta_old;
 
 			if(d != 0)
-			{
-				xi = prob->x[i];
-				while(xi->index != -1)
-				{
-					w[xi->index-1] += d*xi->value;
-					xi++;
-				}
-			}
+				sparse_operator::axpy(d, xi, w);
 		}
 
 		if(iter == 0)
@@ -1261,15 +1227,9 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 		w[i] = 0;
 	for(i=0; i<l; i++)
 	{
-		xTx[i] = 0;
-		feature_node *xi = prob->x[i];
-		while (xi->index != -1)
-		{
-			double val = xi->value;
-			xTx[i] += val*val;
-			w[xi->index-1] += y[i]*alpha[2*i]*val;
-			xi++;
-		}
+		feature_node * const xi = prob->x[i];
+		xTx[i] = sparse_operator::nrm2_sq(xi);
+		sparse_operator::axpy(y[i]*alpha[2*i], xi, w);
 		index[i] = i;
 	}
 
@@ -1285,16 +1245,11 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 		for (s=0; s<l; s++)
 		{
 			i = index[s];
-			schar yi = y[i];
+			const schar yi = y[i];
 			double C = upper_bound[GETI(i)];
 			double ywTx = 0, xisq = xTx[i];
-			feature_node *xi = prob->x[i];
-			while (xi->index != -1)
-			{
-				ywTx += w[xi->index-1]*xi->value;
-				xi++;
-			}
-			ywTx *= y[i];
+			feature_node * const xi = prob->x[i];
+			ywTx = yi*sparse_operator::dot(w, xi);
 			double a = xisq, b = ywTx;
 
 			// Decide to minimize g_1(z) or g_2(z)
@@ -1336,12 +1291,7 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 			{
 				alpha[ind1] = z;
 				alpha[ind2] = C-z;
-				xi = prob->x[i];
-				while (xi->index != -1)
-				{
-					w[xi->index-1] += sign*(z-alpha_old)*yi*xi->value;
-					xi++;
-				}
+				sparse_operator::axpy(sign*(z-alpha_old)*yi, xi, w);
 			}
 		}
 
@@ -1535,11 +1485,7 @@ static void solve_l1r_l2_svc(
 				if(appxcond <= 0)
 				{
 					x = prob_col->x[j];
-					while(x->index != -1)
-					{
-						b[x->index-1] += d_diff*x->value;
-						x++;
-					}
+					sparse_operator::axpy(d_diff, x, b);
 					break;
 				}
 
@@ -1599,11 +1545,7 @@ static void solve_l1r_l2_svc(
 				{
 					if(w[i]==0) continue;
 					x = prob_col->x[i];
-					while(x->index != -1)
-					{
-						b[x->index-1] -= w[i]*x->value;
-						x++;
-					}
+					sparse_operator::axpy(-w[i], x, b);
 				}
 			}
 		}
@@ -1892,12 +1834,7 @@ static void solve_l1r_lr(
 				wpd[j] += z;
 
 				x = prob_col->x[j];
-				while(x->index != -1)
-				{
-					int ind = x->index-1;
-					xTd[ind] += x->value*z;
-					x++;
-				}
+				sparse_operator::axpy(z, x, xTd);
 			}
 
 			iter++;
@@ -1989,11 +1926,7 @@ static void solve_l1r_lr(
 			{
 				if(w[i]==0) continue;
 				x = prob_col->x[i];
-				while(x->index != -1)
-				{
-					exp_wTx[x->index-1] += w[i]*x->value;
-					x++;
-				}
+				sparse_operator::axpy(w[i], x, exp_wTx);
 			}
 
 			for(int i=0; i<l; i++)
