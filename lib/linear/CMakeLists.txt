@@ -1,6 +1,8 @@
 #linear library
 
 SET (LINEAR_LIB_SRCS
+  ${CMAKE_CURRENT_SOURCE_DIR}/linear_locales.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/linear_locales.h
   ${CMAKE_CURRENT_SOURCE_DIR}/linear.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/linear.h
   ${CMAKE_CURRENT_SOURCE_DIR}/tron.cpp

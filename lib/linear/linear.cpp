@@ -7,10 +7,11 @@
 #include <linear.h>
 #include <tron.h>
 
+#include <linear_locales.h>
+
 #ifdef ENABLED_OPENMP
 #include <omp.h>
 #endif
-
 
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
@@ -2932,12 +2933,7 @@ int save_model(const char *model_file_name, const struct model *model_)
 	FILE *fp = fopen(model_file_name,"w");
 	if(fp==NULL) return -1;
 
-	char *old_locale = setlocale(LC_ALL, NULL);
-	if (old_locale)
-	{
-		old_locale = strdup(old_locale);
-	}
-	setlocale(LC_ALL, "C");
+	locale_handle old_locale = set_c_locale();
 
 	int nr_w;
 	if(model_->nr_class==2 && model_->param.solver_type != MCSVM_CS)
@@ -2969,8 +2965,7 @@ int save_model(const char *model_file_name, const struct model *model_)
 		fprintf(fp, "\n");
 	}
 
-	setlocale(LC_ALL, old_locale);
-	free(old_locale);
+	restore_locale(old_locale);
 
 	if (ferror(fp) != 0 || fclose(fp) != 0) return -1;
 	else return 0;
@@ -2991,21 +2986,16 @@ struct model *load_model(const char *model_file_name)
 
 	model_->label = NULL;
 
-	char *old_locale = setlocale(LC_ALL, NULL);
-	if (old_locale)
-	{
-		old_locale = strdup(old_locale);
-	}
-	setlocale(LC_ALL, "C");
+	locale_handle old_locale = set_c_locale();
 
 	char cmd[81];
 	while(1)
 	{
-		fscanf(fp,"%80s",cmd);
+		int r = fscanf(fp,"%80s",cmd);
 		if(strcmp(cmd,"solver_type")==0)
 		{
-			fscanf(fp,"%80s",cmd);
-			int i;
+			int r = fscanf(fp,"%80s",cmd);
+			int i ;
 			for(i=0;solver_type_table[i];i++)
 			{
 				if(strcmp(solver_type_table[i],cmd)==0)
@@ -3018,26 +3008,25 @@ struct model *load_model(const char *model_file_name)
 			{
 				fprintf(stderr,"unknown solver type.\n");
 
-				setlocale(LC_ALL, old_locale);
+				restore_locale(old_locale);
 				free(model_->label);
 				free(model_);
-				free(old_locale);
 				return NULL;
 			}
 		}
 		else if(strcmp(cmd,"nr_class")==0)
 		{
-			fscanf(fp,"%d",&nr_class);
+			int r = fscanf(fp,"%d",&nr_class);
 			model_->nr_class=nr_class;
 		}
 		else if(strcmp(cmd,"nr_feature")==0)
 		{
-			fscanf(fp,"%d",&nr_feature);
+			int r = fscanf(fp,"%d",&nr_feature);
 			model_->nr_feature=nr_feature;
 		}
 		else if(strcmp(cmd,"bias")==0)
 		{
-			fscanf(fp,"%lf",&bias);
+			int r = fscanf(fp,"%lf",&bias);
 			model_->bias=bias;
 		}
 		else if(strcmp(cmd,"w")==0)
@@ -3048,16 +3037,16 @@ struct model *load_model(const char *model_file_name)
 		{
 			int nr_class = model_->nr_class;
 			model_->label = Malloc(int,nr_class);
-			for(int i=0;i<nr_class;i++)
-				fscanf(fp,"%d",&model_->label[i]);
+			for(int i=0;i<nr_class;i++) {
+				int r = fscanf(fp,"%d",&model_->label[i]);
+			}
 		}
 		else
 		{
 			fprintf(stderr,"unknown text in model file: [%s]\n",cmd);
-			setlocale(LC_ALL, old_locale);
+			restore_locale(old_locale);
 			free(model_->label);
 			free(model_);
-			free(old_locale);
 			return NULL;
 		}
 	}
@@ -3077,14 +3066,13 @@ struct model *load_model(const char *model_file_name)
 	model_->w=Malloc(double, w_size*nr_w);
 	for(i=0; i<w_size; i++)
 	{
-		int j;
-		for(j=0; j<nr_w; j++)
-			fscanf(fp, "%lf ", &model_->w[i*nr_w+j]);
-		fscanf(fp, "\n");
+		for(int j=0; j<nr_w; j++) {
+			int r = fscanf(fp, "%lf ", &model_->w[i*nr_w+j]);
+		}
+		int r = fscanf(fp, "\n");
 	}
 
-	setlocale(LC_ALL, old_locale);
-	free(old_locale);
+	restore_locale(old_locale);
 
 	if (ferror(fp) != 0 || fclose(fp) != 0) return NULL;
 
