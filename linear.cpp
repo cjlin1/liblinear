@@ -2386,7 +2386,7 @@ model* train(const problem *prob, const parameter *param)
 
 					train_one(&sub_prob, param, w, weighted_C[i], param->C);
 
-					for(int j=0;j<w_size;j++)
+					for(j=0;j<w_size;j++)
 						model_->w[j*nr_class+i] = w[j];
 				}
 				free(w);
