@@ -570,7 +570,11 @@ VC++ or where it is installed.
 
 nmake -f Makefile.win clean all
 
-2. (Optional) To build 32-bit windows binaries, you must
+3. (optional) To build shared library libsvm.dll, type
+
+nmake -f Makefile.win lib
+
+4. (Optional) To build 32-bit windows binaries, you must
 	(1) Setup "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\vcvars32.bat" instead of vcvars64.bat
 	(2) Change CFLAGS in Makefile.win: /D _WIN64 to /D _WIN32
 
