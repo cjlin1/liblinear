@@ -56,11 +56,16 @@ TRON::~TRON()
 
 void TRON::tron(double *w)
 {
+	// Parameters for updating the iterates.
+	double eta0 = 1e-4, eta1 = 0.25, eta2 = 0.75;
+
+	// Parameters for updating the trust region size delta.
+	double sigma1 = 0.25, sigma2 = 0.5, sigma3 = 4;
+
 	int n = fun_obj->get_nr_variable();
 	int i, cg_iter;
-	double snorm, step_size, one=1.0;
-	double alpha, f, fnew;
-	double init_step_size = 1;
+	double delta, snorm, one=1.0;
+	double alpha, f, fnew, prered, actred, gs;
 	int search = 1, iter = 1, inc = 1;
 	double *s = new double[n];
 	double *r = new double[n];
@@ -77,7 +82,8 @@ void TRON::tron(double *w)
 
 	f = fun_obj->fun(w);
 	fun_obj->grad(w, g);
-	double gnorm = dnrm2_(&n, g, &inc);
+	delta = dnrm2_(&n, g, &inc);
+	double gnorm = delta;
 
 	if (gnorm <= eps*gnorm0)
 		search = 0;
@@ -87,32 +93,66 @@ void TRON::tron(double *w)
 	double *w_new = new double[n];
 	while (iter <= max_iter && search)
 	{
-		cg_iter = trcg(g, s, r);
+		cg_iter = trcg(delta, g, s, r);
 
 		memcpy(w_new, w, sizeof(double)*n);
 		daxpy_(&n, &one, s, &inc, w_new, &inc);
 
-		step_size = fun_obj->line_search(s, w, g, init_step_size, &fnew);
-		if (step_size == 0)
+		gs = ddot_(&n, g, &inc, s, &inc);
+		prered = -0.5*(gs-ddot_(&n, s, &inc, r, &inc));
+		fnew = fun_obj->fun(w_new);
+
+		// Compute the actual reduction.
+		actred = f - fnew;
+
+		// On the first iteration, adjust the initial step bound.
+		snorm = dnrm2_(&n, s, &inc);
+		if (iter == 1)
+			delta = min(delta, snorm);
+
+		// Compute prediction alpha*snorm of the step.
+		if (fnew - f - gs <= 0)
+			alpha = sigma3;
+		else
+			alpha = max(sigma1, -0.5*(gs/(fnew - f - gs)));
+
+		// Update the trust region bound according to the ratio of actual to predicted reduction.
+		if (actred < eta0*prered)
+			delta = min(max(alpha, sigma1)*snorm, sigma2*delta);
+		else if (actred < eta1*prered)
+			delta = max(sigma1*delta, min(alpha*snorm, sigma2*delta));
+		else if (actred < eta2*prered)
+			delta = max(sigma1*delta, min(alpha*snorm, sigma3*delta));
+		else
+			delta = max(delta, min(alpha*snorm, sigma3*delta));
+
+		info("iter %2d act %5.3e pre %5.3e delta %5.3e f %5.3e |g| %5.3e CG %3d\n", iter, actred, prered, delta, f, gnorm, cg_iter);
+
+		if (actred > eta0*prered)
 		{
-			info("WARNING: line search fails\n");
-			break;
+			iter++;
+			memcpy(w, w_new, sizeof(double)*n);
+			f = fnew;
+			fun_obj->grad(w, g);
+
+			gnorm = dnrm2_(&n, g, &inc);
+			if (gnorm <= eps*gnorm0)
+				break;
 		}
-		daxpy_(&n, &step_size, s, &inc, w, &inc);
-
-		info("iter %2d f %5.3e |g| %5.3e CG %3d step_size %5.3e \n", iter, f, gnorm, cg_iter, step_size);
-
-		f = fnew;
-		iter++;
-
-		fun_obj->grad(w, g);
-
-		gnorm = dnrm2_(&n, g, &inc);
-		if (gnorm <= eps*gnorm0)
-			break;
 		if (f < -1.0e+32)
 		{
 			info("WARNING: f < -1.0e+32\n");
+			break;
+		}
+		if (fabs(actred) <= 0 && prered <= 0)
+		{
+			info("WARNING: actred and prered <= 0\n");
+			break;
+		}
+		if (fabs(actred) <= 1.0e-12*fabs(f) &&
+		    fabs(prered) <= 1.0e-12*fabs(f))
+		{
+			info("WARNING: actred and prered too small\n");
 			break;
 		}
 	}
@@ -123,7 +163,7 @@ void TRON::tron(double *w)
 	delete[] s;
 }
 
-int TRON::trcg(double *g, double *s, double *r)
+int TRON::trcg(double delta, double *g, double *s, double *r)
 {
 	int i, inc = 1;
 	int n = fun_obj->get_nr_variable();
@@ -151,6 +191,26 @@ int TRON::trcg(double *g, double *s, double *r)
 
 		alpha = rTr/ddot_(&n, d, &inc, Hd, &inc);
 		daxpy_(&n, &alpha, d, &inc, s, &inc);
+		if (dnrm2_(&n, s, &inc) > delta)
+		{
+			info("cg reaches trust region boundary\n");
+			alpha = -alpha;
+			daxpy_(&n, &alpha, d, &inc, s, &inc);
+
+			double std = ddot_(&n, s, &inc, d, &inc);
+			double sts = ddot_(&n, s, &inc, s, &inc);
+			double dtd = ddot_(&n, d, &inc, d, &inc);
+			double dsq = delta*delta;
+			double rad = sqrt(std*std + dtd*(dsq-sts));
+			if (std >= 0)
+				alpha = (dsq - sts)/(std + rad);
+			else
+				alpha = (rad - std)/dtd;
+			daxpy_(&n, &alpha, d, &inc, s, &inc);
+			alpha = -alpha;
+			daxpy_(&n, &alpha, Hd, &inc, r, &inc);
+			break;
+		}
 		alpha = -alpha;
 		daxpy_(&n, &alpha, Hd, &inc, r, &inc);
 		rnewTrnew = ddot_(&n, r, &inc, r, &inc);
