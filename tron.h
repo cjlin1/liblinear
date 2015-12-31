@@ -7,6 +7,7 @@ public:
 	virtual double fun(double *w) = 0 ;
 	virtual void grad(double *w, double *g) = 0 ;
 	virtual void Hv(double *s, double *Hs) = 0 ;
+	virtual double line_search(double *s, double *w, double *g, double init_step_size, double *fnew) = 0 ;
 
 	virtual int get_nr_variable(void) = 0 ;
 	virtual ~function(void){}
@@ -22,7 +23,7 @@ public:
 	void set_print_string(void (*i_print) (const char *buf));
 
 private:
-	int trcg(double delta, double *g, double *s, double *r);
+	int trcg(double *g, double *s, double *r);
 	double norm_inf(int n, double *x);
 
 	double eps;
