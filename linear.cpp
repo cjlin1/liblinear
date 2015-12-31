@@ -233,7 +233,6 @@ protected:
 
 	double *C;
 	double *z;
-	double *D;
 	int *I;
 	int sizeI;
 	const problem *prob;
@@ -246,7 +245,6 @@ l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, double *C)
 	this->prob = prob;
 
 	z = new double[l];
-	D = new double[l];
 	I = new int[l];
 	this->C = C;
 }
@@ -254,7 +252,6 @@ l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, double *C)
 l2r_l2_svc_fun::~l2r_l2_svc_fun()
 {
 	delete[] z;
-	delete[] D;
 	delete[] I;
 }
 
