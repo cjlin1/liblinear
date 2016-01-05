@@ -182,7 +182,7 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	{
 		feature_node * const xi=x[i];
 		wa[i] = sparse_operator::dot(s, xi);
-		
+
 		wa[i] = C[i]*D[i]*wa[i];
 
 		sparse_operator::axpy(wa[i], xi, Hs);
@@ -318,7 +318,7 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 	{
 		feature_node * const xi=x[I[i]];
 		wa[i] = sparse_operator::dot(s, xi);
-		
+
 		wa[i] = C[I[i]]*wa[i];
 
 		sparse_operator::axpy(wa[i], xi, Hs);
@@ -2347,7 +2347,7 @@ model* train(const problem *prob, const parameter *param)
 					sub_prob.y[k] = +1;
 				for(; k<sub_prob.l; k++)
 					sub_prob.y[k] = -1;
-				
+
 				if(param->init_sol != NULL)
 					for(i=0;i<w_size;i++)
 						model_->w[i] = param->init_sol[i];
