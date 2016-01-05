@@ -1,8 +1,8 @@
-LIBLINEAR is a simple package for solving large-scale regularized linear 
-classification and regression. It currently supports 
+LIBLINEAR is a simple package for solving large-scale regularized linear
+classification and regression. It currently supports
 - L2-regularized logistic regression/L2-loss support vector classification/L1-loss support vector classification
 - L1-regularized L2-loss support vector classification/L1-regularized logistic regression
-- L2-regularized L2-loss support vector regression/L1-loss support vector regression. 
+- L2-regularized L2-loss support vector regression/L1-loss support vector regression.
 This document explains the usage of LIBLINEAR.
 
 To get started, please read the ``Quick Start'' section first.
@@ -29,7 +29,7 @@ When to use LIBLINEAR but not LIBSVM
 
 There are some large data for which with/without nonlinear mappings
 gives similar performances.  Without using kernels, one can
-efficiently train a much larger set via linear classification/regression.  
+efficiently train a much larger set via linear classification/regression.
 These data usually have a large number of features. Document classification
 is an example.
 
@@ -119,7 +119,7 @@ options:
 		where f is the primal function and pos/neg are # of
 		positive/negative data (default 0.01)
 	-s 11
-		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001) 
+		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)
 	-s 1, 3, 4 and 7
 		Dual maximal violation <= eps; similar to libsvm (default 0.1)
 	-s 5 and 6
@@ -200,8 +200,8 @@ If bias >= 0, w becomes [w; w_{n+1}] and x becomes [x; bias].
 The primal-dual relationship implies that -s 1 and -s 2 give the same
 model, -s 0 and -s 7 give the same, and -s 11 and -s 12 give the same.
 
-We implement 1-vs-the rest multi-class strategy for classification. 
-In training i vs. non_i, their C parameters are (weight from -wi)*C 
+We implement 1-vs-the rest multi-class strategy for classification.
+In training i vs. non_i, their C parameters are (weight from -wi)*C
 and C, respectively. If there are only two classes, we train only one
 model. Thus weight1*C vs. weight2*C is used. See examples below.
 
@@ -252,19 +252,19 @@ Use a smaller stopping tolerance 0.001 than the default
 
 > train -C data_file
 
-Conduct cross validation many times by L2-loss SVM 
-and find the parameter C which achieves the best cross 
+Conduct cross validation many times by L2-loss SVM
+and find the parameter C which achieves the best cross
 validation accuracy.
 
 > train -C -s 0 -v 3 -c 0.5 -e 0.0001 data_file
 
-For parameter selection by -C, users can specify other 
-solvers (currently -s 0 and -s 2 are supported) and 
-different number of CV folds. Further, users can use 
-the -c option to specify the smallest C value of the 
-search range. This setting is useful when users want 
-to rerun the parameter selection procedure from a 
-specified C under a different setting, such as a stricter 
+For parameter selection by -C, users can specify other
+solvers (currently -s 0 and -s 2 are supported) and
+different number of CV folds. Further, users can use
+the -c option to specify the smallest C value of the
+search range. This setting is useful when users want
+to rerun the parameter selection procedure from a
+specified C under a different setting, such as a stricter
 stopping tolerance -e 0.0001 in the above example.
 
 > train -c 10 -w1 2 -w2 5 -w3 2 four_class_data_file
@@ -291,8 +291,8 @@ Library Usage
 - Function: model* train(const struct problem *prob,
                 const struct parameter *param);
 
-    This function constructs and returns a linear classification 
-    or regression model according to the given training data and 
+    This function constructs and returns a linear classification
+    or regression model according to the given training data and
     parameters.
 
     struct problem describes the problem:
@@ -308,9 +308,9 @@ Library Usage
     where `l' is the number of training data. If bias >= 0, we assume
     that one additional feature is added to the end of each data
     instance. `n' is the number of feature (including the bias feature
-    if bias >= 0). `y' is an array containing the target values. (integers 
-    in classification, real numbers in regression) And `x' is an array 
-    of pointers, each of which points to a sparse representation (array 
+    if bias >= 0). `y' is an array containing the target values. (integers
+    in classification, real numbers in regression) And `x' is an array
+    of pointers, each of which points to a sparse representation (array
     of feature_node) of one training vector.
 
     For example, if we have the following training data:
@@ -336,7 +336,7 @@ Library Usage
          [ ] -> (2,0.1) (4,1.4) (5,0.5) (6,1) (-1,?)
          [ ] -> (1,-0.1) (2,-0.2) (3,0.1) (4,1.1) (5,0.1) (6,1) (-1,?)
 
-    struct parameter describes the parameters of a linear classification 
+    struct parameter describes the parameters of a linear classification
     or regression model:
 
         struct parameter
@@ -368,7 +368,7 @@ Library Usage
     L2R_L1LOSS_SVR_DUAL   L2-regularized L1-loss support vector regression (dual)
 
     C is the cost of constraints violation.
-    p is the sensitiveness of loss of support vector regression. 
+    p is the sensitiveness of loss of support vector regression.
     eps is the stopping criterion.
 
     nr_weight, weight_label, and weight are used to change the penalty
@@ -400,8 +400,8 @@ Library Usage
 
      param describes the parameters used to obtain the model.
 
-     nr_class and nr_feature are the number of classes and features, 
-     respectively. nr_class = 2 for regression. 
+     nr_class and nr_feature are the number of classes and features,
+     respectively. nr_class = 2 for regression.
 
      The nr_feature*nr_class array w gives feature weights. We use one
      against the rest for multi-class classification, so each feature
@@ -429,19 +429,19 @@ Library Usage
 
     The format of prob is same as that for train().
 
-- Function: void find_parameter_C(const struct problem *prob, 
-            const struct parameter *param, int nr_fold, double start_C, 
+- Function: void find_parameter_C(const struct problem *prob,
+            const struct parameter *param, int nr_fold, double start_C,
 	    double max_C, double *best_C, double *best_rate);
 
     This function is similar to cross_validation. However, instead of
-    conducting cross validation under a specified parameter C, it 
-    conducts cross validation many times under parameters C = start_C, 
+    conducting cross validation under a specified parameter C, it
+    conducts cross validation many times under parameters C = start_C,
     2*start_C, 4*start_C, 8*start_C, ..., and finds the best one with
     the highest cross validation accuracy.
-    
-    If start_C <= 0, then this procedure calculates a small enough C 
-    for prob as the start_C. The procedure stops when the models of 
-    all folds become stable or C reaches max_C. The best C and the 
+
+    If start_C <= 0, then this procedure calculates a small enough C
+    for prob as the start_C. The procedure stops when the models of
+    all folds become stable or C reaches max_C. The best C and the
     corresponding accuracy are assigned to *best_C and *best_rate,
     respectively.
 
@@ -449,17 +449,17 @@ Library Usage
 
     For a classification model, the predicted class for x is returned.
     For a regression model, the function value of x calculated using
-    the model is returned. 
+    the model is returned.
 
 - Function: double predict_values(const struct model *model_,
             const struct feature_node *x, double* dec_values);
 
-    This function gives nr_w decision values in the array dec_values. 
+    This function gives nr_w decision values in the array dec_values.
     nr_w=1 if regression is applied or the number of classes is two. An exception is
-    multi-class SVM by Crammer and Singer (-s 4), where nr_w = 2 if there are two classes. For all other situations, nr_w is the 
+    multi-class SVM by Crammer and Singer (-s 4), where nr_w = 2 if there are two classes. For all other situations, nr_w is the
     number of classes.
 
-    We implement one-vs-the rest multi-class strategy (-s 0,1,2,3,5,6,7) 
+    We implement one-vs-the rest multi-class strategy (-s 0,1,2,3,5,6,7)
     and multi-class SVM by Crammer and Singer (-s 4) for multi-class SVM.
     The class with the highest decision value is returned.
 
@@ -549,7 +549,7 @@ Library Usage
 - Function: void set_print_string_function(void (*print_func)(const char *));
 
     Users can specify their output format by a function. Use
-        set_print_string_function(NULL); 
+        set_print_string_function(NULL);
     for default printing to stdout.
 
 Building Windows Binaries
