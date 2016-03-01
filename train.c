@@ -151,7 +151,7 @@ void do_find_parameter_C()
 		start_C = -1.0;
 	printf("Doing parameter search with %d-fold cross validation.\n", nr_fold);
 	find_parameter_C(&prob, &param, nr_fold, start_C, max_C, &best_C, &best_rate);
-	printf("Best C = %lf  CV accuracy = %g%%\n", best_C, 100.0*best_rate);
+	printf("Best C = %g  CV accuracy = %g%%\n", best_C, 100.0*best_rate);
 }
 
 void do_cross_validation()

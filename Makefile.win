@@ -2,7 +2,7 @@ CXX = cl.exe
 CFLAGS = /nologo /O2 /EHsc /I. /D _WIN64 /D _CRT_SECURE_NO_DEPRECATE
 TARGET = windows
 
-all: $(TARGET)\train.exe $(TARGET)\predict.exe
+all: $(TARGET)\train.exe $(TARGET)\predict.exe lib
 
 $(TARGET)\train.exe: tron.obj linear.obj train.c blas\*.c
 	$(CXX) $(CFLAGS) -Fe$(TARGET)\train.exe tron.obj linear.obj train.c blas\*.c
@@ -20,5 +20,5 @@ lib: linear.cpp linear.h linear.def tron.obj
 	$(CXX) $(CFLAGS) -LD linear.cpp tron.obj blas\*.c -Fe$(TARGET)\liblinear -link -DEF:linear.def 
 
 clean:
-	 -erase /Q *.obj $(TARGET)\.
+	 -erase /Q *.obj $(TARGET)\*.exe $(TARGET)\*.dll $(TARGET)\*.exp $(TARGET)\*.lib
 
