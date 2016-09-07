@@ -173,7 +173,6 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	int i;
 	int l=prob->l;
 	int w_size=get_nr_variable();
-	double *wa = new double[l];
 	feature_node **x=prob->x;
 
 	for(i=0;i<w_size;i++)
@@ -181,15 +180,14 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	for(i=0;i<l;i++)
 	{
 		feature_node * const xi=x[i];
-		wa[i] = sparse_operator::dot(s, xi);
+		double xTs = sparse_operator::dot(s, xi);
 
-		wa[i] = C[i]*D[i]*wa[i];
+		xTs = C[i]*D[i]*xTs;
 
-		sparse_operator::axpy(wa[i], xi, Hs);
+		sparse_operator::axpy(xTs, xi, Hs);
 	}
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + Hs[i];
-	delete[] wa;
 }
 
 void l2r_lr_fun::Xv(double *v, double *Xv)
@@ -309,7 +307,6 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 {
 	int i;
 	int w_size=get_nr_variable();
-	double *wa = new double[sizeI];
 	feature_node **x=prob->x;
 
 	for(i=0;i<w_size;i++)
@@ -317,15 +314,14 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 	for(i=0;i<sizeI;i++)
 	{
 		feature_node * const xi=x[I[i]];
-		wa[i] = sparse_operator::dot(s, xi);
+		double xTs = sparse_operator::dot(s, xi);
 
-		wa[i] = C[I[i]]*wa[i];
+		xTs = C[I[i]]*xTs;
 
-		sparse_operator::axpy(wa[i], xi, Hs);
+		sparse_operator::axpy(xTs, xi, Hs);
 	}
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + 2*Hs[i];
-	delete[] wa;
 }
 
 void l2r_l2_svc_fun::Xv(double *v, double *Xv)
