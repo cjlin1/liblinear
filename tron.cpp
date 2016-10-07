@@ -144,9 +144,9 @@ void TRON::tron(double *w)
 			info("WARNING: f < -1.0e+32\n");
 			break;
 		}
-		if (fabs(actred) <= 0 && prered <= 0)
+		if (prered <= 0)
 		{
-			info("WARNING: actred and prered <= 0\n");
+			info("WARNING: prered <= 0\n");
 			break;
 		}
 		if (fabs(actred) <= 1.0e-12*fabs(f) &&
