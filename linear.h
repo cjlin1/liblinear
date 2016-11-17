@@ -49,6 +49,11 @@ struct model
 	double bias;
 };
 
+#ifdef _WIN32
+// new function to check random number generation fix
+const char *check_rand_fixed();
+#endif 
+
 struct model* train(const struct problem *prob, const struct parameter *param);
 void cross_validation(const struct problem *prob, const struct parameter *param, int nr_fold, double *target);
 void find_parameters(const struct problem *prob, const struct parameter *param, int nr_fold, double start_C, double start_p, double *best_C, double *best_p, double *best_score);
