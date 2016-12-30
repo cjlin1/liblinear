@@ -31,7 +31,7 @@ linear.o: linear.cpp linear.h
 blas/blas.a: blas/*.c blas/*.h
 	make -C blas OPTFLAGS='$(CFLAGS)' CC='$(CC)';
 
-liblinear.a: linear.o
+liblinear.a: linear.o tron.o
 	ar -rcvs liblinear.a linear.o tron.o
 
 clean:
