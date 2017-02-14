@@ -2810,13 +2810,13 @@ struct model *load_model(const char *model_file_name)
 	model *model_ = Malloc(model,1);
 	parameter& param = model_->param;
 
-        param.C = 1;
-        param.p = .1;
-        param.eps = INF;
-        param.nr_weight = 0;
-        param.weight_label = NULL;
-        param.weight = NULL;
-        param.init_sol = NULL;
+	param.C = 1;
+	param.p = .1;
+	param.eps = INF;
+	param.nr_weight = 0;
+	param.weight_label = NULL;
+	param.weight = NULL;
+	param.init_sol = NULL;
 
 	model_->label = NULL;
 
