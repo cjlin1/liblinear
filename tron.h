@@ -22,7 +22,7 @@ public:
 	void set_print_string(void (*i_print) (const char *buf));
 
 private:
-	int trcg(double delta, double *g, double *s, double *r);
+	int trcg(double delta, double *g, double *s, double *r, bool* reach_boundary);
 	double norm_inf(int n, double *x);
 
 	double eps;
