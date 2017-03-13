@@ -288,6 +288,13 @@ Output probability estimates (for logistic regression only).
 Library Usage
 =============
 
+These functions and structures are declared in the header file
+`linear.h'.  You need to #include "linear.h" in your C/C++
+source files and link your program with `linear.cpp'. You can see
+`train.c' and `predict.c' for examples showing how to use them. We
+define LIBLINEAR_VERSION and declare `extern int liblinear_version; '
+in linear.h, so you can check the version number.
+
 - Function: model* train(const struct problem *prob,
                 const struct parameter *param);
 
