@@ -38,7 +38,7 @@ linear_model_matlab.o: linear_model_matlab.c ../linear.h
 ../linear.o: ../linear.cpp ../linear.h
 	make -C .. linear.o
 
-../tron.o: ../tron.cpp ../tron.h 
+../tron.o: ../tron.cpp ../tron.h
 	make -C .. tron.o
 
 ../blas/blas.a: ../blas/*.c ../blas/*.h

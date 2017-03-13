@@ -7,8 +7,8 @@ import sys
 
 __all__ = ['liblinear', 'feature_node', 'gen_feature_nodearray', 'problem',
            'parameter', 'model', 'toPyModel', 'L2R_LR', 'L2R_L2LOSS_SVC_DUAL',
-           'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL', 'MCSVM_CS', 
-           'L1R_L2LOSS_SVC', 'L1R_LR', 'L2R_LR_DUAL', 'L2R_L2LOSS_SVR', 
+           'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL', 'MCSVM_CS',
+           'L1R_L2LOSS_SVC', 'L1R_LR', 'L2R_LR_DUAL', 'L2R_L2LOSS_SVR',
            'L2R_L2LOSS_SVR_DUAL', 'L2R_L1LOSS_SVR_DUAL', 'print_null']
 
 try:
@@ -27,25 +27,25 @@ except:
 		raise Exception('LIBLINEAR library not found.')
 
 L2R_LR = 0
-L2R_L2LOSS_SVC_DUAL = 1 
-L2R_L2LOSS_SVC = 2 
+L2R_L2LOSS_SVC_DUAL = 1
+L2R_L2LOSS_SVC = 2
 L2R_L1LOSS_SVC_DUAL = 3
-MCSVM_CS = 4 
-L1R_L2LOSS_SVC = 5 
-L1R_LR = 6 
-L2R_LR_DUAL = 7  
+MCSVM_CS = 4
+L1R_L2LOSS_SVC = 5
+L1R_LR = 6
+L2R_LR_DUAL = 7
 L2R_L2LOSS_SVR = 11
 L2R_L2LOSS_SVR_DUAL = 12
 L2R_L1LOSS_SVR_DUAL = 13
 
 PRINT_STRING_FUN = CFUNCTYPE(None, c_char_p)
-def print_null(s): 
-	return 
+def print_null(s):
+	return
 
-def genFields(names, types): 
+def genFields(names, types):
 	return list(zip(names, types))
 
-def fillprototype(f, restype, argtypes): 
+def fillprototype(f, restype, argtypes):
 	f.restype = restype
 	f.argtypes = argtypes
 
@@ -69,7 +69,7 @@ def gen_feature_nodearray(xi, feature_max=None, issparse=True):
 	if feature_max:
 		assert(isinstance(feature_max, int))
 		index_range = filter(lambda j: j <= feature_max, index_range)
-	if issparse: 
+	if issparse:
 		index_range = filter(lambda j:xi[j] != 0, index_range)
 
 	index_range = sorted(index_range)
@@ -80,7 +80,7 @@ def gen_feature_nodearray(xi, feature_max=None, issparse=True):
 		ret[idx].index = j
 		ret[idx].value = xi[j]
 	max_idx = 0
-	if index_range : 
+	if index_range :
 		max_idx = index_range[-1]
 	return ret, max_idx
 
@@ -106,18 +106,18 @@ class problem(Structure):
 		self.y = (c_double * l)()
 		for i, yi in enumerate(y): self.y[i] = y[i]
 
-		self.x = (POINTER(feature_node) * l)() 
+		self.x = (POINTER(feature_node) * l)()
 		for i, xi in enumerate(self.x_space): self.x[i] = xi
 
 		self.set_bias(bias)
 
 	def set_bias(self, bias):
 		if self.bias == bias:
-			return 
-		if bias >= 0 and self.bias < 0: 
+			return
+		if bias >= 0 and self.bias < 0:
 			self.n += 1
 			node = feature_node(self.n, bias)
-		if bias < 0 and self.bias >= 0: 
+		if bias < 0 and self.bias >= 0:
 			self.n -= 1
 			node = feature_node(-1, bias)
 
@@ -139,7 +139,7 @@ class parameter(Structure):
 	def __str__(self):
 		s = ''
 		attrs = parameter._names + list(self.__dict__.keys())
-		values = map(lambda attr: getattr(self, attr), attrs) 
+		values = map(lambda attr: getattr(self, attr), attrs)
 		for attr, val in zip(attrs, values):
 			s += (' %s: %s\n' % (attr, val))
 		s = s.strip()
@@ -217,7 +217,7 @@ class parameter(Structure):
 		liblinear.set_print_string_function(self.print_func)
 		self.weight_label = (c_int*self.nr_weight)()
 		self.weight = (c_double*self.nr_weight)()
-		for i in range(self.nr_weight): 
+		for i in range(self.nr_weight):
 			self.weight[i] = weight[i]
 			self.weight_label[i] = weight_label[i]
 

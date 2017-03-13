@@ -28,7 +28,7 @@ void exit_with_help()
 	"-s type : set type of solver (default 1)\n"
 	"  for multi-class classification\n"
 	"	 0 -- L2-regularized logistic regression (primal)\n"
-	"	 1 -- L2-regularized L2-loss support vector classification (dual)\n"	
+	"	 1 -- L2-regularized L2-loss support vector classification (dual)\n"
 	"	 2 -- L2-regularized L2-loss support vector classification (primal)\n"
 	"	 3 -- L2-regularized L1-loss support vector classification (dual)\n"
 	"	 4 -- support vector classification by Crammer and Singer\n"
@@ -42,12 +42,12 @@ void exit_with_help()
 	"-c cost : set the parameter C (default 1)\n"
 	"-p epsilon : set the epsilon in loss function of SVR (default 0.1)\n"
 	"-e epsilon : set tolerance of termination criterion\n"
-	"	-s 0 and 2\n" 
-	"		|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,\n" 
-	"		where f is the primal function and pos/neg are # of\n" 
+	"	-s 0 and 2\n"
+	"		|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,\n"
+	"		where f is the primal function and pos/neg are # of\n"
 	"		positive/negative data (default 0.01)\n"
 	"	-s 11\n"
-	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)\n" 
+	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)\n"
 	"	-s 1, 3, 4 and 7\n"
 	"		Dual maximal violation <= eps; similar to libsvm (default 0.1)\n"
 	"	-s 5 and 6\n"
@@ -89,7 +89,7 @@ void do_find_parameter_C(double *best_C, double *best_rate)
 	else
 		start_C = -1.0;
 	find_parameter_C(&prob, &param, nr_fold, start_C, max_C, best_C, best_rate);
-	mexPrintf("Best C = %lf  CV accuracy = %g%%\n", *best_C, 100.0**best_rate);	
+	mexPrintf("Best C = %lf  CV accuracy = %g%%\n", *best_C, 100.0**best_rate);
 }
 
 
@@ -103,8 +103,8 @@ double do_cross_validation()
 	double retval = 0.0;
 
 	cross_validation(&prob,&param,nr_fold,target);
-	if(param.solver_type == L2R_L2LOSS_SVR || 
-	   param.solver_type == L2R_L1LOSS_SVR_DUAL || 
+	if(param.solver_type == L2R_L2LOSS_SVR ||
+	   param.solver_type == L2R_L1LOSS_SVR_DUAL ||
 	   param.solver_type == L2R_L2LOSS_SVR_DUAL)
 	{
 		for(i=0;i<prob.l;i++)
@@ -261,20 +261,20 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	{
 		switch(param.solver_type)
 		{
-			case L2R_LR: 
+			case L2R_LR:
 			case L2R_L2LOSS_SVC:
 				param.eps = 0.01;
 				break;
 			case L2R_L2LOSS_SVR:
 				param.eps = 0.001;
 				break;
-			case L2R_L2LOSS_SVC_DUAL: 
-			case L2R_L1LOSS_SVC_DUAL: 
-			case MCSVM_CS: 
-			case L2R_LR_DUAL: 
+			case L2R_L2LOSS_SVC_DUAL:
+			case L2R_L1LOSS_SVC_DUAL:
+			case MCSVM_CS:
+			case L2R_LR_DUAL:
 				param.eps = 0.1;
 				break;
-			case L1R_L2LOSS_SVC: 
+			case L1R_L2LOSS_SVC:
 			case L1R_LR:
 				param.eps = 0.01;
 				break;
@@ -333,7 +333,7 @@ int read_problem_sparse(const mxArray *label_vec, const mxArray *instance_mat)
 		mexPrintf("Length of label vector does not match # of instances.\n");
 		return -1;
 	}
-	
+
 	// each column is one instance
 	labels = mxGetPr(label_vec);
 	samples = mxGetPr(instance_mat_col);
@@ -453,9 +453,9 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		if (flag_find_C)
 		{
 			double best_C, best_rate, *ptr;
-			
-			do_find_parameter_C(&best_C, &best_rate);	
-			
+
+			do_find_parameter_C(&best_C, &best_rate);
+
 			plhs[0] = mxCreateDoubleMatrix(2, 1, mxREAL);
 			ptr = mxGetPr(plhs[0]);
 			ptr[0] = best_C;

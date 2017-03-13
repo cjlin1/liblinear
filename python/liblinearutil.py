@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os, sys
-sys.path = [os.path.dirname(os.path.abspath(__file__))] + sys.path 
+sys.path = [os.path.dirname(os.path.abspath(__file__))] + sys.path
 from liblinear import *
 from liblinear import __all__ as liblinear_all
 from ctypes import c_double
@@ -153,7 +153,7 @@ def train(arg1, arg2=None, arg3=None):
 	if param.flag_find_C:
 		nr_fold = param.nr_fold
 		best_C = c_double()
-		best_rate = c_double()		
+		best_rate = c_double()
 		max_C = 1024
 		if param.flag_C_specified:
 			start_C = param.C

@@ -120,7 +120,7 @@ LIBLINEAR shared library:
 
     Show the index and the value of a node.
 
-    >>> print(node) 
+    >>> print(node)
 
 - Function: gen_feature_nodearray(xi [,feature_max=None [,issparse=True]])
 
@@ -149,7 +149,7 @@ LIBLINEAR shared library:
     x: a Python list/tuple of l data instances. Each element of x must be
        an instance of list/tuple/dictionary type.
 
-    bias: if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term 
+    bias: if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term
           added (default -1)
 
     You can also modify the bias value by
@@ -277,9 +277,9 @@ The above command loads
            structure. If '-v' is specified, cross validation is
            conducted and the returned model is just a scalar: cross-validation
            accuracy for classification and mean-squared error for regression.
-           If the '-C' option is specified, the best parameter C is found 
-	   by cross validation. The returned model is a tuple of the best C 
-	   and the corresponding cross-validation accuracy. The parameter 
+           If the '-C' option is specified, the best parameter C is found
+	   by cross validation. The returned model is a tuple of the best C
+	   and the corresponding cross-validation accuracy. The parameter
 	   selection utility is supported by only -s 0 and -s 2.
 
 
@@ -322,11 +322,11 @@ The above command loads
            squared error, and squared correlation coefficient (for
            regression).
 
-    p_vals: a list of decision values or probability estimates (if '-b 1' 
+    p_vals: a list of decision values or probability estimates (if '-b 1'
             is specified). If k is the number of classes, for decision values,
             each element includes results of predicting k binary-class
-            SVMs. If k = 2 and solver is not MCSVM_CS, only one decision value 
-            is returned. For probabilities, each element contains k values 
+            SVMs. If k = 2 and solver is not MCSVM_CS, only one decision value
+            is returned. For probabilities, each element contains k values
             indicating the probability that the testing instance is in each class.
             Note that the order of classes here is the same as 'model.label'
             field in the model structure.

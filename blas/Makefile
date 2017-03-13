@@ -1,14 +1,14 @@
 AR     = ar rcv
-RANLIB = ranlib 
+RANLIB = ranlib
 
 HEADERS = blas.h blasp.h
-FILES = dnrm2.o daxpy.o ddot.o dscal.o 
+FILES = dnrm2.o daxpy.o ddot.o dscal.o
 
-CFLAGS = $(OPTFLAGS) 
+CFLAGS = $(OPTFLAGS)
 FFLAGS = $(OPTFLAGS)
 
 blas: $(FILES) $(HEADERS)
-	$(AR) blas.a $(FILES)  
+	$(AR) blas.a $(FILES)
 	$(RANLIB) blas.a
 
 clean:

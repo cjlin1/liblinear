@@ -1187,7 +1187,7 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 	int i, s, iter = 0;
 	double *xTx = new double[l];
 	int max_iter = 1000;
-	int *index = new int[l];	
+	int *index = new int[l];
 	double *alpha = new double[2*l]; // store alpha and C - alpha
 	schar *y = new schar[l];
 	int max_inner_iter = 100; // for inner Newton
@@ -1206,7 +1206,7 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 			y[i] = -1;
 		}
 	}
-	
+
 	// Initial alpha can be set here. Note that
 	// 0 < alpha[i] < upper_bound[GETI(i)]
 	// alpha[2*i] + alpha[2*i+1] = upper_bound[GETI(i)]
