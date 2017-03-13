@@ -1,9 +1,13 @@
 #ifndef _LIBLINEAR_H
 #define _LIBLINEAR_H
 
+#define LIBLINEAR_VERSION 211
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+extern int liblinear_version;
 
 struct feature_node
 {
