@@ -2885,11 +2885,6 @@ struct model *load_model(const char *model_file_name)
 		int j;
 		for(j=0; j<nr_w; j++)
 			FSCANF(fp, "%lf ", &model_->w[i*nr_w+j]);
-		if (fscanf(fp, "\n") !=0)
-		{
-			fprintf(stderr, "ERROR: fscanf failed to read the model\n");
-			EXIT_LOAD_MODEL()
-		}
 	}
 
 	setlocale(LC_ALL, old_locale);
