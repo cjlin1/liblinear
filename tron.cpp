@@ -169,7 +169,7 @@ void TRON::tron(double *w)
 	delete[] s;
 }
 
-int TRON::trcg(double delta, double *g, double *s, double *r, bool* reach_boundary)
+int TRON::trcg(double delta, double *g, double *s, double *r, bool *reach_boundary)
 {
 	int i, inc = 1;
 	int n = fun_obj->get_nr_variable();
