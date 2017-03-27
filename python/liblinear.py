@@ -5,6 +5,17 @@ from ctypes.util import find_library
 from os import path
 import sys
 
+try:
+	import scipy
+	from scipy import sparse
+except:
+	scipy = None
+	sparse = None
+
+if sys.version_info[0] < 3:
+	range = xrange
+	from itertools import izip as zip
+
 __all__ = ['liblinear', 'feature_node', 'gen_feature_nodearray', 'problem',
            'parameter', 'model', 'toPyModel', 'L2R_LR', 'L2R_L2LOSS_SVC_DUAL',
            'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL', 'MCSVM_CS',
@@ -57,32 +68,88 @@ class feature_node(Structure):
 	def __str__(self):
 		return '%d:%g' % (self.index, self.value)
 
-def gen_feature_nodearray(xi, feature_max=None, issparse=True):
-	if isinstance(xi, dict):
-		index_range = xi.keys()
-	elif isinstance(xi, (list, tuple)):
-		xi = [0] + xi  # idx should start from 1
-		index_range = range(1, len(xi))
-	else:
-		raise TypeError('xi should be a dictionary, list or tuple')
-
+def gen_feature_nodearray(xi, feature_max=None):
 	if feature_max:
 		assert(isinstance(feature_max, int))
-		index_range = filter(lambda j: j <= feature_max, index_range)
-	if issparse:
-		index_range = filter(lambda j:xi[j] != 0, index_range)
 
-	index_range = sorted(index_range)
-	ret = (feature_node * (len(index_range)+2))()
+	xi_shift = 0 # ensure correct indices of xi
+	if scipy and isinstance(xi, tuple) and len(xi) == 2\
+			and isinstance(xi[0], scipy.ndarray) and isinstance(xi[1], scipy.ndarray): # for a sparse vector
+		index_range = xi[0] + 1 # index starts from 1
+		if feature_max:
+			index_range = index_range[scipy.where(index_range <= feature_max)]
+	elif scipy and isinstance(xi, scipy.ndarray):
+		xi_shift = 1
+		index_range = xi.nonzero()[0] + 1 # index starts from 1
+		if feature_max:
+			index_range = index_range[scipy.where(index_range <= feature_max)]
+	elif isinstance(xi, (dict, list, tuple)):
+		if isinstance(xi, dict):
+			index_range = xi.keys()
+		elif isinstance(xi, (list, tuple)):
+			xi_shift = 1
+			index_range = range(1, len(xi) + 1)
+		index_range = filter(lambda j: xi[j-xi_shift] != 0, index_range)
+
+		if feature_max:
+			index_range = filter(lambda j: j <= feature_max, index_range)
+		index_range = sorted(index_range)
+	else:
+		raise TypeError('xi should be a dictionary, list, tuple, 1-d numpy array, or tuple of (index, data)')
+
+	ret = (feature_node*(len(index_range)+2))()
 	ret[-1].index = -1 # for bias term
 	ret[-2].index = -1
-	for idx, j in enumerate(index_range):
-		ret[idx].index = j
-		ret[idx].value = xi[j]
+
+	if scipy and isinstance(xi, tuple) and len(xi) == 2\
+			and isinstance(xi[0], scipy.ndarray) and isinstance(xi[1], scipy.ndarray): # for a sparse vector
+		for idx, j in enumerate(index_range):
+			ret[idx].index = j
+			ret[idx].value = (xi[1])[idx]
+	else:
+		for idx, j in enumerate(index_range):
+			ret[idx].index = j
+			ret[idx].value = xi[j - xi_shift]
+
 	max_idx = 0
-	if index_range :
+	if len(index_range) > 0:
 		max_idx = index_range[-1]
 	return ret, max_idx
+
+try:
+	from numba import jit
+	jit_enabled = True
+except:
+	jit = lambda x: x
+	jit_enabled = False
+
+@jit
+def csr_to_problem_jit(l, x_val, x_ind, x_rowptr, prob_val, prob_ind, prob_rowptr):
+	for i in range(l):
+		b1,e1 = x_rowptr[i], x_rowptr[i+1]
+		b2,e2 = prob_rowptr[i], prob_rowptr[i+1]-2
+		for j in range(b1,e1):
+			prob_ind[j-b1+b2] = x_ind[j]+1
+			prob_val[j-b1+b2] = x_val[j]
+def csr_to_problem_nojit(l, x_val, x_ind, x_rowptr, prob_val, prob_ind, prob_rowptr):
+	for i in range(l):
+		x_slice = slice(x_rowptr[i], x_rowptr[i+1])
+		prob_slice = slice(prob_rowptr[i], prob_rowptr[i+1]-2)
+		prob_ind[prob_slice] = x_ind[x_slice]+1
+		prob_val[prob_slice] = x_val[x_slice]
+
+def csr_to_problem(x, prob):
+	# Extra space for termination node and (possibly) bias term
+	x_space = prob.x_space = scipy.empty((x.nnz+x.shape[0]*2), dtype=feature_node)
+	prob.rowptr = x.indptr.copy()
+	prob.rowptr[1:] += 2*scipy.arange(1,x.shape[0]+1)
+	prob_ind = x_space["index"]
+	prob_val = x_space["value"]
+	prob_ind[:] = -1
+	if jit_enabled:
+		csr_to_problem_jit(x.shape[0], x.data, x.indices, x.indptr, prob_val, prob_ind, prob.rowptr)
+	else:
+		csr_to_problem_nojit(x.shape[0], x.data, x.indices, x.indptr, prob_val, prob_ind, prob.rowptr)
 
 class problem(Structure):
 	_names = ["l", "n", "y", "x", "bias"]
@@ -90,24 +157,51 @@ class problem(Structure):
 	_fields_ = genFields(_names, _types)
 
 	def __init__(self, y, x, bias = -1):
-		if len(y) != len(x) :
-			raise ValueError("len(y) != len(x)")
+		if (not isinstance(y, (list, tuple))) and (not (scipy and isinstance(y, scipy.ndarray))):
+			raise TypeError("type of y: {0} is not supported!".format(type(y)))
+
+		if isinstance(x, (list, tuple)):
+			if len(y) != len(x):
+				raise ValueError("len(y) != len(x)")
+		elif scipy != None and isinstance(x, (scipy.ndarray, sparse.spmatrix)):
+			if len(y) != x.shape[0]:
+				raise ValueError("len(y) != len(x)")
+			if isinstance(x, scipy.ndarray):
+				x = scipy.ascontiguousarray(x) # enforce row-major
+			if isinstance(x, sparse.spmatrix):
+				x = x.tocsr()
+				pass
+		else:
+			raise TypeError("type of x: {0} is not supported!".format(type(x)))
 		self.l = l = len(y)
 		self.bias = -1
 
 		max_idx = 0
 		x_space = self.x_space = []
-		for i, xi in enumerate(x):
-			tmp_xi, tmp_idx = gen_feature_nodearray(xi)
-			x_space += [tmp_xi]
-			max_idx = max(max_idx, tmp_idx)
+		if scipy != None and isinstance(x, sparse.csr_matrix):
+			csr_to_problem(x, self)
+			max_idx = x.shape[1]
+		else:
+			for i, xi in enumerate(x):
+				tmp_xi, tmp_idx = gen_feature_nodearray(xi)
+				x_space += [tmp_xi]
+				max_idx = max(max_idx, tmp_idx)
 		self.n = max_idx
 
 		self.y = (c_double * l)()
-		for i, yi in enumerate(y): self.y[i] = y[i]
+		if scipy != None and isinstance(y, scipy.ndarray):
+			scipy.ctypeslib.as_array(self.y, (self.l,))[:] = y
+		else:
+			for i, yi in enumerate(y): self.y[i] = yi
 
 		self.x = (POINTER(feature_node) * l)()
-		for i, xi in enumerate(self.x_space): self.x[i] = xi
+		if scipy != None and isinstance(x, sparse.csr_matrix):
+			base = addressof(self.x_space.ctypes.data_as(POINTER(feature_node))[0])
+			x_ptr = cast(self.x, POINTER(c_uint64))
+			x_ptr = scipy.ctypeslib.as_array(x_ptr,(self.l,))
+			x_ptr[:] = self.rowptr[:-1]*sizeof(feature_node)+base
+		else:
+			for i, xi in enumerate(self.x_space): self.x[i] = xi
 
 		self.set_bias(bias)
 
@@ -121,8 +215,13 @@ class problem(Structure):
 			self.n -= 1
 			node = feature_node(-1, bias)
 
-		for xi in self.x_space:
-			xi[-2] = node
+		if isinstance(self.x_space, list):
+			for xi in self.x_space:
+				xi[-2] = node
+		else:
+			self.x_space["index"][self.rowptr[1:]-2] = node.index
+			self.x_space["value"][self.rowptr[1:]-2] = node.value
+
 		self.bias = bias
 
 
@@ -210,7 +309,7 @@ class parameter(Structure):
 			elif argv[i] == "-C":
 				self.flag_find_C = True
 
-			else :
+			else:
 				raise ValueError("Wrong options")
 			i += 1
 

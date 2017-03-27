@@ -41,6 +41,8 @@ please follow the instruction of building windows binaries in LIBLINEAR README.
 Quick Start
 ===========
 
+"Quick Start with Scipy" is in the next section.
+
 There are two levels of usage. The high-level one uses utility functions
 in liblinearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 
@@ -78,6 +80,53 @@ carefully.
 >>> m = liblinear.train(prob, param) # m is a ctype pointer to a model
 # Convert a Python-format instance to feature_nodearray, a ctypes structure
 >>> x0, max_idx = gen_feature_nodearray({1:1, 3:1})
+>>> label = liblinear.predict(m, x0)
+
+Quick Start with Scipy
+======================
+
+Make sure you have Scipy installed to proceed in this section.
+If numba (http://numba.pydata.org) is installed, some operations will be much faster.
+
+There are two levels of usage. The high-level one uses utility functions
+in liblinearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
+
+>>> import scipy
+>>> from liblinearutil import *
+# Read data in LIBSVM format
+>>> y, x = svm_read_problem('../heart_scale', return_scipy = True) # y: ndarray, x: csr_matrix
+>>> m = train(y[:200], x[:200, :], '-c 4')
+>>> p_label, p_acc, p_val = predict(y[200:], x[200:, :], m)
+
+# Construct problem in Scipy format
+# Dense data: numpy ndarray
+>>> y, x = scipy.asarray([1,-1]), scipy.asarray([[1,0,1], [-1,0,-1]])
+# Sparse data: scipy csr_matrix((data, (row_ind, col_ind))
+>>> y, x = scipy.asarray([1,-1]), scipy.sparse.csr_matrix(([1, 1, -1, -1], ([0, 0, 1, 1], [0, 2, 0, 2])))
+>>> prob  = problem(y, x)
+>>> param = parameter('-s 0 -c 4 -B 1')
+>>> m = train(prob, param)
+
+# Other utility functions
+>>> save_model('heart_scale.model', m)
+>>> m = load_model('heart_scale.model')
+>>> p_label, p_acc, p_val = predict(y, x, m, '-b 1')
+>>> ACC, MSE, SCC = evaluations(y, p_label)
+
+# Getting online help
+>>> help(train)
+
+The low-level use directly calls C interfaces imported by liblinear.py. Note that
+all arguments and return values are in ctypes format. You need to handle them
+carefully.
+
+>>> from liblinear import *
+>>> prob = problem(scipy.asarray([1,-1]), scipy.sparse.csr_matrix(([1, 1, -1, -1], ([0, 0, 1, 1], [0, 2, 0, 2]))))
+>>> param = parameter('-c 4')
+>>> m = liblinear.train(prob, param) # m is a ctype pointer to a model
+# Convert a tuple of ndarray (index, data) to feature_nodearray, a ctypes structure
+# Note that index starts from 0, though the following example will be changed to 1:1, 3:1 internally
+>>> x0, max_idx = gen_feature_nodearray((scipy.asarray([0,2]), scipy.asarray([1,1])))
 >>> label = liblinear.predict(m, x0)
 
 Design Description
@@ -122,18 +171,15 @@ LIBLINEAR shared library:
 
     >>> print(node)
 
-- Function: gen_feature_nodearray(xi [,feature_max=None [,issparse=True]])
+- Function: gen_feature_nodearray(xi [,feature_max=None])
 
-    Generate a feature vector from a Python list/tuple or a dictionary:
+    Generate a feature vector from a Python list/tuple/dictionary, numpy ndarray or tuple of (index, data):
 
-    >>> xi, max_idx = gen_feature_nodearray({1:1, 3:1, 5:-2})
+    >>> xi_ctype, max_idx = gen_feature_nodearray({1:1, 3:1, 5:-2})
 
-    xi: the returned feature_nodearray (a ctypes structure)
+    xi_ctype: the returned feature_nodearray (a ctypes structure)
 
     max_idx: the maximal feature index of xi
-
-    issparse: if issparse == True, zero feature values are removed. The default
-              value is True for the sparsity.
 
     feature_max: if feature_max is assigned, features with indices larger than
                  feature_max are removed.
@@ -144,10 +190,12 @@ LIBLINEAR shared library:
 
     >>> prob = problem(y, x [,bias=-1])
 
-    y: a Python list/tuple of l labels (type must be int/double).
+    y: a Python list/tuple/ndarray of l labels (type must be int/double).
 
-    x: a Python list/tuple of l data instances. Each element of x must be
-       an instance of list/tuple/dictionary type.
+	x: 1. a list/tuple of l training instances. Feature vector of
+	      each training instance is a list/tuple or dictionary.
+
+	   2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
 
     bias: if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term
           added (default -1)
@@ -259,10 +307,12 @@ The above command loads
     >>> model = train(prob [, 'training_options'])
     >>> model = train(prob, param)
 
-    y: a list/tuple of l training labels (type must be int/double).
+    y: a list/tuple/ndarray of l training labels (type must be int/double).
 
-    x: a list/tuple of l training instances. The feature vector of
-       each training instance is an instance of list/tuple or dictionary.
+	x: 1. a list/tuple of l training instances. Feature vector of
+	      each training instance is a list/tuple or dictionary.
+
+	   2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
 
     training_options: a string in the same form as that for LIBLINEAR command
                       mode.
@@ -304,12 +354,14 @@ The above command loads
 
     >>> p_labs, p_acc, p_vals = predict(y, x, model [,'predicting_options'])
 
-    y: a list/tuple of l true labels (type must be int/double). It is used
-       for calculating the accuracy. Use [] if true labels are
+    y: a list/tuple/ndarray of l true labels (type must be int/double).
+	   It is used for calculating the accuracy. Use [] if true labels are
        unavailable.
 
-    x: a list/tuple of l predicting instances. The feature vector of
-       each predicting instance is an instance of list/tuple or dictionary.
+	x: 1. a list/tuple of l training instances. Feature vector of
+	      each training instance is a list/tuple or dictionary.
+
+	   2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
 
     predicting_options: a string of predicting options in the same format as
                         that of LIBLINEAR.
@@ -349,11 +401,13 @@ The above command loads
     Calculate some evaluations using the true values (ty) and predicted
     values (pv):
 
-    >>> (ACC, MSE, SCC) = evaluations(ty, pv)
+    >>> (ACC, MSE, SCC) = evaluations(ty, pv, useScipy)
 
-    ty: a list of true values.
+    ty: a list/tuple/ndarray of true values.
 
-    pv: a list of predict values.
+    pv: a list/tuple/ndarray of predicted values.
+
+    useScipy: convert ty, pv to ndarray, and use scipy functions to do the evaluation
 
     ACC: accuracy.
 
