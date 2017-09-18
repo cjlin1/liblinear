@@ -2802,6 +2802,7 @@ struct model *load_model(const char *model_file_name)
 	double bias;
 	model *model_ = Malloc(model,1);
 	parameter& param = model_->param;
+	param.nr_weight = 0;
 
 	model_->label = NULL;
 
