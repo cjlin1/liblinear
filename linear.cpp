@@ -170,6 +170,27 @@ int l2r_lr_fun::get_nr_variable(void)
 	return prob->n;
 }
 
+void l2r_lr_fun::get_diagH(double *M)
+{
+	int i;
+	int l = prob->l;
+	int w_size=get_nr_variable();
+	feature_node **x = prob->x;
+
+	for (i=0; i<w_size; i++)
+		M[i] = 1;
+
+	for (i=0; i<l; i++)
+	{
+		feature_node *s = x[i];
+		while (s->index!=-1)
+		{
+			M[s->index-1] += s->value*s->value*C[i]*D[i];
+			s++;
+		}
+	}
+}
+
 void l2r_lr_fun::Hv(double *s, double *Hs)
 {
 	int i;
@@ -190,27 +211,6 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	}
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + Hs[i];
-}
-
-void l2r_lr_fun::get_diagH(double *M)
-{
-	int i;
-	int l = prob->l;
-	int w_size=get_nr_variable();
-	feature_node **x = prob->x;
-
-	for (i=0; i<w_size; i++)
-		M[i] = 1;
-
-	for (i=0; i<l; i++)
-	{
-		feature_node *s = x[i];
-		while (s->index!=-1)
-		{
-			M[s->index-1] += s->value*s->value*C[i]*D[i];
-			s++;
-		}
-	}
 }
 
 void l2r_lr_fun::Xv(double *v, double *Xv)
