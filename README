@@ -576,7 +576,7 @@ VC++ or where it is installed.
 
 nmake -f Makefile.win clean all
 
-3. (optional) To build shared library libsvm.dll, type
+3. (optional) To build shared library liblinear.dll, type
 
 nmake -f Makefile.win lib
 
