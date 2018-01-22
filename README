@@ -19,7 +19,6 @@ Table of Contents
 - `predict' Usage
 - Examples
 - Library Usage
-- Building Windows Binaries
 - Additional Information
 - MATLAB/OCTAVE interface
 - PYTHON interface
@@ -75,22 +74,29 @@ sparse data, use `-l 0' to keep the sparsity.
 Installation
 ============
 
-On Unix systems, type `make' to build the `train' and `predict'
-programs. Run them without arguments to show the usages.
+Required libraries:
+* libboost-regex-dev
+* libboost-program-options-dev
+* libboost-system-dev
+* libboost-filesystem-dev
 
-On other systems, consult `Makefile' to build them (e.g., see
-'Building Windows binaries' in this file) or use the pre-built
-binaries (Windows binaries are in the directory `windows').
+Create and enter into a build folder:
 
-This software uses some level-1 BLAS subroutines. The needed functions are
-included in this package.  If a BLAS library is available on your
-machine, you may use it by modifying the Makefile: Unmark the following line
+```bash
+mkdir build && cd build
+```
 
-        #LIBS ?= -lblas
+Run cmake to generate the make files:
+```bash
+cmake ../ -DCMAKE_BUILD_TYPE=Release
+```
 
-and mark
+Or use the cmake gui (e.g. ccmake) to set manually the build variables e.g.:
+```bash
+ccmake ../
+```
 
-        LIBS ?= blas/blas.a
+Be aware that if a conda environment is active it may prevent the system to build (if gcc is installed into conda but not all the other dependecies). The python program may have problems running on conda if the version of libgomp into conda is not the same used for building the linear library. 
 
 `train' Usage
 =============
@@ -551,28 +557,6 @@ Library Usage
     Users can specify their output format by a function. Use
         set_print_string_function(NULL); 
     for default printing to stdout.
-
-Building Windows Binaries
-=========================
-
-Windows binaries are in the directory `windows'. To build them via
-Visual C++, use the following steps:
-
-1. Open a dos command box and change to liblinear directory. If
-environment variables of VC++ have not been set, type
-
-""C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\amd64\vcvars64.bat""
-
-You may have to modify the above command according which version of
-VC++ or where it is installed.
-
-2. Type
-
-nmake -f Makefile.win clean all
-
-2. (Optional) To build 32-bit windows binaries, you must
-	(1) Setup "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\vcvars32.bat" instead of vcvars64.bat
-	(2) Change CFLAGS in Makefile.win: /D _WIN64 to /D _WIN32
 
 MATLAB/OCTAVE Interface
 =======================
