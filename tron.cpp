@@ -103,17 +103,16 @@ void TRON::tron(double *w)
 	if (gnorm <= eps*gnorm0)
 		search = 0;
 
-	iter = 1;
+	fun_obj->get_diagH(M);
+	for(i=0; i<n; i++)
+		M[i] = (1-alpha_pcg) + alpha_pcg*M[i];
+	delta = sqrt(uTMv(n, g, M, g));
 
 	double *w_new = new double[n];
 	bool reach_boundary;
+	bool delta_adjusted = false;
 	while (iter <= max_iter && search)
 	{
-		fun_obj->get_diagH(M);
-		for(i=0; i<n; i++)
-			M[i] = (1-alpha_pcg) + alpha_pcg*M[i];
-		if (iter == 1)
-			delta = sqrt(uTMv(n, g, M, g));
 		cg_iter = trpcg(delta, g, M, s, r, &reach_boundary);
 
 		memcpy(w_new, w, sizeof(double)*n);
@@ -128,8 +127,11 @@ void TRON::tron(double *w)
 
 		// On the first iteration, adjust the initial step bound.
 		sMnorm = sqrt(uTMv(n, s, M, s));
-		if (iter == 1)
+		if (iter == 1 && !delta_adjusted)
+		{
 			delta = min(delta, sMnorm);
+			delta_adjusted = true;
+		}
 
 		// Compute prediction alpha*sMnorm of the step.
 		if (fnew - f - gs <= 0)
@@ -160,6 +162,9 @@ void TRON::tron(double *w)
 			memcpy(w, w_new, sizeof(double)*n);
 			f = fnew;
 			fun_obj->grad(w, g);
+			fun_obj->get_diagH(M);
+			for(i=0; i<n; i++)
+				M[i] = (1-alpha_pcg) + alpha_pcg*M[i];
 
 			gnorm = dnrm2_(&n, g, &inc);
 			if (gnorm <= eps*gnorm0)
