@@ -2792,14 +2792,14 @@ int save_model(const char *model_file_name, const struct model *model_)
 
 	fprintf(fp, "nr_feature %d\n", nr_feature);
 
-	fprintf(fp, "bias %.16g\n", model_->bias);
+	fprintf(fp, "bias %.17g\n", model_->bias);
 
 	fprintf(fp, "w\n");
 	for(i=0; i<w_size; i++)
 	{
 		int j;
 		for(j=0; j<nr_w; j++)
-			fprintf(fp, "%.16g ", model_->w[i*nr_w+j]);
+			fprintf(fp, "%.17g ", model_->w[i*nr_w+j]);
 		fprintf(fp, "\n");
 	}
 
