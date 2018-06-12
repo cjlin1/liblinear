@@ -47,7 +47,7 @@ def svm_read_problem(data_file_name, return_scipy=False):
 			xi = {}
 			for e in features.split():
 				ind, val = e.split(":")
-				if val != 0:
+				if float(val) != 0:
 					xi[int(ind)] = float(val)
 			prob_x += [xi]
 	if scipy != None and return_scipy:
