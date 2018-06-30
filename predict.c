@@ -145,7 +145,7 @@ void do_predict(FILE *input, FILE *output)
 		else
 		{
 			predict_label = predict(model_,x);
-			fprintf(output,"%g\n",predict_label);
+			fprintf(output,"%.17g\n",predict_label);
 		}
 
 		if(predict_label == target_label)
