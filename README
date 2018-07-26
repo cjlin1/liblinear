@@ -17,6 +17,7 @@ Table of Contents
 - Installation
 - `train' Usage
 - `predict' Usage
+- `svm-scale' Usage
 - Examples
 - Library Usage
 - Building Windows Binaries
@@ -75,8 +76,8 @@ sparse data, use `-l 0' to keep the sparsity.
 Installation
 ============
 
-On Unix systems, type `make' to build the `train' and `predict'
-programs. Run them without arguments to show the usages.
+On Unix systems, type `make' to build the `train', `predict',
+and `svm-scale' programs. Run them without arguments to show the usages.
 
 On other systems, consult `Makefile' to build them (e.g., see
 'Building Windows binaries' in this file) or use the pre-built
@@ -91,6 +92,8 @@ machine, you may use it by modifying the Makefile: Unmark the following line
 and mark
 
         LIBS ?= blas/blas.a
+
+The tool `svm-scale', borrowed from LIBSVM, is for scaling input data file.
 
 `train' Usage
 =============
@@ -232,6 +235,11 @@ options:
 
 Note that -b is only needed in the prediction phase. This is different
 from the setting of LIBSVM.
+
+`svm-scale' Usage
+=================
+
+See LIBSVM README.
 
 Examples
 ========
@@ -437,7 +445,7 @@ in linear.h, so you can check the version number.
 
 - Function: void find_parameter_C(const struct problem *prob,
             const struct parameter *param, int nr_fold, double start_C,
-	    double max_C, double *best_C, double *best_rate);
+            double max_C, double *best_C, double *best_rate);
 
     This function is similar to cross_validation. However, instead of
     conducting cross validation under a specified parameter C, it
@@ -581,8 +589,8 @@ nmake -f Makefile.win clean all
 nmake -f Makefile.win lib
 
 4. (Optional) To build 32-bit windows binaries, you must
-	(1) Setup "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\vcvars32.bat" instead of vcvars64.bat
-	(2) Change CFLAGS in Makefile.win: /D _WIN64 to /D _WIN32
+        (1) Setup "C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\vcvars32.bat" instead of vcvars64.bat
+        (2) Change CFLAGS in Makefile.win: /D _WIN64 to /D _WIN32
 
 MATLAB/OCTAVE Interface
 =======================

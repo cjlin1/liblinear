@@ -108,6 +108,11 @@ in liblinearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 >>> param = parameter('-s 0 -c 4 -B 1')
 >>> m = train(prob, param)
 
+# Apply data scaling in Scipy format
+>>> y, x = svm_read_problem('../heart_scale', return_scipy=True)
+>>> scale_param = csr_find_scale_param(x, lower=0)
+>>> scaled_x = csr_scale(x, scale_param)
+
 # Other utility functions
 >>> save_model('heart_scale.model', m)
 >>> m = load_model('heart_scale.model')
@@ -193,10 +198,10 @@ LIBLINEAR shared library:
 
     y: a Python list/tuple/ndarray of l labels (type must be int/double).
 
-	x: 1. a list/tuple of l training instances. Feature vector of
-	      each training instance is a list/tuple or dictionary.
+    x: 1. a list/tuple of l training instances. Feature vector of
+          each training instance is a list/tuple or dictionary.
 
-	   2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
+       2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
 
     bias: if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term
           added (default -1)
@@ -310,10 +315,10 @@ The above command loads
 
     y: a list/tuple/ndarray of l training labels (type must be int/double).
 
-	x: 1. a list/tuple of l training instances. Feature vector of
-	      each training instance is a list/tuple or dictionary.
+    x: 1. a list/tuple of l training instances. Feature vector of
+          each training instance is a list/tuple or dictionary.
 
-	   2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
+       2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
 
     training_options: a string in the same form as that for LIBLINEAR command
                       mode.
@@ -356,13 +361,13 @@ The above command loads
     >>> p_labs, p_acc, p_vals = predict(y, x, model [,'predicting_options'])
 
     y: a list/tuple/ndarray of l true labels (type must be int/double).
-	   It is used for calculating the accuracy. Use [] if true labels are
+       It is used for calculating the accuracy. Use [] if true labels are
        unavailable.
 
-	x: 1. a list/tuple of l training instances. Feature vector of
-	      each training instance is a list/tuple or dictionary.
+    x: 1. a list/tuple of l training instances. Feature vector of
+          each training instance is a list/tuple or dictionary.
 
-	   2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
+       2. an l * n numpy ndarray or scipy spmatrix (n: number of features).
 
     predicting_options: a string of predicting options in the same format as
                         that of LIBLINEAR.
@@ -399,7 +404,7 @@ The above command loads
 
 - Function: evaluations
 
-    Calculate some evaluations using the true values (ty) and predicted
+    Calculate some evaluations using the true values (ty) and the predicted
     values (pv):
 
     >>> (ACC, MSE, SCC) = evaluations(ty, pv, useScipy)
@@ -416,6 +421,26 @@ The above command loads
 
     SCC: squared correlation coefficient.
 
+- Function: csr_find_scale_parameter/csr_scale
+
+    Scale data in csr format.
+
+    >>> param = csr_find_scale_param(x [, lower=l, upper=u])
+    >>> x = csr_scale(x, param)
+
+    x: a csr_matrix of data.
+
+    l: x scaling lower limit; default -1.
+
+    u: x scaling upper limit; default 1.
+
+    The scaling process is: x * diag(coef) + ones(l, 1) * offset'
+
+    param: a dictionary of scaling parameters, where param['coef'] = coef and param['offset'] = offset.
+
+    coef: a scipy array of scaling coefficients.
+
+    offset: a scipy array of scaling offsets.
 
 Additional Information
 ======================
