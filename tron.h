@@ -9,7 +9,7 @@ public:
 	virtual void Hv(double *s, double *Hs) = 0 ;
 
 	virtual int get_nr_variable(void) = 0 ;
-	virtual void get_diagH(double *M) = 0 ;
+	virtual void get_diag_preconditioner(double *M) = 0 ;
 	virtual ~function(void){}
 };
 

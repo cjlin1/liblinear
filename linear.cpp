@@ -91,7 +91,7 @@ public:
 	void Hv(double *s, double *Hs);
 
 	int get_nr_variable(void);
-	void get_diagH(double *M);
+	void get_diag_preconditioner(double *M);
 
 private:
 	void Xv(double *v, double *Xv);
@@ -170,7 +170,7 @@ int l2r_lr_fun::get_nr_variable(void)
 	return prob->n;
 }
 
-void l2r_lr_fun::get_diagH(double *M)
+void l2r_lr_fun::get_diag_preconditioner(double *M)
 {
 	int i;
 	int l = prob->l;
@@ -247,7 +247,7 @@ public:
 	void Hv(double *s, double *Hs);
 
 	int get_nr_variable(void);
-	void get_diagH(double *M);
+	void get_diag_preconditioner(double *M);
 
 protected:
 	void Xv(double *v, double *Xv);
@@ -327,7 +327,7 @@ int l2r_l2_svc_fun::get_nr_variable(void)
 	return prob->n;
 }
 
-void l2r_l2_svc_fun::get_diagH(double *M)
+void l2r_l2_svc_fun::get_diag_preconditioner(double *M)
 {
 	int i;
 	int w_size=get_nr_variable();

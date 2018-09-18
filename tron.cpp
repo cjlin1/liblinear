@@ -103,7 +103,7 @@ void TRON::tron(double *w)
 	if (gnorm <= eps*gnorm0)
 		search = 0;
 
-	fun_obj->get_diagH(M);
+	fun_obj->get_diag_preconditioner(M);
 	for(i=0; i<n; i++)
 		M[i] = (1-alpha_pcg) + alpha_pcg*M[i];
 	delta = sqrt(uTMv(n, g, M, g));
@@ -162,7 +162,7 @@ void TRON::tron(double *w)
 			memcpy(w, w_new, sizeof(double)*n);
 			f = fnew;
 			fun_obj->grad(w, g);
-			fun_obj->get_diagH(M);
+			fun_obj->get_diag_preconditioner(M);
 			for(i=0; i<n; i++)
 				M[i] = (1-alpha_pcg) + alpha_pcg*M[i];
 
