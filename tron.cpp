@@ -217,8 +217,9 @@ int TRON::trpcg(double delta, double *g, double *M, double *s, double *r, bool *
 	zTr = ddot_(&n, z, &inc, r, &inc);
 	cgtol = eps_cg*sqrt(zTr);
 	int cg_iter = 0;
+	int max_cg_iter = max(n, 5);
 
-	while (1)
+	while (cg_iter < max_cg_iter)
 	{
 		if (sqrt(zTr) <= cgtol)
 			break;
@@ -262,6 +263,9 @@ int TRON::trpcg(double delta, double *g, double *M, double *s, double *r, bool *
 		zTr = znewTrnew;
 	}
 
+	if (cg_iter == max_cg_iter)
+		info("WARNING: reaching maximal number of CG steps\n");
+	
 	delete[] d;
 	delete[] Hd;
 	delete[] z;
