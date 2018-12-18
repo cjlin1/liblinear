@@ -12,6 +12,9 @@ from ctypes import c_double
 if sys.version_info[0] < 3:
 	range = xrange
 	from itertools import izip as zip
+	_cstr = lambda s: s.encode("utf-8") if isinstance(s,unicode) else str(s)
+else:
+	_cstr = lambda s: bytes(s, "utf-8")        
 
 __all__ = ['load_model', 'save_model', 'train', 'predict'] + liblinear_all + common_all
 
@@ -22,7 +25,7 @@ def load_model(model_file_name):
 
 	Load a LIBLINEAR model from model_file_name and return.
 	"""
-	model = liblinear.load_model(model_file_name.encode())
+	model = liblinear.load_model(_cstr(model_file_name))
 	if not model:
 		print("can't open model file %s" % model_file_name)
 		return None
@@ -35,7 +38,7 @@ def save_model(model_file_name, model):
 
 	Save a LIBLINEAR model to the file model_file_name.
 	"""
-	liblinear.save_model(model_file_name.encode(), model)
+	liblinear.save_model(_cstr(model_file_name), model)
 
 def train(arg1, arg2=None, arg3=None):
 	"""
