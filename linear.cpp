@@ -1400,7 +1400,7 @@ static void solve_l1r_l2_svc(
 	double Gmax_new, Gnorm1_new;
 	double Gnorm1_init = -1.0; // Gnorm1_init is initialized at the first iteration
 	double d_old, d_diff;
-	double loss_old, loss_new;
+	double loss_old = 0, loss_new;
 	double appxcond, cond;
 
 	int *index = new int[w_size];
