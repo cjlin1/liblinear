@@ -2713,12 +2713,14 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 	*best_p = -1;
 	if(param->solver_type == L2R_LR || param->solver_type == L2R_L2LOSS_SVC)
 	{
-		if( start_C <= 0)
+		if(start_C <= 0)
 			start_C = calc_start_C(prob, &param_tmp);
 		double max_C = 1024;
+		start_C = min(start_C, max_C);		
 		double best_C_tmp, best_score_tmp;
-        start_C = min(start_C, max_C);
+		
 		find_parameter_C(prob, &param_tmp, start_C, max_C, &best_C_tmp, &best_score_tmp, fold_start, perm, subprob, nr_fold);
+		
 		*best_C = best_C_tmp;
 		*best_score = best_score_tmp;
 	}
@@ -2735,14 +2737,16 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 		for(; i >= 0; i--)
 		{
 			param_tmp.p = i*max_p/num_p_steps;
-      double start_C_tmp;
-			if( start_C <= 0)
+			double start_C_tmp;
+			if(start_C <= 0)
 				start_C_tmp = calc_start_C(prob, &param_tmp);
 			else
 				start_C_tmp = start_C;
-			double best_C_tmp, best_score_tmp;
 			start_C_tmp = min(start_C_tmp, max_C);
+			double best_C_tmp, best_score_tmp;
+			
 			find_parameter_C(prob, &param_tmp, start_C_tmp, max_C, &best_C_tmp, &best_score_tmp, fold_start, perm, subprob, nr_fold);
+			
 			if(best_score_tmp < *best_score)
 			{
 				*best_p = param_tmp.p;
