@@ -122,7 +122,7 @@ options:
 		where f is the primal function and pos/neg are # of
 		positive/negative data (default 0.01)
 	-s 11
-		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)
+		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.0001)
 	-s 1, 3, 4 and 7
 		Dual maximal violation <= eps; similar to libsvm (default 0.1)
 	-s 5 and 6
@@ -134,15 +134,16 @@ options:
 -B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)
 -wi weight: weights adjust the parameter C of different classes (see README for details)
 -v n: n-fold cross validation mode
--C : find parameter C (only for -s 0 and 2)
+-C : find parameters (C for -s 0, 2 and C, p for -s 11)
 -q : quiet mode (no outputs)
 
 Option -v randomly splits the data into n parts and calculates cross
 validation accuracy on them.
 
-Option -C conducts cross validation under different C values and finds
-the best one. This options is supported only by -s 0 and -s 2. If
-the solver is not specified, -s 2 is used.
+Option -C conducts cross validation under different parameters and finds
+the best one. This option is supported only by -s 0, -s 2 (for finding 
+C) and -s 11 (for finding C, p). If the solver is not specified, -s 2 
+is used.
 
 Formulations:
 
@@ -270,13 +271,15 @@ use the selected C to train the data for getting a model.
 > train -C -s 0 -v 3 -c 0.5 -e 0.0001 data_file
 
 For parameter selection by -C, users can specify other
-solvers (currently -s 0 and -s 2 are supported) and
+solvers (currently -s 0, -s 2 and -s 11 are supported) and
 different number of CV folds. Further, users can use
 the -c option to specify the smallest C value of the
-search range. This setting is useful when users want
-to rerun the parameter selection procedure from a
-specified C under a different setting, such as a stricter
-stopping tolerance -e 0.0001 in the above example.
+search range. This option is useful when users want to 
+rerun the parameter selection procedure from a specified
+C under a different setting, such as a stricter stopping
+tolerance -e 0.0001 in the above example. Similarly, for
+-s 11, users can use the -p option to specify the 
+maximal p value of the search range. 
 
 > train -c 10 -w1 2 -w2 5 -w3 2 four_class_data_file
 
@@ -446,21 +449,33 @@ in linear.h, so you can check the version number.
 
     The format of prob is same as that for train().
 
-- Function: void find_parameter_C(const struct problem *prob,
+- Function: void find_parameters(const struct problem *prob,
             const struct parameter *param, int nr_fold, double start_C,
-            double max_C, double *best_C, double *best_rate);
+            double start_p, double *best_C, double *best_p, double *best_score);
 
     This function is similar to cross_validation. However, instead of
-    conducting cross validation under a specified parameter C, it
+    conducting cross validation under specified parameters. For -s 0, 2, it
     conducts cross validation many times under parameters C = start_C,
     2*start_C, 4*start_C, 8*start_C, ..., and finds the best one with
-    the highest cross validation accuracy.
+    the highest cross validation accuracy. For -s 11, it conducts cross
+    validation many times with a two-fold loop. The outer loop considers a 
+    default sequence of p = 19/20*max_p, ..., 1/20*max_p, 0 and
+    under each p value the inner loop considers a sequence of parameters 
+    C = start_C, 2*start_C, 4*start_C, ..., and finds the best one with the
+    lowest mean squared error.
 
     If start_C <= 0, then this procedure calculates a small enough C
     for prob as the start_C. The procedure stops when the models of
-    all folds become stable or C reaches max_C. The best C and the
-    corresponding accuracy are assigned to *best_C and *best_rate,
-    respectively.
+    all folds become stable or C reaches max_C.
+
+    If start_p <= 0, then this procedure calculates a maximal p for prob as
+    the start_p. Otherwise, the procedure starts with the first 
+    i/20*max_p <= start_p so the outer sequence is i/20*max_p, 
+    (i-1)/20*max_p, ..., 0.
+    
+    The best C, the best p, and the corresponding accuracy (or MSE) are 
+    assigned to *best_C, *best_p and *best_score, respectively. For 
+    classification, *best_p is not used, and the returned value is -1.
 
 - Function: double predict(const model *model_, const feature_node *x);
 

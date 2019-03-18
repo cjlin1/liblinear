@@ -82,7 +82,7 @@ def train(arg1, arg2=None, arg3=None):
 				|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,
 				where f is the primal function, (default 0.01)
 			-s 11
-				|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)
+				|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.0001)
 			-s 1, 3, 4, and 7
 				Dual maximal violation <= eps; similar to liblinear (default 0.)
 			-s 5 and 6
@@ -94,6 +94,7 @@ def train(arg1, arg2=None, arg3=None):
 		-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)
 		-wi weight: weights adjust the parameter C of different classes (see README for details)
 		-v n: n-fold cross validation mode
+		"-C : find parameters (C for -s 0, 2 and C, p for -s 11)\n"
 		-q : quiet mode (no outputs)
 	"""
 	prob, param = None, None
@@ -117,18 +118,25 @@ def train(arg1, arg2=None, arg3=None):
 	if err_msg :
 		raise ValueError('Error: %s' % err_msg)
 
-	if param.flag_find_C:
+	if param.flag_find_parameters:
 		nr_fold = param.nr_fold
 		best_C = c_double()
-		best_rate = c_double()
-		max_C = 1024
+		best_p = c_double()
+		best_score = c_double()
 		if param.flag_C_specified:
 			start_C = param.C
 		else:
 			start_C = -1.0
-		liblinear.find_parameter_C(prob, param, nr_fold, start_C, max_C, best_C, best_rate)
-		print("Best C = %lf  CV accuracy = %g%%\n"% (best_C.value, 100.0*best_rate.value))
-		return best_C.value,best_rate.value
+		if param.flag_p_specified:
+			start_p = param.p
+		else:
+			start_p = -1.0
+		liblinear.find_parameters(prob, param, nr_fold, start_C, start_p, best_C, best_p, best_score)
+		if param.solver_type in [L2R_LR, L2R_L2LOSS_SVC]:
+			print("Best C = %g  CV accuracy = %g%%\n"% (best_C.value, 100.0*best_score.value))
+		elif param.solver_type in [L2R_L2LOSS_SVR]:
+			print("Best C = %g Best p = %g  CV MSE = %g\n"% (best_C.value, best_p.value, best_score.value))
+		return best_C.value,best_p.value,best_score.value
 
 
 	elif param.flag_cross_validation:
