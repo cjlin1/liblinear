@@ -94,7 +94,7 @@ def train(arg1, arg2=None, arg3=None):
 		-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)
 		-wi weight: weights adjust the parameter C of different classes (see README for details)
 		-v n: n-fold cross validation mode
-		-C : find parameters (C for -s 0, 2 and C, p for -s 11)\n
+		-C : find parameters (C for -s 0, 2 and C, p for -s 11)
 		-q : quiet mode (no outputs)
 	"""
 	prob, param = None, None
