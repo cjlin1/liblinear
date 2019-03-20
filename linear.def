@@ -19,4 +19,4 @@ EXPORTS
     get_decfun_coef @17
     get_decfun_bias @18
     check_regression_model  @19
-    find_parameter_C @20
+    find_parameters @20
