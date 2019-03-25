@@ -58,11 +58,11 @@ int myrand() {
 	// so in MS Visual Studio we need to call rand() several times to always ensure the same random number range than in Linux GCC
 	if (std::numeric_limits<int>::max() == 0x7FFFFFFF) {
 		// make a 31bit random number by using several 15bit rand()
-		return ((rand() << 16) + (rand() << 1) + (rand() >> 14));
+		return ( ( (__int32)rand() << 16) + ( (__int32)rand() << 1) + ( (__int32)rand() >> 14) );
 	}
 	else if (std::numeric_limits<int>::max() == 0x7FFFFFFFFFFFFFFF) {
 		// make a 63bit random number by using several 15bit rand()
-		return ((rand() << 48) + (rand() << 33) + (rand() << 18) + (rand() << 3) + (rand() >> 12));
+		return ( ( (__int64)rand() << 48) + ( (__int64)rand() << 33) + ( (__int64)rand() << 18) + ( (__int64)rand() << 3) + ( (__int64)rand() >> 12) );
 	}
 	else {
 		//fallback - should never happen on 32 or 64 bits systems
@@ -85,11 +85,11 @@ const char *check_rand_fixed()
 	int verif;
 	// perform the same operation than in myrand()
 	if (std::numeric_limits<int>::max() == 0x7FFFFFFF) {
-		verif = ((maxRandWindows << 16) + (maxRandWindows << 1) + (maxRandWindows >> 14));
+		verif = ( ( (__int32)maxRandWindows << 16) + ( (__int32)maxRandWindows << 1) + ( (__int32)maxRandWindows >> 14));
 	}
 	else if (std::numeric_limits<int>::max() == 0x7FFFFFFFFFFFFFFF) {
 		// a priori will never be used as int have the same size on 32 and 64 bit systems
-		verif = ((maxRandWindows << 48) + (maxRandWindows << 33) + (maxRandWindows << 18) + (maxRandWindows << 3) + (maxRandWindows >> 12));
+		verif = ( ( (__int64)maxRandWindows << 48) + ( (__int64)maxRandWindows << 33) + ( (__int64)maxRandWindows << 18) + ( (__int64)maxRandWindows << 3) + ( (__int64)maxRandWindows >> 12));
 	}
 	if (std::numeric_limits<int>::max() != verif) {
 		info("\nMaximum integer value on your system is : %d \n", std::numeric_limits<int>::max());
