@@ -7,7 +7,6 @@
 #include "linear.h"
 #include "tron.h"
 #include <climits>
-#include <random>
 int liblinear_version = LIBLINEAR_VERSION;
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
