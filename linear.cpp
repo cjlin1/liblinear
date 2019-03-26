@@ -6,6 +6,7 @@
 #include <locale.h>
 #include "linear.h"
 #include "tron.h"
+#include <climits>
 int liblinear_version = LIBLINEAR_VERSION;
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
@@ -45,6 +46,62 @@ static void info(const char *fmt,...)
 #else
 static void info(const char *fmt,...) {}
 #endif
+
+// New function to ensure the same behaviour for random number generation on windows and linux
+inline int myrand() {
+// In MS Visual Studio (2012) RAND_MAX = 0x7FFF (15bit) = 32767
+// In Linux GCC (4.6) 32bits RAND_MAX = 0x7FFFFFFF (31bit) = 2147483647
+// In Linux GCC (4.6) 64bits RAND_MAX = 0x7FFFFFFFFFFFFFFF (63 bits) = 9223372036854775807
+// so in MS Visual Studio we need to call rand() several times to always ensure the same random number range than in Linux GCC
+#if RAND_MAX != INT_MAX
+    #if INT_MAX == 0x7FFFFFFF
+    // make a 31bit random number by using several 15bit rand()
+    // info("Fixing random number generator for 32 bits ints. RAND_MAX=%d INT_MAX=%d\n", RAND_MAX, INT_MAX);
+	return ( (__int32)rand() << 16) + ( (__int32)rand() << 1) + ( (__int32)rand() >> 14);
+    #elif INT_MAX == 0x7FFFFFFFFFFFFFFF
+    // make a 63bit random number by using several 15bit rand()
+    // info("Fixing random number generator for 64 bits ints. RAND_MAX=%d INT_MAX=%d\n", RAND_MAX, INT_MAX);
+    return ( ( (__int64)rand() << 48) + ( (__int64)rand() << 33) + ( (__int64)rand() << 18) + ( (__int64)rand() << 3) + ( (__int64)rand() >> 12) );
+	#else
+    //fallback - should never happen on 32 or 64 bits windows systems
+    info("Random number generator is not fixed for this system. Please report issue. RAND_MAX=%d INT_MAX=%d\n", RAND_MAX, INT_MAX);
+    exit(1);
+	#endif
+#else
+	// In Linux GCC (4.6) 32bits RAND_MAX = 0x7FFFFFFF (31bit) or 64bits RAND_MAX = 0x7FFFFFFFFFFFFFFF (63 bits)
+	// nothing special to do
+	return rand();
+#endif
+}
+
+// For auto-check at startup
+const char *check_rand_fixed() {
+	//info("\nMaximum integer value on your system is : %d \n", std::numeric_limits<int>::max());
+	int maxRandWindows = 0x7FFF;
+	int verif;
+	// perform the same operation than in myrand()
+#if RAND_MAX != INT_MAX
+    #if INT_MAX == 0x7FFFFFFF
+	verif = ( (__int32)maxRandWindows << 16) + ( (__int32)maxRandWindows << 1) + ( (__int32)maxRandWindows >> 14);
+	#elif INT_MAX == 0x7FFFFFFFFFFFFFFF
+	// a priori will never be used as int have the same size on 32 and 64 bit systems
+	verif = ( (__int64)maxRandWindows << 48) + ( (__int64)maxRandWindows << 33) + ( (__int64)maxRandWindows << 18) + ( (__int64)maxRandWindows << 3) + ( (__int64)maxRandWindows >> 12);
+	#else
+	return "This error should never happen - please report\n";
+	#endif
+	if (INT_MAX != verif) {
+		info("\nMaximum integer value on your system is : %d \n", INT_MAX);
+		info("Our fix provides a maximum random number value of : %d \n", verif);
+		return "Random number fix was unable to work for your system/arch";
+	}
+	else {
+		return NULL;
+	}
+#else
+    return NULL;
+#endif
+}
+
 class sparse_operator
 {
 public:
@@ -625,7 +682,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 		double stopping = -INF;
 		for(i=0;i<active_size;i++)
 		{
-			int j = i+rand()%(active_size-i);
+			int j = i+myrand()%(active_size-i);
 			swap(index[i], index[j]);
 		}
 		for(s=0;s<active_size;s++)
@@ -883,7 +940,7 @@ static void solve_l2r_l1l2_svc(
 
 		for (i=0; i<active_size; i++)
 		{
-			int j = i+rand()%(active_size-i);
+			int j = i+myrand()%(active_size-i);
 			swap(index[i], index[j]);
 		}
 
@@ -1074,7 +1131,7 @@ static void solve_l2r_l1l2_svr(
 
 		for(i=0; i<active_size; i++)
 		{
-			int j = i+rand()%(active_size-i);
+			int j = i+myrand()%(active_size-i);
 			swap(index[i], index[j]);
 		}
 
@@ -1275,7 +1332,7 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 	{
 		for (i=0; i<l; i++)
 		{
-			int j = i+rand()%(l-i);
+			int j = i+myrand()%(l-i);
 			swap(index[i], index[j]);
 		}
 		int newton_iter = 0;
@@ -1446,7 +1503,7 @@ static void solve_l1r_l2_svc(
 
 		for(j=0; j<active_size; j++)
 		{
-			int i = j+rand()%(active_size-j);
+			int i = j+myrand()%(active_size-j);
 			swap(index[i], index[j]);
 		}
 
@@ -1813,7 +1870,7 @@ static void solve_l1r_lr(
 
 			for(j=0; j<QP_active_size; j++)
 			{
-				int i = j+rand()%(QP_active_size-j);
+				int i = j+myrand()%(QP_active_size-j);
 				swap(index[i], index[j]);
 			}
 
@@ -2612,7 +2669,7 @@ void cross_validation(const problem *prob, const parameter *param, int nr_fold, 
 	for(i=0;i<l;i++) perm[i]=i;
 	for(i=0;i<l;i++)
 	{
-		int j = i+rand()%(l-i);
+		int j = i+myrand()%(l-i);
 		swap(perm[i],perm[j]);
 	}
 	for(i=0;i<=nr_fold;i++)
@@ -2675,7 +2732,7 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 	for(i=0;i<l;i++) perm[i]=i;
 	for(i=0;i<l;i++)
 	{
-		int j = i+rand()%(l-i);
+		int j = i+myrand()%(l-i);
 		swap(perm[i],perm[j]);
 	}
 	for(i=0;i<=nr_fold;i++)
@@ -2716,11 +2773,11 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 		if(start_C <= 0)
 			start_C = calc_start_C(prob, &param_tmp);
 		double max_C = 1024;
-		start_C = min(start_C, max_C);		
+		start_C = min(start_C, max_C);
 		double best_C_tmp, best_score_tmp;
-		
+
 		find_parameter_C(prob, &param_tmp, start_C, max_C, &best_C_tmp, &best_score_tmp, fold_start, perm, subprob, nr_fold);
-		
+
 		*best_C = best_C_tmp;
 		*best_score = best_score_tmp;
 	}
@@ -2744,9 +2801,9 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 				start_C_tmp = start_C;
 			start_C_tmp = min(start_C_tmp, max_C);
 			double best_C_tmp, best_score_tmp;
-			
+
 			find_parameter_C(prob, &param_tmp, start_C_tmp, max_C, &best_C_tmp, &best_score_tmp, fold_start, perm, subprob, nr_fold);
-			
+
 			if(best_score_tmp < *best_score)
 			{
 				*best_p = param_tmp.p;
@@ -2961,7 +3018,7 @@ struct model *load_model(const char *model_file_name)
 	// parameters for training only won't be assigned, but arrays are assigned as NULL for safety
 	param.nr_weight = 0;
 	param.weight_label = NULL;
-	param.weight = NULL;	
+	param.weight = NULL;
 	param.init_sol = NULL;
 
 	model_->label = NULL;

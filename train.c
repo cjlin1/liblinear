@@ -101,6 +101,16 @@ double bias;
 
 int main(int argc, char **argv)
 {
+
+	// Auto-check random number generator fix at startup
+	const char *error_msg_rand;
+	error_msg_rand = check_rand_fixed();
+	if (error_msg_rand)
+	{
+		fprintf(stderr, "ERROR: %s\n", error_msg_rand);
+		exit(1);
+	}
+
 	char input_file_name[1024];
 	char model_file_name[1024];
 	const char *error_msg;
