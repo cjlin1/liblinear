@@ -7,6 +7,7 @@
 #include "linear.h"
 #include "tron.h"
 #include <climits>
+#include <random>
 int liblinear_version = LIBLINEAR_VERSION;
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
@@ -74,32 +75,33 @@ inline int myrand() {
 #endif
 }
 
-
 // For auto-check at startup
-#ifdef _WIN32
-const char *check_rand_fixed()
-{
+const char *check_rand_fixed() {
 	//info("\nMaximum integer value on your system is : %d \n", std::numeric_limits<int>::max());
 	int maxRandWindows = 0x7FFF;
 	int verif;
 	// perform the same operation than in myrand()
-	if (std::numeric_limits<int>::max() == 0x7FFFFFFF) {
-		verif = ( ( (__int32)maxRandWindows << 16) + ( (__int32)maxRandWindows << 1) + ( (__int32)maxRandWindows >> 14));
-	}
-	else if (std::numeric_limits<int>::max() == 0x7FFFFFFFFFFFFFFF) {
-		// a priori will never be used as int have the same size on 32 and 64 bit systems
-		verif = ( ( (__int64)maxRandWindows << 48) + ( (__int64)maxRandWindows << 33) + ( (__int64)maxRandWindows << 18) + ( (__int64)maxRandWindows << 3) + ( (__int64)maxRandWindows >> 12));
-	}
-	if (std::numeric_limits<int>::max() != verif) {
-		info("\nMaximum integer value on your system is : %d \n", std::numeric_limits<int>::max());
+#if RAND_MAX != INT_MAX
+    #if INT_MAX == 0x7FFFFFFF
+	verif = ( (__int32)maxRandWindows << 16) + ( (__int32)maxRandWindows << 1) + ( (__int32)maxRandWindows >> 14);
+	#elif INT_MAX == 0x7FFFFFFFFFFFFFFF
+	// a priori will never be used as int have the same size on 32 and 64 bit systems
+	verif = ( (__int64)maxRandWindows << 48) + ( (__int64)maxRandWindows << 33) + ( (__int64)maxRandWindows << 18) + ( (__int64)maxRandWindows << 3) + ( (__int64)maxRandWindows >> 12);
+	#else
+	return "This error should never happen - please report\n";
+	#endif
+	if (INT_MAX != verif) {
+		info("\nMaximum integer value on your system is : %d \n", INT_MAX);
 		info("Our fix provides a maximum random number value of : %d \n", verif);
 		return "Random number fix was unable to work for your system/arch";
 	}
 	else {
 		return NULL;
 	}
-}
+#else
+    return NULL;
 #endif
+}
 
 class sparse_operator
 {
