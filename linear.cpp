@@ -3122,10 +3122,8 @@ double get_decfun_bias(const struct model *model_, int label_idx)
 
 void free_model_content(struct model *model_ptr)
 {
-	if(model_ptr->w != NULL)
-		free(model_ptr->w);
-	if(model_ptr->label != NULL)
-		free(model_ptr->label);
+	free(model_ptr->w);
+	free(model_ptr->label);
 }
 
 void free_and_destroy_model(struct model **model_ptr_ptr)
@@ -3140,12 +3138,9 @@ void free_and_destroy_model(struct model **model_ptr_ptr)
 
 void destroy_param(parameter* param)
 {
-	if(param->weight_label != NULL)
-		free(param->weight_label);
-	if(param->weight != NULL)
-		free(param->weight);
-	if(param->init_sol != NULL)
-		free(param->init_sol);
+	free(param->weight_label);
+	free(param->weight);
+	free(param->init_sol);
 }
 
 const char *check_parameter(const problem *prob, const parameter *param)
