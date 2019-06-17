@@ -37,9 +37,12 @@ def save_model(model_file_name, model):
 	"""
 	liblinear.save_model(model_file_name.encode(), model)
 
-def train(arg1, arg2=None, arg3=None):
+def train(arg1, arg2=None, arg3=None, arg4=None):
 	"""
-	train(y, x [, options]) -> model | ACC
+	train(W, y, x [, options]) -> model | ACC
+
+	W: a list/tuple/ndarray of l weights (type must be double).
+       Use [] if no weights.
 
 	y: a list/tuple/ndarray of l true labels (type must be int/double).
 
@@ -51,7 +54,7 @@ def train(arg1, arg2=None, arg3=None):
 	train(prob [, options]) -> model | ACC
 	train(prob, param) -> model | ACC
 
-	Train a model from data (y, x) or a problem prob using
+	Train a model from weighted data (y, x) or a problem prob using
 	'options' or a parameter param.
 
 	If '-v' is specified in 'options' (i.e., cross validation)
@@ -95,9 +98,10 @@ def train(arg1, arg2=None, arg3=None):
 	"""
 	prob, param = None, None
 	if isinstance(arg1, (list, tuple)) or (scipy and isinstance(arg1, scipy.ndarray)):
-		assert isinstance(arg2, (list, tuple)) or (scipy and isinstance(arg2, (scipy.ndarray, sparse.spmatrix)))
-		y, x, options = arg1, arg2, arg3
-		prob = problem(y, x)
+		assert isinstance(arg2, (list, tuple)) or (scipy and isinstance(arg2, scipy.ndarray))
+		assert isinstance(arg3, (list, tuple)) or (scipy and isinstance(arg3, (scipy.ndarray, sparse.spmatrix)))
+		W, y, x, options = arg1, arg2, arg3, arg4
+		prob = problem(W, y, x)
 		param = parameter(options)
 	elif isinstance(arg1, problem):
 		prob = arg1

@@ -259,10 +259,13 @@ Use a smaller stopping tolerance 0.001 than the default
 0.1 if you want more accurate solutions.
 
 > train -C data_file
+...
+Best C = 0.000488281  CV accuracy = 83.3333%
+> train -c 0.000488281 data_file 
 
-Conduct cross validation many times by L2-loss SVM
-and find the parameter C which achieves the best cross
-validation accuracy.
+Conduct cross validation many times by L2-loss SVM and find the
+parameter C which achieves the best cross validation accuracy. Then
+use the selected C to train the data for getting a model.
 
 > train -C -s 0 -v 3 -c 0.5 -e 0.0001 data_file
 

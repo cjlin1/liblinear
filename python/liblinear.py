@@ -152,20 +152,26 @@ def csr_to_problem(x, prob):
 		csr_to_problem_nojit(x.shape[0], x.data, x.indices, x.indptr, prob_val, prob_ind, prob.rowptr)
 
 class problem(Structure):
-	_names = ["l", "n", "y", "x", "bias"]
-	_types = [c_int, c_int, POINTER(c_double), POINTER(POINTER(feature_node)), c_double]
+	_names = ["l", "n", "y", "x", "bias", "W"]
+	_types = [c_int, c_int, POINTER(c_double), POINTER(POINTER(feature_node)), c_double, POINTER(c_double)]
 	_fields_ = genFields(_names, _types)
 
-	def __init__(self, y, x, bias = -1):
+	def __init__(self, W, y, x, bias = -1):
+		if (not isinstance(W, (list, tuple))) and (not (scipy and isinstance(W, scipy.ndarray))):
+			raise TypeError("type of W: {0} is not supported!".format(type(W)))
 		if (not isinstance(y, (list, tuple))) and (not (scipy and isinstance(y, scipy.ndarray))):
 			raise TypeError("type of y: {0} is not supported!".format(type(y)))
 
 		if isinstance(x, (list, tuple)):
 			if len(y) != len(x):
 				raise ValueError("len(y) != len(x)")
+			if len(W) != 0 and len(W) != len(x):
+				raise ValueError("len(W) != len(x)")
 		elif scipy != None and isinstance(x, (scipy.ndarray, sparse.spmatrix)):
 			if len(y) != x.shape[0]:
 				raise ValueError("len(y) != len(x)")
+			if len(W) != 0 and len(W) != x.shape[0]:
+				raise ValueError("len(W) != len(x)")
 			if isinstance(x, scipy.ndarray):
 				x = scipy.ascontiguousarray(x) # enforce row-major
 			if isinstance(x, sparse.spmatrix):
@@ -175,6 +181,8 @@ class problem(Structure):
 			raise TypeError("type of x: {0} is not supported!".format(type(x)))
 		self.l = l = len(y)
 		self.bias = -1
+		if len(W) == 0:
+			W = [1] * l
 
 		max_idx = 0
 		x_space = self.x_space = []
@@ -187,6 +195,12 @@ class problem(Structure):
 				x_space += [tmp_xi]
 				max_idx = max(max_idx, tmp_idx)
 		self.n = max_idx
+
+		self.W = (c_double * l)()
+		if scipy != None and isinstance(W, scipy.ndarray):
+			scipy.ctypeslib.as_array(self.W, (self.l,))[:] = W
+		else:
+			for i, Wi in enumerate(W): self.W[i] = Wi
 
 		self.y = (c_double * l)()
 		if scipy != None and isinstance(y, scipy.ndarray):
