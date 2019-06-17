@@ -226,8 +226,8 @@ class problem(Structure):
 
 
 class parameter(Structure):
-	_names = ["solver_type", "eps", "C", "nr_weight", "weight_label", "weight", "p", "init_sol"]
-	_types = [c_int, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double), c_double, POINTER(c_double)]
+	_names = ["solver_type", "eps", "C", "nr_thread", "nr_weight", "weight_label", "weight", "p", "init_sol"]
+	_types = [c_int, c_double, c_double, c_int, c_int, POINTER(c_int), POINTER(c_double), c_double, POINTER(c_double)]
 	_fields_ = genFields(_names, _types)
 
 	def __init__(self, options = None):
@@ -250,6 +250,7 @@ class parameter(Structure):
 		self.eps = float('inf')
 		self.C = 1
 		self.p = 0.1
+		self.nr_thread = 1
 		self.nr_weight = 0
 		self.weight_label = None
 		self.weight = None
@@ -259,6 +260,7 @@ class parameter(Structure):
 		self.flag_C_specified = False
 		self.flag_solver_specified = False
 		self.flag_find_C = False
+		self.flag_omp = False
 		self.nr_fold = 0
 		self.print_func = cast(None, PRINT_STRING_FUN)
 
@@ -299,6 +301,10 @@ class parameter(Structure):
 				self.nr_fold = int(argv[i])
 				if self.nr_fold < 2 :
 					raise ValueError("n-fold cross validation: n must >= 2")
+			elif argv[i] == "-n":
+				i = i + 1
+				self.flag_omp = True
+				self.nr_thread = int(argv[i])
 			elif argv[i].startswith("-w"):
 				i = i + 1
 				self.nr_weight += 1
@@ -329,7 +335,13 @@ class parameter(Structure):
 				self.flag_solver_specified = True
 			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC]:
 				raise ValueError("Warm-start parameter search only available for -s 0 and -s 2")
-
+		if self.flag_omp:
+			if not self.flag_solver_specified:
+				self.solver_type = L2R_L2LOSS_SVC
+				self.flag_solver_specified = True
+			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC, L2R_L2LOSS_SVR, L2R_L2LOSS_SVC_DUAL, L2R_L1LOSS_SVC_DUAL, L1R_LR, L1R_L2LOSS_SVC]:
+				raise ValueError("Parallel LIBLINEAR is only available for -s 0, 1, 2, 3, 5, 6, 11 now")
+	
 		if self.eps == float('inf'):
 			if self.solver_type in [L2R_LR, L2R_L2LOSS_SVC]:
 				self.eps = 0.01

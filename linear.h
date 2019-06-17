@@ -1,7 +1,7 @@
 #ifndef _LIBLINEAR_H
 #define _LIBLINEAR_H
 
-#define LIBLINEAR_VERSION 221
+#define LIBLINEAR_VERSION 220
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +32,7 @@ struct parameter
 	/* these are for training only */
 	double eps;	        /* stopping criteria */
 	double C;
+	int nr_thread;
 	int nr_weight;
 	int *weight_label;
 	double* weight;

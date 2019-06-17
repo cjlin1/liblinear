@@ -1,0 +1,116 @@
+Introduction
+============
+
+This extension of liblinear supports multi-core parallel learning by OpenMP.
+We applied efficient implementations to train models for multi-core machines.
+Currently, -s 0 (solving primal LR), -s 2 (solving primal l2-loss SVM),
+-s 1 (solving dual l2-loss SVM), -s 3 (solving dual l1-loss SVM),
+-s 5 (solving primal l1-regularized l2-loss SVM), 
+-s 6 (solving primal l1-regularized logistic regression),
+and -s 11 (solving primal l2-loss SVR) are supported.
+
+Usage
+=====
+
+The usage is the same as liblinear except for the additional option:
+
+-n nr_thread: use nr_thread threads for training (only for -s 0, -s 1, -s 2, -s 3, -s 5, -s 6, and -s 11)
+
+Examples
+========
+
+> ./train -s 0 -n 8 heart_scale
+
+will run the L2-regularized logistic regression primal solver with 8 threads.
+
+> ./train -s 3 -n 8 heart_scale
+
+will run the L2-regularized l1-loss dual solver with 8 threads.
+
+Differences from LIBLINEAR
+==========================
+
+	Primal L2-regularized solvers (-s 0, -s 2)
+	------------------------------------------
+	Do matrix-vector multiplications in parallel. 
+
+	Dual L2-regularized solvers (-s 1, -s 3, -s 11)
+	-----------------------------------------------
+	Calculate the gradients in parallel, and then do CD 
+	(coordinate descent) updates serially.
+
+	Primal l1-regularized solvers (-s 5, -s 6)
+	------------------------------------------
+	Parallelize feature-wise operations for the features
+	that have enough non-zeros.
+
+More details can be found in the references.
+
+Experimental Results
+====================
+
+Time for solving the optimization problems. Other pre- and
+post-processing steps not included.
+
+Primal l1-regularized Logistic Regression:
+dataset              1-thread  4-threads   8-threads
+====================================================
+covtype_scale           1.837      0.491       0.393
+epsilon_normalized    114.495     30.030      18.200
+rcv1_test.binary       15.118      3.978       2.187
+webspam(trigram)      519.574    184.922     116.896
+
+Dual l2-regularized l1-loss SVM:
+dataset              1-thread  4-threads   8-threads
+====================================================
+covtype_scale           3.420      2.261       2.150
+epsilon_normalized     18.945      9.702       8.914
+rcv1_test.binary        2.553      1.319       1.091
+webspam(trigram)       60.986     28.901      22.843
+
+Dual l2-regularized l2-loss SVM:
+dataset              1-thread  4-threads   8-threads
+====================================================
+covtype_scale           7.508      5.090       4.771
+epsilon_normalized     31.164     20.434      19.691
+rcv1_test.binary        3.146      1.982       1.804
+webspam(trigram)       47.472     26.726      22.812
+
+Primal l1-regularized l2-loss SVM:
+dataset              1-thread  4-threads   8-threads
+====================================================
+epsilon_normalized   603.650     187.688     113.048
+url_combined          72.929      35.288      28.859
+criteo              3153.940    1375.010     875.591
+rcv1_test.binary      11.504       6.391       5.537
+webspam(trigram)     228.418     156.179     145.676
+
+Primal l1-regularized logistic regression:
+dataset              1-thread  4-threads   8-threads
+====================================================
+epsilon_normalized     1241.3      310.4       156.7
+url_combined            126.0       35.9        20.4
+criteo                  810.3      246.2       148.8 
+rcv1_test.binary         24.1        7.1         4.1
+webspam(trigram)        269.1       85.5        56.6
+
+Note that the primal and dual results are NOT COMPARABLE because they
+solve different problems and were run on different machines.
+
+Reference
+=========
+
+M.-C. Lee, W.-L. Chiang, and C.-J. Lin.  
+Fast matrix-vector multiplications for large-scale logistic regression on shared-memory systems.  
+ICDM 2015
+
+W.-L. Chiang, M.-C. Lee, and C.-J. Lin.
+Parallel dual coordinate descent method for large-scale linear classification in multi-core environments.
+KDD 2016
+
+Y. Zhuang, Y.-C. Juan, G.-X. Yuan, C.-J. Lin.
+Naive parallelization of coordinate descent methods and an application on multi-core l1-regularized classification.
+CIKM 2018
+
+For any questions and comments, please email
+cjlin@csie.ntu.edu.tw

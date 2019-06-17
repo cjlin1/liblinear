@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include "linear.h"
+#include <omp.h>
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 #define INF HUGE_VAL
 
@@ -50,6 +51,7 @@ void exit_with_help()
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
 	"-C : find parameter C (only for -s 0 and 2)\n"
+	"-n nr_thread : parallel version with [nr_thread] threads (default 1; only for -s 0, 1, 2, 3, 5, 6, 11)\n"
 	"-q : quiet mode (no outputs)\n"
 	);
 	exit(1);
@@ -93,6 +95,7 @@ struct problem prob;
 struct model* model_;
 int flag_cross_validation;
 int flag_find_C;
+int flag_omp;
 int flag_C_specified;
 int flag_solver_specified;
 int nr_fold;
@@ -205,6 +208,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	param.C = 1;
 	param.eps = INF; // see setting below
 	param.p = 0.1;
+	param.nr_thread = 1;
 	param.nr_weight = 0;
 	param.weight_label = NULL;
 	param.weight = NULL;
@@ -213,6 +217,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	flag_C_specified = 0;
 	flag_solver_specified = 0;
 	flag_find_C = 0;
+	flag_omp = 0;
 	bias = -1;
 
 	// parse options
@@ -243,6 +248,11 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 
 			case 'B':
 				bias = atof(argv[i]);
+				break;
+
+			case 'n':
+				flag_omp = 1;
+				param.nr_thread = atoi(argv[i]);
 				break;
 
 			case 'w':
@@ -316,6 +326,46 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 			exit_with_help();
 		}
 	}
+
+	//default solver for parallel execution is L2R_L2LOSS_SVC
+	if(flag_omp)
+	{
+		if(!flag_solver_specified)
+		{
+			fprintf(stderr, "Solver not specified. Using -s 2\n");
+			param.solver_type = L2R_L2LOSS_SVC;
+		}
+		else if(param.solver_type != L2R_LR &&
+			param.solver_type != L2R_L2LOSS_SVC &&
+			param.solver_type != L2R_L2LOSS_SVR &&
+			param.solver_type != L2R_L1LOSS_SVC_DUAL &&
+			param.solver_type != L2R_L2LOSS_SVC_DUAL &&
+			param.solver_type != L1R_L2LOSS_SVC &&
+			param.solver_type != L1R_LR)
+		{
+			fprintf(stderr, "Parallel LIBLINEAR is only available for -s 0, 1, 2, 3, 5, 6, 11 now\n");
+			exit_with_help();
+		}
+#ifndef CV_OMP
+		printf("Total threads used: %d\n", param.nr_thread);
+#endif
+	}
+#ifdef CV_OMP
+	if(flag_cross_validation)
+	{
+		int cvthreads = nr_fold;
+		int maxthreads = omp_get_num_procs();
+		if(flag_omp)
+		{
+			omp_set_nested(1);
+			maxthreads = omp_get_num_procs()/param.nr_thread;
+		}
+		if(cvthreads > maxthreads)
+			cvthreads = maxthreads;
+		omp_set_num_threads(cvthreads);
+		printf("Total threads used: %d\n", cvthreads*param.nr_thread);
+	}
+#endif
 
 	if(param.eps == INF)
 	{

@@ -1,5 +1,5 @@
 CXX = cl.exe
-CFLAGS = /nologo /O2 /EHsc /I. /D _WIN64 /D _CRT_SECURE_NO_DEPRECATE
+CFLAGS = /nologo /O2 /EHsc /I. /D _WIN64 /D _CRT_SECURE_NO_DEPRECATE /openmp
 TARGET = windows
 
 all: $(TARGET)\train.exe $(TARGET)\predict.exe lib
