@@ -38,7 +38,7 @@ void exit_with_help()
 	"		where f is the primal function and pos/neg are # of\n"
 	"		positive/negative data (default 0.01)\n"
 	"	-s 11\n"
-	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)\n"
+	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.0001)\n"
 	"	-s 1, 3, 4, and 7\n"
 	"		Dual maximal violation <= eps; similar to libsvm (default 0.1)\n"
 	"	-s 5 and 6\n"
@@ -50,7 +50,7 @@ void exit_with_help()
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
-	"-C : find parameter C (only for -s 0 and 2)\n"
+	"-C : find parameters (C for -s 0, 2 and C, p for -s 11)\n"
 	"-n nr_thread : parallel version with [nr_thread] threads (default 1; only for -s 0, 1, 2, 3, 5, 6, 11)\n"
 	"-q : quiet mode (no outputs)\n"
 	"-W weight_file: set weight file\n"
@@ -88,7 +88,7 @@ static char* readline(FILE *input)
 void parse_command_line(int argc, char **argv, char *input_file_name, char *model_file_name);
 void read_problem(const char *filename);
 void do_cross_validation();
-void do_find_parameter_C();
+void do_find_parameters();
 
 struct feature_node *x_space;
 struct parameter param;
@@ -96,9 +96,10 @@ struct problem prob;
 struct model* model_;
 char *weight_file;
 int flag_cross_validation;
-int flag_find_C;
+int flag_find_parameters;
 int flag_omp;
 int flag_C_specified;
+int flag_p_specified;
 int flag_solver_specified;
 int nr_fold;
 double bias;
@@ -119,9 +120,9 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if (flag_find_C)
+	if (flag_find_parameters)
 	{
-		do_find_parameter_C();
+		do_find_parameters();
 	}
 	else if(flag_cross_validation)
 	{
@@ -147,17 +148,24 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-void do_find_parameter_C()
+void do_find_parameters()
 {
-	double start_C, best_C, best_rate;
-	double max_C = 1024;
+	double start_C, start_p, best_C, best_p, best_score;
 	if (flag_C_specified)
 		start_C = param.C;
 	else
 		start_C = -1.0;
+	if (flag_p_specified)
+		start_p = param.p;
+	else
+		start_p = -1.0;
+	
 	printf("Doing parameter search with %d-fold cross validation.\n", nr_fold);
-	find_parameter_C(&prob, &param, nr_fold, start_C, max_C, &best_C, &best_rate);
-	printf("Best C = %g  CV accuracy = %g%%\n", best_C, 100.0*best_rate);
+	find_parameters(&prob, &param, nr_fold, start_C, start_p, &best_C, &best_p, &best_score);
+	if(param.solver_type == L2R_LR || param.solver_type == L2R_L2LOSS_SVC)
+		printf("Best C = %g  CV accuracy = %g%%\n", best_C, 100.0*best_score);
+	else if(param.solver_type == L2R_L2LOSS_SVR)
+		printf("Best C = %g Best p = %g  CV MSE = %g\n", best_C, best_p, best_score);
 }
 
 void do_cross_validation()
@@ -219,8 +227,9 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	flag_cross_validation = 0;
 	weight_file = NULL;
 	flag_C_specified = 0;
+	flag_p_specified = 0;
 	flag_solver_specified = 0;
-	flag_find_C = 0;
+	flag_find_parameters = 0;
 	flag_omp = 0;
 	bias = -1;
 
@@ -243,6 +252,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 				break;
 
 			case 'p':
+				flag_p_specified = 1;
 				param.p = atof(argv[i]);
 				break;
 
@@ -287,7 +297,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 				break;
 				
 			case 'C':
-				flag_find_C = 1;
+				flag_find_parameters = 1;
 				i--;
 				break;
 
@@ -319,7 +329,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	}
 
 	// default solver for parameter selection is L2R_L2LOSS_SVC
-	if(flag_find_C)
+	if(flag_find_parameters)
 	{
 		if(!flag_cross_validation)
 			nr_fold = 5;
@@ -328,9 +338,9 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 			fprintf(stderr, "Solver not specified. Using -s 2\n");
 			param.solver_type = L2R_L2LOSS_SVC;
 		}
-		else if(param.solver_type != L2R_LR && param.solver_type != L2R_L2LOSS_SVC)
+		else if(param.solver_type != L2R_LR && param.solver_type != L2R_L2LOSS_SVC && param.solver_type != L2R_L2LOSS_SVR)
 		{
-			fprintf(stderr, "Warm-start parameter search only available for -s 0 and -s 2\n");
+			fprintf(stderr, "Warm-start parameter search only available for -s 0, -s 2 and -s 11\n");
 			exit_with_help();
 		}
 	}
@@ -384,7 +394,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 				param.eps = 0.01;
 				break;
 			case L2R_L2LOSS_SVR:
-				param.eps = 0.001;
+				param.eps = 0.0001;
 				break;
 			case L2R_L2LOSS_SVC_DUAL:
 			case L2R_L1LOSS_SVC_DUAL:

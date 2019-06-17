@@ -272,9 +272,14 @@ class parameter(Structure):
 		self.bias = -1
 		self.flag_cross_validation = False
 		self.flag_C_specified = False
+		self.flag_p_specified = False
 		self.flag_solver_specified = False
+<<<<<<< HEAD
 		self.flag_find_C = False
 		self.flag_omp = False
+=======
+		self.flag_find_parameters = False
+>>>>>>> master
 		self.nr_fold = 0
 		self.print_func = cast(None, PRINT_STRING_FUN)
 
@@ -303,6 +308,7 @@ class parameter(Structure):
 			elif argv[i] == "-p":
 				i = i + 1
 				self.p = float(argv[i])
+				self.flag_p_specified = True
 			elif argv[i] == "-e":
 				i = i + 1
 				self.eps = float(argv[i])
@@ -327,7 +333,7 @@ class parameter(Structure):
 			elif argv[i] == "-q":
 				self.print_func = PRINT_STRING_FUN(print_null)
 			elif argv[i] == "-C":
-				self.flag_find_C = True
+				self.flag_find_parameters = True
 
 			else:
 				raise ValueError("Wrong options")
@@ -341,12 +347,13 @@ class parameter(Structure):
 			self.weight_label[i] = weight_label[i]
 
 		# default solver for parameter selection is L2R_L2LOSS_SVC
-		if self.flag_find_C:
+		if self.flag_find_parameters:
 			if not self.flag_cross_validation:
 				self.nr_fold = 5
 			if not self.flag_solver_specified:
 				self.solver_type = L2R_L2LOSS_SVC
 				self.flag_solver_specified = True
+<<<<<<< HEAD
 			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC]:
 				raise ValueError("Warm-start parameter search only available for -s 0 and -s 2")
 		if self.flag_omp:
@@ -356,11 +363,16 @@ class parameter(Structure):
 			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC, L2R_L2LOSS_SVR, L2R_L2LOSS_SVC_DUAL, L2R_L1LOSS_SVC_DUAL, L1R_LR, L1R_L2LOSS_SVC]:
 				raise ValueError("Parallel LIBLINEAR is only available for -s 0, 1, 2, 3, 5, 6, 11 now")
 	
+=======
+			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC, L2R_L2LOSS_SVR]:
+				raise ValueError("Warm-start parameter search only available for -s 0, -s 2 and -s 11")
+
+>>>>>>> master
 		if self.eps == float('inf'):
 			if self.solver_type in [L2R_LR, L2R_L2LOSS_SVC]:
 				self.eps = 0.01
 			elif self.solver_type in [L2R_L2LOSS_SVR]:
-				self.eps = 0.001
+				self.eps = 0.0001
 			elif self.solver_type in [L2R_L2LOSS_SVC_DUAL, L2R_L1LOSS_SVC_DUAL, MCSVM_CS, L2R_LR_DUAL]:
 				self.eps = 0.1
 			elif self.solver_type in [L1R_L2LOSS_SVC, L1R_LR]:
@@ -423,7 +435,7 @@ def toPyModel(model_ptr):
 	return m
 
 fillprototype(liblinear.train, POINTER(model), [POINTER(problem), POINTER(parameter)])
-fillprototype(liblinear.find_parameter_C, None, [POINTER(problem), POINTER(parameter), c_int, c_double, c_double, POINTER(c_double), POINTER(c_double)])
+fillprototype(liblinear.find_parameters, None, [POINTER(problem), POINTER(parameter), c_int, c_double, c_double, POINTER(c_double), POINTER(c_double), POINTER(c_double)])
 fillprototype(liblinear.cross_validation, None, [POINTER(problem), POINTER(parameter), c_int, POINTER(c_double)])
 
 fillprototype(liblinear.predict_values, c_double, [POINTER(model), POINTER(feature_node), POINTER(c_double)])

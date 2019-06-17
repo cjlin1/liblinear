@@ -48,7 +48,7 @@ void exit_with_help()
 	"		where f is the primal function and pos/neg are # of\n"
 	"		positive/negative data (default 0.01)\n"
 	"	-s 11\n"
-	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.001)\n"
+	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.0001)\n"
 	"	-s 1, 3, 4 and 7\n"
 	"		Dual maximal violation <= eps; similar to libsvm (default 0.1)\n"
 	"	-s 5 and 6\n"
@@ -60,8 +60,12 @@ void exit_with_help()
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
+<<<<<<< HEAD
 	"-C : find parameter C (only for -s 0 and 2)\n"
 	"-n nr_thread : parallel version with [nr_thread] threads (default 1; only for -s 0, 1, 2, 3, 5, 6, 11)\n"
+=======
+	"-C : find parameters (C for -s 0, 2 and C, p for -s 11)\n"
+>>>>>>> master
 	"-q : quiet mode (no outputs)\n"
 	"col:\n"
 	"	if 'col' is setted, training_instance_matrix is parsed in column format, otherwise is in row format\n"
@@ -74,25 +78,37 @@ struct problem prob;		// set by read_problem
 struct model *model_;
 struct feature_node *x_space;
 int flag_cross_validation;
+<<<<<<< HEAD
 int flag_find_C;
 int flag_omp;
+=======
+int flag_find_parameters;
+>>>>>>> master
 int flag_C_specified;
+int flag_p_specified;
 int flag_solver_specified;
 int col_format_flag;
 int nr_fold;
 double bias;
 
 
-void do_find_parameter_C(double *best_C, double *best_rate)
+void do_find_parameters(double *best_C, double *best_p, double *best_score)
 {
-	double start_C;
-	double max_C = 1024;
+	double start_C, start_p;
 	if (flag_C_specified)
 		start_C = param.C;
 	else
 		start_C = -1.0;
-	find_parameter_C(&prob, &param, nr_fold, start_C, max_C, best_C, best_rate);
-	mexPrintf("Best C = %lf  CV accuracy = %g%%\n", *best_C, 100.0**best_rate);
+	if (flag_p_specified)
+		start_p = param.p;
+	else
+		start_p = -1.0;
+	find_parameters(&prob, &param, nr_fold, start_C, start_p, best_C, best_p, best_score);
+
+	if(param.solver_type == L2R_LR || param.solver_type == L2R_L2LOSS_SVC)
+		mexPrintf("Best C = %g  CV accuracy = %g%%\n", *best_C, 100.0**best_score);
+	else if(param.solver_type == L2R_L2LOSS_SVR)
+		mexPrintf("Best C = %g Best p = %g  CV MSE = %g\n", *best_C, *best_p, *best_score);
 }
 
 
@@ -162,9 +178,14 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	flag_cross_validation = 0;
 	col_format_flag = 0;
 	flag_C_specified = 0;
+	flag_p_specified = 0;
 	flag_solver_specified = 0;
+<<<<<<< HEAD
 	flag_find_C = 0;
 	flag_omp = 0;
+=======
+	flag_find_parameters = 0;
+>>>>>>> master
 	bias = -1;
 
 
@@ -206,6 +227,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				break;
 			case 'p':
 				param.p = atof(argv[i]);
+				flag_p_specified = 1;
 				break;
 			case 'e':
 				param.eps = atof(argv[i]);
@@ -238,7 +260,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				i--;
 				break;
 			case 'C':
-				flag_find_C = 1;
+				flag_find_parameters = 1;
 				i--;
 				break;
 			default:
@@ -250,7 +272,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	set_print_string_function(print_func);
 
 	// default solver for parameter selection is L2R_L2LOSS_SVC
-	if(flag_find_C)
+	if(flag_find_parameters)
 	{
 		if(!flag_cross_validation)
 			nr_fold = 5;
@@ -259,9 +281,9 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 			mexPrintf("Solver not specified. Using -s 2\n");
 			param.solver_type = L2R_L2LOSS_SVC;
 		}
-		else if(param.solver_type != L2R_LR && param.solver_type != L2R_L2LOSS_SVC)
+		else if(param.solver_type != L2R_LR && param.solver_type != L2R_L2LOSS_SVC && param.solver_type != L2R_L2LOSS_SVR)
 		{
-			mexPrintf("Warm-start parameter search only available for -s 0 and -s 2\n");
+			mexPrintf("Warm-start parameter search only available for -s 0, -s 2 and -s 11\n");
 			return 1;
 		}
 	}
@@ -315,7 +337,7 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				param.eps = 0.01;
 				break;
 			case L2R_L2LOSS_SVR:
-				param.eps = 0.001;
+				param.eps = 0.0001;
 				break;
 			case L2R_L2LOSS_SVC_DUAL:
 			case L2R_L1LOSS_SVC_DUAL:
@@ -512,16 +534,17 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			return;
 		}
 
-		if (flag_find_C)
+		if (flag_find_parameters)
 		{
-			double best_C, best_rate, *ptr;
+			double best_C, best_p, best_score, *ptr;
 
-			do_find_parameter_C(&best_C, &best_rate);
+			do_find_parameters(&best_C, &best_p, &best_score);
 
-			plhs[0] = mxCreateDoubleMatrix(2, 1, mxREAL);
+			plhs[0] = mxCreateDoubleMatrix(3, 1, mxREAL);
 			ptr = mxGetPr(plhs[0]);
 			ptr[0] = best_C;
-			ptr[1] = best_rate;
+			ptr[1] = best_p;
+			ptr[2] = best_score;
 		}
 		else if(flag_cross_validation)
 		{
