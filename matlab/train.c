@@ -24,7 +24,7 @@ void print_string_matlab(const char *s) {mexPrintf(s);}
 void exit_with_help()
 {
 	mexPrintf(
-	"Usage: model = train(training_label_vector, training_instance_matrix, 'liblinear_options', 'col');\n"
+	"Usage: model = train(weight_vector, training_label_vector, training_instance_matrix, 'liblinear_options', 'col');\n"
 	"liblinear_options:\n"
 	"-s type : set type of solver (default 1)\n"
 	"  for multi-class classification\n"
@@ -141,7 +141,7 @@ double do_cross_validation()
 	return retval;
 }
 
-// nrhs should be 3
+// nrhs should be 4
 int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 {
 	int i, argc = 1;
@@ -168,20 +168,20 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	bias = -1;
 
 
-	if(nrhs <= 1)
+	if(nrhs <= 2)
 		return 1;
 
-	if(nrhs == 4)
+	if(nrhs == 5)
 	{
-		mxGetString(prhs[3], cmd, mxGetN(prhs[3])+1);
+		mxGetString(prhs[4], cmd, mxGetN(prhs[4])+1);
 		if(strcmp(cmd, "col") == 0)
 			col_format_flag = 1;
 	}
 
 	// put options in argv[]
-	if(nrhs > 2)
+	if(nrhs > 3)
 	{
-		mxGetString(prhs[2], cmd,  mxGetN(prhs[2]) + 1);
+		mxGetString(prhs[3], cmd,  mxGetN(prhs[3]) + 1);
 		if((argv[argc] = strtok(cmd, " ")) != NULL)
 			while((argv[++argc] = strtok(NULL, " ")) != NULL)
 				;
@@ -343,17 +343,18 @@ static void fake_answer(int nlhs, mxArray *plhs[])
 		plhs[i] = mxCreateDoubleMatrix(0, 0, mxREAL);
 }
 
-int read_problem_sparse(const mxArray *label_vec, const mxArray *instance_mat)
+int read_problem_sparse(const mxArray *weight_vec, const mxArray *label_vec, const mxArray *instance_mat)
 {
 	mwIndex *ir, *jc, low, high, k;
 	// using size_t due to the output type of matlab functions
-	size_t i, j, l, elements, max_index, label_vector_row_num;
+	size_t i, j, l, elements, max_index, label_vector_row_num, weight_vector_row_num;
 	mwSize num_samples;
-	double *samples, *labels;
+	double *samples, *labels, *weights;
 	mxArray *instance_mat_col; // instance sparse matrix in column format
 
 	prob.x = NULL;
 	prob.y = NULL;
+	prob.W = NULL;
 	x_space = NULL;
 
 	if(col_format_flag)
@@ -374,16 +375,25 @@ int read_problem_sparse(const mxArray *label_vec, const mxArray *instance_mat)
 
 	// the number of instance
 	l = mxGetN(instance_mat_col);
-	label_vector_row_num = mxGetM(label_vec);
 	prob.l = (int) l;
+	label_vector_row_num = mxGetM(label_vec);
+	weight_vector_row_num = mxGetM(weight_vec);
 
-	if(label_vector_row_num!=l)
+	if(weight_vector_row_num == 0) 
+		mexPrintf("Warning: treat each instance with weight 1.0\n");
+	else if(weight_vector_row_num!=prob.l)
+	{
+		mexPrintf("Length of weight vector does not match # of instances.\n");
+		return -1;
+	}
+	if(label_vector_row_num!=prob.l)
 	{
 		mexPrintf("Length of label vector does not match # of instances.\n");
 		return -1;
 	}
 
 	// each column is one instance
+	weights = mxGetPr(weight_vec);
 	labels = mxGetPr(label_vec);
 	samples = mxGetPr(instance_mat_col);
 	ir = mxGetIr(instance_mat_col);
@@ -395,6 +405,7 @@ int read_problem_sparse(const mxArray *label_vec, const mxArray *instance_mat)
 	max_index = mxGetM(instance_mat_col);
 
 	prob.y = Malloc(double, l);
+	prob.W = Malloc(double, l);
 	prob.x = Malloc(struct feature_node*, l);
 	x_space = Malloc(struct feature_node, elements);
 
@@ -405,6 +416,9 @@ int read_problem_sparse(const mxArray *label_vec, const mxArray *instance_mat)
 	{
 		prob.x[i] = &x_space[j];
 		prob.y[i] = labels[i];
+		prob.W[i] = 1;
+		if(weight_vector_row_num == prob.l)
+			prob.W[i] *= (double) weights[i];
 		low = jc[i], high = jc[i+1];
 		for(k=low;k<high;k++)
 		{
@@ -447,13 +461,12 @@ void mexFunction( int nlhs, mxArray *plhs[],
 	}
 
 	// Transform the input Matrix to libsvm format
-	if(nrhs > 1 && nrhs < 5)
+	if(nrhs > 2 && nrhs < 6)
 	{
 		int err=0;
 
-		if(!mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]))
-		{
-			mexPrintf("Error: label vector and instance matrix must be double\n");
+		if(!mxIsDouble(prhs[0]) || !mxIsDouble(prhs[1]) || !mxIsDouble(prhs[2])) {
+			mexPrintf("Error: weight vector, label vector and instance matrix must be double\n");
 			fake_answer(nlhs, plhs);
 			return;
 		}
@@ -473,8 +486,8 @@ void mexFunction( int nlhs, mxArray *plhs[],
 			return;
 		}
 
-		if(mxIsSparse(prhs[1]))
-			err = read_problem_sparse(prhs[0], prhs[1]);
+		if(mxIsSparse(prhs[2]))
+			err = read_problem_sparse(prhs[0], prhs[1], prhs[2]);
 		else
 		{
 			mexPrintf("Training_instance_matrix must be sparse; "
@@ -530,6 +543,7 @@ void mexFunction( int nlhs, mxArray *plhs[],
 		destroy_param(&param);
 		free(prob.y);
 		free(prob.x);
+		free(prob.W);
 		free(x_space);
 	}
 	else

@@ -605,7 +605,7 @@ void l2r_l2_svr_fun::grad(double *w, double *g)
 //
 // See Appendix of LIBLINEAR paper, Fan et al. (2008)
 
-#define GETI(i) ((int) prob->y[i])
+#define GETI(i) (i)
 // To support weights for instances, use GETI(i) (i)
 
 class Solver_MCSVM_CS
@@ -635,13 +635,16 @@ Solver_MCSVM_CS::Solver_MCSVM_CS(const problem *prob, int nr_class, double *weig
 	this->prob = prob;
 	this->B = new double[nr_class];
 	this->G = new double[nr_class];
-	this->C = weighted_C;
+	this->C = new double[prob->l];
+	for(int i = 0; i < prob->l; i++)
+		this->C[i] = prob->W[i] * weighted_C[(int)prob->y[i]];
 }
 
 Solver_MCSVM_CS::~Solver_MCSVM_CS()
 {
 	delete[] B;
 	delete[] G;
+	delete[] C;
 }
 
 int compare_double(const void *a, const void *b)
@@ -927,7 +930,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 // See Algorithm 3 of Hsieh et al., ICML 2008
 
 #undef GETI
-#define GETI(i) (y[i]+1)
+#define GETI(i) (i)
 // To support weights for instances, use GETI(i) (i)
 
 static void solve_l2r_l1l2_svc(
@@ -963,14 +966,25 @@ static void solve_l2r_l1l2_svc(
 	int *workingset = new int[max_candidates_size];
 
 	// default solver_type: L2R_L2LOSS_SVC_DUAL
-	double diag[3] = {0.5/Cn, 0, 0.5/Cp};
-	double upper_bound[3] = {INF, 0, INF};
+	double *diag = new double[l];
+	double *upper_bound = new double[l];
+	double *C_ = new double[l];
+	for(i=0; i<l; i++) 
+	{
+		if(prob->y[i]>0)
+			C_[i] = prob->W[i] * Cp;
+		else 
+			C_[i] = prob->W[i] * Cn;
+		diag[i] = 0.5/C_[i];
+		upper_bound[i] = INF;
+	}
 	if(solver_type == L2R_L1LOSS_SVC_DUAL)
 	{
-		diag[0] = 0;
-		diag[2] = 0;
-		upper_bound[0] = Cn;
-		upper_bound[2] = Cp;
+		for(i=0; i<l; i++) 
+		{
+			diag[i] = 0;
+			upper_bound[i] = C_[i];
+		}
 	}
 
 	for(i=0; i<l; i++)
@@ -1164,6 +1178,9 @@ static void solve_l2r_l1l2_svc(
 	info("Objective value = %lf\n",v/2);
 	info("nSV = %d\n",nSV);
 
+	delete [] upper_bound;
+	delete [] diag;
+	delete [] C_;
 	delete [] QD;
 	delete [] alpha;
 	delete [] y;
@@ -1198,7 +1215,7 @@ static void solve_l2r_l1l2_svc(
 // See Algorithm 4 of Ho and Lin, 2012
 
 #undef GETI
-#define GETI(i) (0)
+#define GETI(i) (i)
 // To support weights for instances, use GETI(i) (i)
 
 static void solve_l2r_l1l2_svr(
@@ -1224,16 +1241,23 @@ static void solve_l2r_l1l2_svr(
 	double *y = prob->y;
 
 	// L2R_L2LOSS_SVR_DUAL
-	double lambda[1], upper_bound[1];
-	lambda[0] = 0.5/C;
-	upper_bound[0] = INF;
-
+	double *lambda = new double[l];
+ 	double *upper_bound = new double[l];
+	double *C_ = new double[l];
+	for (i=0; i<l; i++)
+	{
+		C_[i] = prob->W[i] * C;
+		lambda[i] = 0.5/C_[i];
+		upper_bound[i] = INF;
+	}
 	if(solver_type == L2R_L1LOSS_SVR_DUAL)
 	{
-		lambda[0] = 0;
-		upper_bound[0] = C;
+		for (i=0; i<l; i++)
+		{
+			lambda[i] = 0;
+			upper_bound[i] = C_[i];
+		}
 	}
-
 	// Initial beta can be set here. Note that
 	// -upper_bound <= beta[i] <= upper_bound
 	for(i=0; i<l; i++)
@@ -1381,6 +1405,9 @@ static void solve_l2r_l1l2_svr(
 	info("Objective value = %lf\n", v);
 	info("nSV = %d\n",nSV);
 
+	delete [] upper_bound;
+	delete [] lambda;
+	delete [] C_;
 	delete [] beta;
 	delete [] QD;
 	delete [] index;
@@ -1406,7 +1433,7 @@ static void solve_l2r_l1l2_svr(
 // See Algorithm 5 of Yu et al., MLJ 2010
 
 #undef GETI
-#define GETI(i) (y[i]+1)
+#define GETI(i) (i)
 // To support weights for instances, use GETI(i) (i)
 
 void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, double Cn)
@@ -1422,16 +1449,18 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 	int max_inner_iter = 100; // for inner Newton
 	double innereps = 1e-2;
 	double innereps_min = min(1e-8, eps);
-	double upper_bound[3] = {Cn, 0, Cp};
+	double *upper_bound = new double [l];
 
 	for(i=0; i<l; i++)
 	{
 		if(prob->y[i] > 0)
 		{
-			y[i] = +1;
+			upper_bound[i] = prob->W[i] * Cp;
+			y[i] = +1; 
 		}
 		else
 		{
+			upper_bound[i] = prob->W[i] * Cn;
 			y[i] = -1;
 		}
 	}
@@ -1544,6 +1573,7 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 			- upper_bound[GETI(i)] * log(upper_bound[GETI(i)]);
 	info("Objective value = %lf\n", v);
 
+	delete [] upper_bound;
 	delete [] xTx;
 	delete [] alpha;
 	delete [] y;
@@ -1564,7 +1594,7 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 // See Yuan et al. (2010) and appendix of LIBLINEAR paper, Fan et al. (2008)
 
 #undef GETI
-#define GETI(i) (y[i]+1)
+#define GETI(i) (i)
 // To support weights for instances, use GETI(i) (i)
 
 static void solve_l1r_l2_svc(
@@ -1594,7 +1624,7 @@ static void solve_l1r_l2_svc(
 	double *xj_sq = new double[w_size];
 	feature_node *x;
 
-	double C[3] = {Cn,0,Cp};
+	double *C = new double[l];
 
 	int *nnz_per_feature = new int[w_size];
 
@@ -1606,9 +1636,15 @@ static void solve_l1r_l2_svc(
 	{
 		b[j] = 1;
 		if(prob_col->y[j] > 0)
+		{	
 			y[j] = 1;
+			C[j] = prob_col->W[j] * Cp;
+		}
 		else
+		{
 			y[j] = -1;
+			C[j] = prob_col->W[j] * Cn;
+		}
 	}
 	for(j=0; j<w_size; j++)
 	{
@@ -1888,6 +1924,7 @@ static void solve_l1r_l2_svc(
 	info("Objective value = %lf\n", v);
 	info("#nonzeros/#features = %d/%d\n", nnz, w_size);
 
+	delete [] C;
 	delete [] index;
 	delete [] y;
 	delete [] b;
@@ -1909,7 +1946,7 @@ static void solve_l1r_l2_svc(
 // See Yuan et al. (2011) and appendix of LIBLINEAR paper, Fan et al. (2008)
 
 #undef GETI
-#define GETI(i) (y[i]+1)
+#define GETI(i) (i)
 // To support weights for instances, use GETI(i) (i)
 
 static void solve_l1r_lr(
@@ -1953,7 +1990,7 @@ static void solve_l1r_lr(
 
 	int *nnz_per_feature = new int[w_size];
 
-	double C[3] = {Cn,0,Cp};
+	double *C = new double[l];
 
 	// Initial w can be set here.
 	for(j=0; j<w_size; j++)
@@ -1962,9 +1999,15 @@ static void solve_l1r_lr(
 	for(j=0; j<l; j++)
 	{
 		if(prob_col->y[j] > 0)
+		{
 			y[j] = 1;
+			C[j] = prob_col->W[j] * Cp;
+		}
 		else
+		{
 			y[j] = -1;
+			C[j] = prob_col->W[j] * Cn;
+		}
 
 		exp_wTx[j] = 0;
 	}
@@ -2307,6 +2350,7 @@ static void solve_l1r_lr(
 	info("Objective value = %lf\n", v);
 	info("#nonzeros/#features = %d/%d\n", nnz, w_size);
 
+	delete [] C;
 	delete [] index;
 	delete [] y;
 	delete [] Hdiag;
@@ -2334,9 +2378,13 @@ static void transpose(const problem *prob, feature_node **x_space_ret, problem *
 	prob_col->n = n;
 	prob_col->y = new double[l];
 	prob_col->x = new feature_node*[n];
+	prob_col->W = new double[l];
 
 	for(i=0; i<l; i++)
+	{
 		prob_col->y[i] = prob->y[i];
+		prob_col->W[i] = prob->W[i];
+	}
 
 	for(i=0; i<n+1; i++)
 		col_ptr[i] = 0;
@@ -2479,9 +2527,9 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			for(int i = 0; i < prob->l; i++)
 			{
 				if(prob->y[i] > 0)
-					C[i] = Cp;
+					C[i] = prob->W[i] * Cp;
 				else
-					C[i] = Cn;
+					C[i] = prob->W[i] * Cn;
 			}
 			fun_obj=new l2r_lr_fun(prob, C);
 			TRON tron_obj(fun_obj, primal_solver_tol, eps_cg);
@@ -2497,9 +2545,9 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			for(int i = 0; i < prob->l; i++)
 			{
 				if(prob->y[i] > 0)
-					C[i] = Cp;
+					C[i] = prob->W[i] * Cp;
 				else
-					C[i] = Cn;
+					C[i] = prob->W[i] * Cn;
 			}
 			fun_obj=new l2r_l2_svc_fun(prob, C);
 			TRON tron_obj(fun_obj, primal_solver_tol, eps_cg);
@@ -2523,6 +2571,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			solve_l1r_l2_svc(&prob_col, w, primal_solver_tol, Cp, Cn);
 			delete [] prob_col.y;
 			delete [] prob_col.x;
+			delete [] prob_col.W;
 			delete [] x_space;
 			break;
 		}
@@ -2534,6 +2583,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			solve_l1r_lr(&prob_col, w, primal_solver_tol, Cp, Cn);
 			delete [] prob_col.y;
 			delete [] prob_col.x;
+			delete [] prob_col.W;
 			delete [] x_space;
 			break;
 		}
@@ -2544,8 +2594,8 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 		{
 			double *C = new double[prob->l];
 			for(int i = 0; i < prob->l; i++)
-				C[i] = param->C;
-
+				C[i] = prob->W[i] * param->C;
+			
 			fun_obj=new l2r_l2_svr_fun(prob, C, param->p);
 			TRON tron_obj(fun_obj, param->eps);
 			tron_obj.set_print_string(liblinear_print_string);
@@ -2598,10 +2648,39 @@ static double calc_start_C(const problem *prob, const parameter *param)
 
 
 //
+// Remove zero weighed data as libsvm and some liblinear solvers require C > 0.
+//
+static void remove_zero_weight(problem *newprob, const problem *prob) 
+{
+	int i;
+	int l = 0;
+	for(i=0;i<prob->l;i++)
+		if(prob->W[i] > 0) l++;
+	*newprob = *prob;
+	newprob->l = l;
+	newprob->x = Malloc(feature_node*,l);
+	newprob->y = Malloc(double,l);
+	newprob->W = Malloc(double,l);
+
+	int j = 0;
+	for(i=0;i<prob->l;i++)
+		if(prob->W[i] > 0)
+		{
+			newprob->x[j] = prob->x[i];
+			newprob->y[j] = prob->y[i];
+			newprob->W[j] = prob->W[i];
+			j++;
+		}
+}
+
+//
 // Interface functions
 //
 model* train(const problem *prob, const parameter *param)
 {
+	problem newprob;
+	remove_zero_weight(&newprob, prob);
+	prob = &newprob;
 	int i,j;
 	int l = prob->l;
 	int n = prob->n;
@@ -2668,9 +2747,11 @@ model* train(const problem *prob, const parameter *param)
 		sub_prob.n = n;
 		sub_prob.x = Malloc(feature_node *,sub_prob.l);
 		sub_prob.y = Malloc(double,sub_prob.l);
-
-		for(k=0; k<sub_prob.l; k++)
+		sub_prob.W = Malloc(double,sub_prob.l);
+		for(k=0; k<sub_prob.l; k++){
 			sub_prob.x[k] = x[k];
+			sub_prob.W[k] = prob->W[perm[k]];
+		}
 
 		// multi-class svm by Crammer and Singer
 		if(param->solver_type == MCSVM_CS)
@@ -2746,6 +2827,10 @@ model* train(const problem *prob, const parameter *param)
 		free(sub_prob.x);
 		free(sub_prob.y);
 		free(weighted_C);
+		free(sub_prob.W);
+		free(newprob.x);
+		free(newprob.y);
+		free(newprob.W);
 	}
 	return model_;
 }
@@ -2786,18 +2871,21 @@ void cross_validation(const problem *prob, const parameter *param, int nr_fold, 
 		subprob.l = l-(end-begin);
 		subprob.x = Malloc(struct feature_node*,subprob.l);
 		subprob.y = Malloc(double,subprob.l);
+		subprob.W = Malloc(double,subprob.l);
 
 		k=0;
 		for(j=0;j<begin;j++)
 		{
 			subprob.x[k] = prob->x[perm[j]];
 			subprob.y[k] = prob->y[perm[j]];
+			subprob.W[k] = prob->W[perm[j]];
 			++k;
 		}
 		for(j=end;j<l;j++)
 		{
 			subprob.x[k] = prob->x[perm[j]];
 			subprob.y[k] = prob->y[perm[j]];
+			subprob.W[k] = prob->W[perm[j]];
 			++k;
 		}
 		struct model *submodel = train(&subprob,param);
@@ -2806,6 +2894,7 @@ void cross_validation(const problem *prob, const parameter *param, int nr_fold, 
 		free_and_destroy_model(&submodel);
 		free(subprob.x);
 		free(subprob.y);
+		free(subprob.W);
 	}
 	free(fold_start);
 	free(perm);
@@ -2856,18 +2945,20 @@ void find_parameter_C(const problem *prob, const parameter *param, int nr_fold, 
 		subprob[i].l = l-(end-begin);
 		subprob[i].x = Malloc(struct feature_node*,subprob[i].l);
 		subprob[i].y = Malloc(double,subprob[i].l);
-
+		subprob[i].W = Malloc(double,subprob[i].l);
 		k=0;
 		for(j=0;j<begin;j++)
 		{
 			subprob[i].x[k] = prob->x[perm[j]];
 			subprob[i].y[k] = prob->y[perm[j]];
+			subprob[i].W[k] = prob->W[perm[j]];
 			++k;
 		}
 		for(j=end;j<l;j++)
 		{
 			subprob[i].x[k] = prob->x[perm[j]];
 			subprob[i].y[k] = prob->y[perm[j]];
+			subprob[i].W[k] = prob->W[perm[j]];
 			++k;
 		}
 
@@ -2901,6 +2992,7 @@ void find_parameter_C(const problem *prob, const parameter *param, int nr_fold, 
 				total_w_size = subprob[i].n;
 			else
 				total_w_size = subprob[i].n * submodel->nr_class;
+
 
 			if(prev_w[i] == NULL)
 			{
@@ -2966,6 +3058,7 @@ void find_parameter_C(const problem *prob, const parameter *param, int nr_fold, 
 	free(prev_w);
 	free(subprob);
 }
+
 
 double predict_values(const struct model *model_, const struct feature_node *x, double *dec_values)
 {

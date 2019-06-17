@@ -1,0 +1,7 @@
+Usage:
+	use '-W weight_file' to assign weights for each instance.
+	Please make sure all weights are non-negative.
+	
+Example:
+	$ ./train -W heart_scale.wgt  heart_scale
+
