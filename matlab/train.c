@@ -60,12 +60,8 @@ void exit_with_help()
 	"-B bias : if bias >= 0, instance x becomes [x; bias]; if < 0, no bias term added (default -1)\n"
 	"-wi weight: weights adjust the parameter C of different classes (see README for details)\n"
 	"-v n: n-fold cross validation mode\n"
-<<<<<<< HEAD
-	"-C : find parameter C (only for -s 0 and 2)\n"
-	"-n nr_thread : parallel version with [nr_thread] threads (default 1; only for -s 0, 1, 2, 3, 5, 6, 11)\n"
-=======
 	"-C : find parameters (C for -s 0, 2 and C, p for -s 11)\n"
->>>>>>> master
+	"-n nr_thread : parallel version with [nr_thread] threads (default 1; only for -s 0, 1, 2, 3, 5, 6, 11)\n"
 	"-q : quiet mode (no outputs)\n"
 	"col:\n"
 	"	if 'col' is setted, training_instance_matrix is parsed in column format, otherwise is in row format\n"
@@ -78,12 +74,8 @@ struct problem prob;		// set by read_problem
 struct model *model_;
 struct feature_node *x_space;
 int flag_cross_validation;
-<<<<<<< HEAD
-int flag_find_C;
-int flag_omp;
-=======
 int flag_find_parameters;
->>>>>>> master
+int flag_omp;
 int flag_C_specified;
 int flag_p_specified;
 int flag_solver_specified;
@@ -180,12 +172,8 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	flag_C_specified = 0;
 	flag_p_specified = 0;
 	flag_solver_specified = 0;
-<<<<<<< HEAD
-	flag_find_C = 0;
-	flag_omp = 0;
-=======
 	flag_find_parameters = 0;
->>>>>>> master
+	flag_omp = 0;
 	bias = -1;
 
 

@@ -274,12 +274,8 @@ class parameter(Structure):
 		self.flag_C_specified = False
 		self.flag_p_specified = False
 		self.flag_solver_specified = False
-<<<<<<< HEAD
-		self.flag_find_C = False
-		self.flag_omp = False
-=======
 		self.flag_find_parameters = False
->>>>>>> master
+		self.flag_omp = False
 		self.nr_fold = 0
 		self.print_func = cast(None, PRINT_STRING_FUN)
 
@@ -353,21 +349,16 @@ class parameter(Structure):
 			if not self.flag_solver_specified:
 				self.solver_type = L2R_L2LOSS_SVC
 				self.flag_solver_specified = True
-<<<<<<< HEAD
 			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC]:
 				raise ValueError("Warm-start parameter search only available for -s 0 and -s 2")
 		if self.flag_omp:
 			if not self.flag_solver_specified:
 				self.solver_type = L2R_L2LOSS_SVC
 				self.flag_solver_specified = True
-			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC, L2R_L2LOSS_SVR, L2R_L2LOSS_SVC_DUAL, L2R_L1LOSS_SVC_DUAL, L1R_LR, L1R_L2LOSS_SVC]:
-				raise ValueError("Parallel LIBLINEAR is only available for -s 0, 1, 2, 3, 5, 6, 11 now")
-	
-=======
 			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC, L2R_L2LOSS_SVR]:
 				raise ValueError("Warm-start parameter search only available for -s 0, -s 2 and -s 11")
-
->>>>>>> master
+			elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC, L2R_L2LOSS_SVR, L2R_L2LOSS_SVC_DUAL, L2R_L1LOSS_SVC_DUAL, L1R_LR, L1R_L2LOSS_SVC]:
+				raise ValueError("Parallel LIBLINEAR is only available for -s 0, 1, 2, 3, 5, 6, 11 now")
 		if self.eps == float('inf'):
 			if self.solver_type in [L2R_LR, L2R_L2LOSS_SVC]:
 				self.eps = 0.01
