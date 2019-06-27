@@ -265,7 +265,7 @@ int TRON::trpcg(double delta, double *g, double *M, double *s, double *r, bool *
 
 	if (cg_iter == max_cg_iter)
 		info("WARNING: reaching maximal number of CG steps\n");
-	
+
 	delete[] d;
 	delete[] Hd;
 	delete[] z;

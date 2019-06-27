@@ -14,7 +14,7 @@ if sys.version_info[0] < 3:
 	from itertools import izip as zip
 	_cstr = lambda s: s.encode("utf-8") if isinstance(s,unicode) else str(s)
 else:
-	_cstr = lambda s: bytes(s, "utf-8")        
+	_cstr = lambda s: bytes(s, "utf-8")
 
 __all__ = ['load_model', 'save_model', 'train', 'predict'] + liblinear_all + common_all
 

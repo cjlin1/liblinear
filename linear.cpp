@@ -2716,11 +2716,11 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 		if(start_C <= 0)
 			start_C = calc_start_C(prob, &param_tmp);
 		double max_C = 1024;
-		start_C = min(start_C, max_C);		
+		start_C = min(start_C, max_C);
 		double best_C_tmp, best_score_tmp;
-		
+
 		find_parameter_C(prob, &param_tmp, start_C, max_C, &best_C_tmp, &best_score_tmp, fold_start, perm, subprob, nr_fold);
-		
+
 		*best_C = best_C_tmp;
 		*best_score = best_score_tmp;
 	}
@@ -2744,9 +2744,9 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 				start_C_tmp = start_C;
 			start_C_tmp = min(start_C_tmp, max_C);
 			double best_C_tmp, best_score_tmp;
-			
+
 			find_parameter_C(prob, &param_tmp, start_C_tmp, max_C, &best_C_tmp, &best_score_tmp, fold_start, perm, subprob, nr_fold);
-			
+
 			if(best_score_tmp < *best_score)
 			{
 				*best_p = param_tmp.p;
@@ -2961,7 +2961,7 @@ struct model *load_model(const char *model_file_name)
 	// parameters for training only won't be assigned, but arrays are assigned as NULL for safety
 	param.nr_weight = 0;
 	param.weight_label = NULL;
-	param.weight = NULL;	
+	param.weight = NULL;
 	param.init_sol = NULL;
 
 	model_->label = NULL;
