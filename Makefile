@@ -8,7 +8,7 @@ OS = $(shell uname)
 
 all: train predict
 
-lib: linear.o tron.o blas/blas.a
+lib: linear.o tron.o blas/blas.a liblinear.a
 	if [ "$(OS)" = "Darwin" ]; then \
 		SHARED_LIB_FLAG="-dynamiclib -Wl,-install_name,liblinear.so.$(SHVER)"; \
 	else \
@@ -30,6 +30,9 @@ linear.o: linear.cpp linear.h
 
 blas/blas.a: blas/*.c blas/*.h
 	make -C blas OPTFLAGS='$(CFLAGS)' CC='$(CC)';
+
+liblinear.a: linear.o tron.o
+	ar -rcvs liblinear.a linear.o tron.o
 
 clean:
 	make -C blas clean
