@@ -133,11 +133,11 @@ If the '-v' option is specified, cross validation is conducted and the
 returned model is just a scalar: cross-validation accuracy for
 classification and mean-squared error for regression.
 
-If the '-C' option is specified, best parameters are found by cross 
+If the '-C' option is specified, best parameters are found by cross
 validation. The parameter selection utility is supported only by -s 0,
--s 2 (for finding C) and -s 11 (for finding C, p). The returned 
-model is a three dimensional vector with the best C, the best p, and 
-the corresponding cross-validation accuracy or mean squared error. The 
+-s 2 (for finding C) and -s 11 (for finding C, p). The returned
+model is a three dimensional vector with the best C, the best p, and
+the corresponding cross-validation accuracy or mean squared error. The
 returned best p for -s 0 and -s 2 is set to -1 because the p parameter
 is not used by classification models.
 
