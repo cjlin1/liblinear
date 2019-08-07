@@ -2855,6 +2855,24 @@ double predict_probability(const struct model *model_, const struct feature_node
 		return 0;
 }
 
+double predict_softmax_probability(const struct model *model_, const struct feature_node *x, double* prob_estimates)
+{
+	int i;
+	int nr_class=model_->nr_class;
+
+	double label=predict_values(model_, x, prob_estimates);
+	double sum = 0.0;
+	for(i=0;i<nr_class;i++) {
+		prob_estimates[i]=exp(prob_estimates[i]);
+		sum += prob_estimates[i];
+	}
+
+	for(i=0;i<nr_class;i++)
+		prob_estimates[i]=prob_estimates[i]/sum;
+
+	return label;
+}
+
 static const char *solver_type_table[]=
 {
 	"L2R_LR", "L2R_L2LOSS_SVC_DUAL", "L2R_L2LOSS_SVC", "L2R_L1LOSS_SVC_DUAL", "MCSVM_CS",

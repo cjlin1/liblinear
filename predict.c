@@ -62,7 +62,7 @@ void do_predict(FILE *input, FILE *output)
 	{
 		int *labels;
 
-		if(!check_probability_model(model_))
+		if(flag_predict_probability == 1 && !check_probability_model(model_))
 		{
 			fprintf(stderr, "probability output is only supported for logistic regression\n");
 			exit(1);
@@ -136,7 +136,18 @@ void do_predict(FILE *input, FILE *output)
 		if(flag_predict_probability)
 		{
 			int j;
-			predict_label = predict_probability(model_,x,prob_estimates);
+			predict_label = 0.0;
+			switch(flag_predict_probability) {
+				case 1:
+					predict_label = predict_probability(model_,x,prob_estimates);
+					break;
+				case 2:
+					predict_label = predict_softmax_probability(model_,x,prob_estimates);
+					break;
+				case 3:
+					predict_label = predict_values(model_,x,prob_estimates);
+					break;
+			}
 			fprintf(output,"%g",predict_label);
 			for(j=0;j<model_->nr_class;j++)
 				fprintf(output," %g",prob_estimates[j]);
@@ -168,7 +179,7 @@ void do_predict(FILE *input, FILE *output)
 	}
 	else
 		info("Accuracy = %g%% (%d/%d)\n",(double) correct/total*100,correct,total);
-	if(flag_predict_probability)
+	if(prob_estimates)
 		free(prob_estimates);
 }
 
@@ -177,7 +188,11 @@ void exit_with_help()
 	printf(
 	"Usage: predict [options] test_file model_file output_file\n"
 	"options:\n"
-	"-b probability_estimates: whether to output probability estimates, 0 or 1 (default 0); currently for logistic regression only\n"
+	"-b probability_estimates:\n"
+	"    0: output only best label;\n"
+	"    1: output probabilities for logistic regression solver;\n"
+	"    2: output softmax probabilities;\n"
+	"    3: output raw scores.\n"
 	"-q : quiet mode (no outputs)\n"
 	);
 	exit(1);
