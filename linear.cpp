@@ -2766,6 +2766,109 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 	free(subprob);
 }
 
+void find_parameters_pso(const problem *prob, const parameter *param, int nr_fold, double start_C, double start_p, double *best_C, double *best_p, double *best_score)
+{
+    // prepare CV folds
+
+    int i;
+    int *fold_start;
+    int l = prob->l;
+    int *perm = Malloc(int, l);
+    struct problem *subprob = Malloc(problem,nr_fold);
+
+    if (nr_fold > l)
+    {
+        nr_fold = l;
+        fprintf(stderr,"WARNING: # folds > # data. Will use # folds = # data instead (i.e., leave-one-out cross validation)\n");
+    }
+    fold_start = Malloc(int,nr_fold+1);
+    for(i=0;i<l;i++) perm[i]=i;
+    for(i=0;i<l;i++)
+    {
+        int j = i+rand()%(l-i);
+        swap(perm[i],perm[j]);
+    }
+    for(i=0;i<=nr_fold;i++)
+        fold_start[i]=i*l/nr_fold;
+
+    for(i=0;i<nr_fold;i++)
+    {
+        int begin = fold_start[i];
+        int end = fold_start[i+1];
+        int j,k;
+
+        subprob[i].bias = prob->bias;
+        subprob[i].n = prob->n;
+        subprob[i].l = l-(end-begin);
+        subprob[i].x = Malloc(struct feature_node*,subprob[i].l);
+        subprob[i].y = Malloc(double,subprob[i].l);
+
+        k=0;
+        for(j=0;j<begin;j++)
+        {
+            subprob[i].x[k] = prob->x[perm[j]];
+            subprob[i].y[k] = prob->y[perm[j]];
+            ++k;
+        }
+        for(j=end;j<l;j++)
+        {
+            subprob[i].x[k] = prob->x[perm[j]];
+            subprob[i].y[k] = prob->y[perm[j]];
+            ++k;
+        }
+
+    }
+
+    struct parameter param_tmp = *param;
+    *best_p = -1;
+    if(param->solver_type == L2R_LR || param->solver_type == L2R_L2LOSS_SVC)
+    {
+        // TODO
+        printf("Not yet.");
+        exit(1);
+    }
+    else if(param->solver_type == L2R_L2LOSS_SVR)
+    {
+        double max_p = calc_max_p(prob, &param_tmp);
+        int num_p_steps = 20;
+        double max_C = 1048576;
+        *best_score = INF;
+
+        i = num_p_steps-1;
+        if(start_p > 0)
+            i = min((int)(start_p/(max_p/num_p_steps)), i);
+        for(; i >= 0; i--)
+        {
+            param_tmp.p = i*max_p/num_p_steps;
+            double start_C_tmp;
+            if(start_C <= 0)
+                start_C_tmp = calc_start_C(prob, &param_tmp);
+            else
+                start_C_tmp = start_C;
+            start_C_tmp = min(start_C_tmp, max_C);
+            double best_C_tmp, best_score_tmp;
+            
+            find_parameter_C(prob, &param_tmp, start_C_tmp, max_C, &best_C_tmp, &best_score_tmp, fold_start, perm, subprob, nr_fold);
+            
+            if(best_score_tmp < *best_score)
+            {
+                *best_p = param_tmp.p;
+                *best_C = best_C_tmp;
+                *best_score = best_score_tmp;
+            }
+        }
+    }
+
+    free(fold_start);
+    free(perm);
+    for(i=0; i<nr_fold; i++)
+    {
+        free(subprob[i].x);
+        free(subprob[i].y);
+    }
+    free(subprob);
+}
+
 double predict_values(const struct model *model_, const struct feature_node *x, double *dec_values)
 {
 	int idx;
