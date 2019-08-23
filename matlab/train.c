@@ -92,6 +92,8 @@ void do_find_parameters(double *best_C, double *best_p, double *best_score)
 		start_p = param.p;
 	else
 		start_p = -1.0;
+
+	mexPrintf("Doing parameter search with %d-fold cross validation.\n", nr_fold);
 	find_parameters(&prob, &param, nr_fold, start_C, start_p, best_C, best_p, best_score);
 
 	if(param.solver_type == L2R_LR || param.solver_type == L2R_L2LOSS_SVC)
