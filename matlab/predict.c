@@ -16,7 +16,7 @@ typedef int mwIndex;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-int print_null(const char *s,...) {}
+int print_null(const char *s,...) {return 0;}
 int (*info)(const char *fmt,...);
 
 int col_format_flag;
