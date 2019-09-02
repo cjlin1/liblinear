@@ -86,6 +86,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 void read_problem(const char *filename);
 void do_cross_validation();
 void do_find_parameters();
+void do_find_parameters_pso();
 
 struct feature_node *x_space;
 struct parameter param;
@@ -93,6 +94,7 @@ struct problem prob;
 struct model* model_;
 int flag_cross_validation;
 int flag_find_parameters;
+int flag_find_parameters_pso;
 int flag_C_specified;
 int flag_p_specified;
 int flag_solver_specified;
@@ -119,6 +121,10 @@ int main(int argc, char **argv)
 	{
 		do_find_parameters();
 	}
+	else if (flag_find_parameters_pso)
+    {
+        do_find_parameters_pso();
+    }
 	else if(flag_cross_validation)
 	{
 		do_cross_validation();
@@ -160,6 +166,22 @@ void do_find_parameters()
 		printf("Best C = %g  CV accuracy = %g%%\n", best_C, 100.0*best_score);
 	else if(param.solver_type == L2R_L2LOSS_SVR)
 		printf("Best C = %g Best p = %g  CV MSE = %g\n", best_C, best_p, best_score);
+}
+
+void do_find_parameters_pso()
+{
+    double start_C, start_p, best_C, best_p, best_score;
+    if (flag_C_specified)
+        start_C = param.C;
+    else
+        start_C = -1.0;
+    if (flag_p_specified)
+        start_p = param.p;
+    else
+        start_p = -1.0;
+    
+    printf("Doing parameter search with %d-fold cross validation.\n", nr_fold);
+    find_parameters_pso(&prob, &param, nr_fold, start_C, start_p, &best_C, &best_p, &best_score);
 }
 
 void do_cross_validation()
@@ -222,6 +244,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	flag_p_specified = 0;
 	flag_solver_specified = 0;
 	flag_find_parameters = 0;
+	flag_find_parameters_pso = 0;
 	bias = -1;
 
 	// parse options
@@ -283,6 +306,11 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 				i--;
 				break;
 
+			case 'P':
+				flag_find_parameters_pso = 1;
+				i--;
+				break;
+
 			default:
 				fprintf(stderr,"unknown option: -%c\n", argv[i-1][1]);
 				exit_with_help();
@@ -311,7 +339,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	}
 
 	// default solver for parameter selection is L2R_L2LOSS_SVC
-	if(flag_find_parameters)
+	if(flag_find_parameters || flag_find_parameters_pso)
 	{
 		if(!flag_cross_validation)
 			nr_fold = 5;

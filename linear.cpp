@@ -6,6 +6,9 @@
 #include <locale.h>
 #include "linear.h"
 #include "tron.h"
+#include <iostream>
+#include <random>
+#include <cassert>
 int liblinear_version = LIBLINEAR_VERSION;
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
@@ -2318,6 +2321,38 @@ static double calc_max_p(const problem *prob, const parameter *param)
 	return max_p;
 }
 
+double cross_validation_with_subprob(const problem *prob, const parameter *param, const int *fold_start, const int *perm, const problem *subprob, int nr_fold)
+{
+    int i;
+    double *target = Malloc(double, prob->l);
+
+    for(i=0;i<nr_fold;i++)
+    {
+        int begin = fold_start[i];
+        int end = fold_start[i+1];
+        int j;
+        struct model *submodel = train(subprob,param);
+        for(j=begin;j<end;j++){
+            target[perm[j]] = predict(submodel,prob->x[perm[j]]);
+        }
+        free_and_destroy_model(&submodel);
+    }
+    
+    double total_error = 0.0;
+    for(i=0; i<prob->l; i++)
+    {
+        double y = prob->y[i];
+        double v = target[i];
+        total_error += (v-y)*(v-y);
+    }
+    double current_error = total_error/prob->l;
+    
+    info("log2c=%7.2f\tp=%7.2f\tMean squared error=%g\n",log(param->C)/log(2.0),param->p,current_error);
+    free(target);
+
+    return current_error;
+}
+
 static void find_parameter_C(const problem *prob, parameter *param_tmp, double start_C, double max_C, double *best_C, double *best_score, const int *fold_start, const int *perm, const problem *subprob, int nr_fold)
 {
 	// variables for CV
@@ -2766,6 +2801,203 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 	free(subprob);
 }
 
+const int D = 2; // Dimension
+const int N = 40; // Swarm size
+class pso{
+    public:
+        pso(const problem *prob, const parameter *param, int *fold_start, int *perm, problem *subprob, int nr_fold);
+        void solve();
+        //    cross_validation_with_subprob();
+    private:
+        double min_p, max_p;
+        double min_C, max_C;
+        double range[D][2];
+        const int max_iter = 100;
+        const int nbh_size = 3; // Neighborhood size
+        const double omega = 1.0 / (2.0 * log(2.0));
+        const double c = 1.0/2.0 + log(2.0);
+
+        double g_best = INF;
+        double p_best[N];
+        double l_best[N];
+        
+        double g_pos[D];
+        double c_pos[N][D];
+        double p_pos[N][D];
+        double l_pos[N][D];
+
+        double v[N][D];
+
+        // Fold splits and parameter
+        const problem *prob;
+        parameter param_tmp;
+        int *fold_start;
+        int *perm;
+        problem *subprob;
+        int nr_fold;
+
+        void update_i(const int i);
+        double get_i_MSE(const int i);
+        void update_g_MSE(const int i, const double mse_i);
+        void update_p_MSE(const int i, const double mse_i);
+        void update_l_MSE(const int i, const double mse_i);
+};
+
+pso::pso(const problem *_prob, const parameter *_param, int *_fold_start, int *_perm, problem *_subprob, int _nr_fold) : prob(_prob), param_tmp(*_param), fold_start(_fold_start), perm(_perm), subprob(_subprob), nr_fold(_nr_fold){
+    
+    set_print_string_function(&print_null);
+    min_p = 0;
+    max_p = calc_max_p(prob, &param_tmp);
+    min_C = INF;
+    max_C = 1048576;
+    const int num_p_steps = 20;
+    for(int i = 0; i < num_p_steps; i++){
+        param_tmp.p = i*max_p/num_p_steps;
+        min_C = min(min_C, calc_start_C(prob, &param_tmp));
+    }
+
+
+    for(int i = 0; i < N; i++){
+        p_best[i] = INF;
+        l_best[i] = INF;
+    }
+    
+    range[0][0] = min_p; range[0][1] = max_p;
+    range[1][0] = min_C; range[1][1] = max_C;
+
+    std::default_random_engine generator[D];
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
+    // Random init position
+    for(int i = 0; i < N; i++){
+        for(int d = 0; d < D; d++){
+            c_pos[i][d] = range[d][0] + (range[d][1] - range[d][0]) * distribution(generator[d]);
+            p_pos[i][d] = c_pos[i][d];
+            l_pos[i][d] = c_pos[i][d];
+        }
+    }
+    // Random init velocity
+    for(int i = 0; i < N; i++){
+        for(int d = 0; d < D; d++){
+            v[i][d] = range[d][0] - c_pos[i][d] + (range[d][1] - range[d][0]) * distribution(generator[d]);
+        }
+    }
+    // Init MSE_i
+    for(int i = 0; i < N; i++){ 
+        double mse_i = get_i_MSE(i);
+        update_p_MSE(i, mse_i);
+        update_l_MSE(i, mse_i);
+    }
+}
+
+void pso::update_g_MSE(const int i, const double mse_i){
+    if( g_best > mse_i ){
+        g_best = mse_i;
+        for(int d = 0; d < D; d++)
+            g_pos[d] = c_pos[i][d];
+    }
+}
+
+void pso::update_p_MSE(const int i, const double mse_i){
+    if(mse_i < p_best[i]){
+        p_best[i] = mse_i;
+        for(int d = 0; d < D; d++)
+            p_pos[i][d] = c_pos[i][d];
+    }
+}
+
+void pso::update_l_MSE(const int i, const double mse_i){
+    for(int cnt = 0; cnt < nbh_size; cnt++ ){
+        int j = rand() % N;
+        if(mse_i < p_best[j]){
+            l_best[j] = mse_i;
+            for(int d = 0; d < D; d++)
+                l_pos[j][d] = c_pos[i][d];
+        }
+    }
+}
+
+double pso::get_i_MSE(int i){
+    param_tmp.p = c_pos[i][0];
+    param_tmp.C = c_pos[i][1];
+    double mse_i = cross_validation_with_subprob(prob, &param_tmp, fold_start, perm, subprob, nr_fold);
+    return mse_i;
+}
+
+void pso::update_i(const int i){
+    bool p_l_pos_same = true;
+    for(int d = 0; d < D; d++){
+        if(p_pos[i][d] != l_pos[i][d]){
+            p_l_pos_same = false;
+            break;
+        }
+    }
+
+    double g[D];
+    if(p_l_pos_same){
+        for(int d = 0; d < D; d++)
+            g[d] = c_pos[i][d] + c*(p_pos[i][d] - c_pos[i][d])/2.0;
+    }
+    else{
+        for(int d = 0; d < D; d++)
+            g[d] = c_pos[i][d] + c*(p_pos[i][d] + l_pos[i][d] - c_pos[i][d])/3.0;
+    }
+
+   // printf("c_pos %lf %lf \n", c_pos[i][0], c_pos[i][1]);
+   // printf("l_pos %lf %lf \n", l_pos[i][0], l_pos[i][1]);
+   // printf("g_pos %lf %lf \n", g[0], g[1]);
+    double radius = 0;
+    for(int d = 0; d < D; d++)
+        radius += (c_pos[i][d] - g[d]) * (c_pos[i][d] - g[d]);
+    radius = sqrt( radius );
+    
+    double rand_pos[D];
+    std::default_random_engine generator;
+    std::normal_distribution<double> distribution(0.0,1.0);
+    for(int d = 0; d < D; d++)
+        rand_pos[d] = distribution(generator);
+
+    double rand_radius = 0;
+    for(int d = 0; d < D; d++)
+        rand_radius += (rand_pos[d]) * (rand_pos[d]);
+    rand_radius = sqrt( rand_radius );
+   
+    double scale = radius / rand_radius;
+    for(int d = 0; d < D; d++)
+        rand_pos[d] *= scale;
+
+    //printf("rand_pos %lf %lf \n", rand_pos[0], rand_pos[1]);
+
+    for(int d = 0; d < D; d++)
+        v[i][d] = omega*v[i][d] + ( rand_pos[d] - c_pos[i][d] );
+
+    for(int d = 0; d < D; d++){
+        c_pos[i][d] += v[i][d];
+        if(c_pos[i][d] < range[d][0]){
+            c_pos[i][d] = range[d][0];
+            v[i][d] = -0.5 * v[i][d];
+        }
+        else if(c_pos[i][d] > range[d][1]){
+            c_pos[i][d] = range[d][1]; 
+            v[i][d] = -0.5 * v[i][d];
+        }
+    }
+}
+void pso::solve(){
+    int t = 0;
+    while(t < max_iter){
+        for(int i = 0; i < N; i++){
+            update_i(i);
+            double mse_i = get_i_MSE(i);
+            printf("p: %lf log2C: %lf mse_i: %lf\n", c_pos[i][0], log(c_pos[i][1])/log(2.0), mse_i );
+            update_g_MSE(i, mse_i);
+            update_p_MSE(i, mse_i);
+            update_l_MSE(i, mse_i);
+        }
+        printf("iter %d p: %lf C: %lf mse_i: %lf\n", t, g_pos[0], g_pos[1], g_best );
+        t++;
+    }
+}
+
 void find_parameters_pso(const problem *prob, const parameter *param, int nr_fold, double start_C, double start_p, double *best_C, double *best_p, double *best_score)
 {
     // prepare CV folds
@@ -2819,45 +3051,9 @@ void find_parameters_pso(const problem *prob, const parameter *param, int nr_fol
 
     }
 
-    struct parameter param_tmp = *param;
-    *best_p = -1;
-    if(param->solver_type == L2R_LR || param->solver_type == L2R_L2LOSS_SVC)
-    {
-        // TODO
-        printf("Not yet.");
-        exit(1);
-    }
-    else if(param->solver_type == L2R_L2LOSS_SVR)
-    {
-        double max_p = calc_max_p(prob, &param_tmp);
-        int num_p_steps = 20;
-        double max_C = 1048576;
-        *best_score = INF;
 
-        i = num_p_steps-1;
-        if(start_p > 0)
-            i = min((int)(start_p/(max_p/num_p_steps)), i);
-        for(; i >= 0; i--)
-        {
-            param_tmp.p = i*max_p/num_p_steps;
-            double start_C_tmp;
-            if(start_C <= 0)
-                start_C_tmp = calc_start_C(prob, &param_tmp);
-            else
-                start_C_tmp = start_C;
-            start_C_tmp = min(start_C_tmp, max_C);
-            double best_C_tmp, best_score_tmp;
-            
-            find_parameter_C(prob, &param_tmp, start_C_tmp, max_C, &best_C_tmp, &best_score_tmp, fold_start, perm, subprob, nr_fold);
-            
-            if(best_score_tmp < *best_score)
-            {
-                *best_p = param_tmp.p;
-                *best_C = best_C_tmp;
-                *best_score = best_score_tmp;
-            }
-        }
-    }
+    pso pso_prob(prob, param, fold_start, perm, subprob , nr_fold);
+    pso_prob.solve();
 
     free(fold_start);
     free(perm);

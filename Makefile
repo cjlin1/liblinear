@@ -1,6 +1,7 @@
 CXX ?= g++
 CC ?= gcc
 CFLAGS = -Wall -Wconversion -O3 -fPIC
+#CFLAGS = -Wall -Wconversion -g -fPIC
 LIBS = blas/blas.a
 SHVER = 3
 OS = $(shell uname)
@@ -26,7 +27,7 @@ tron.o: tron.cpp tron.h
 	$(CXX) $(CFLAGS) -c -o tron.o tron.cpp
 
 linear.o: linear.cpp linear.h
-	$(CXX) $(CFLAGS) -c -o linear.o linear.cpp
+	$(CXX) -std=c++11 $(CFLAGS) -c -o linear.o linear.cpp
 
 blas/blas.a: blas/*.c blas/*.h
 	make -C blas OPTFLAGS='$(CFLAGS)' CC='$(CC)';
