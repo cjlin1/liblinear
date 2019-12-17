@@ -182,11 +182,11 @@ void l2r_lr_fun::get_diag_preconditioner(double *M)
 
 	for (i=0; i<l; i++)
 	{
-		feature_node *s = x[i];
-		while (s->index!=-1)
+		feature_node *xi = x[i];
+		while (xi->index!=-1)
 		{
-			M[s->index-1] += s->value*s->value*C[i]*D[i];
-			s++;
+			M[xi->index-1] += xi->value*xi->value*C[i]*D[i];
+			xi++;
 		}
 	}
 }
@@ -339,11 +339,11 @@ void l2r_l2_svc_fun::get_diag_preconditioner(double *M)
 	for (i=0; i<sizeI; i++)
 	{
 		int idx = I[i];
-		feature_node *s = x[idx];
-		while (s->index!=-1)
+		feature_node *xi = x[idx];
+		while (xi->index!=-1)
 		{
-			M[s->index-1] += s->value*s->value*C[idx]*2;
-			s++;
+			M[xi->index-1] += xi->value*xi->value*C[idx]*2;
+			xi++;
 		}
 	}
 }
