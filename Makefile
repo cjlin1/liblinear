@@ -2,7 +2,7 @@ CXX ?= g++
 CC ?= gcc
 CFLAGS = -Wall -Wconversion -O3 -fPIC
 LIBS = blas/blas.a
-SHVER = 3
+SHVER = 4
 OS = $(shell uname)
 #LIBS = -lblas
 
