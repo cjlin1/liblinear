@@ -2432,7 +2432,7 @@ static void find_parameter_C(const problem *prob, parameter *param_tmp, double s
 	}
 
 	if(param_tmp->C > max_C)
-		info("warning: maximum C reached.\n");
+		info("WARNING: maximum C reached.\n");
 	free(target);
 	for(i=0; i<nr_fold; i++)
 		free(prev_w[i]);
@@ -3173,8 +3173,10 @@ const char *check_parameter(const problem *prob, const parameter *param)
 		return "unknown solver type";
 
 	if(param->init_sol != NULL
-		&& param->solver_type != L2R_LR && param->solver_type != L2R_L2LOSS_SVC)
-		return "Initial-solution specification supported only for solver L2R_LR and L2R_L2LOSS_SVC";
+		&& param->solver_type != L2R_LR
+		&& param->solver_type != L2R_L2LOSS_SVC
+		&& param->solver_type != L2R_L2LOSS_SVR)
+		return "Initial-solution specification supported only for solvers L2R_LR, L2R_L2LOSS_SVC, and L2R_L2LOSS_SVR";
 
 	return NULL;
 }
