@@ -70,6 +70,28 @@ public:
 		return (ret);
 	}
 
+	static double sparse_dot(const feature_node *x1, const feature_node *x2)
+	{
+		double ret = 0;
+		while(x1->index != -1 && x2->index != -1)
+		{
+			if(x1->index == x2->index)
+			{
+				ret += x1->value * x2->value;
+				++x1;
+				++x2;
+			}
+			else
+			{
+				if(x1->index > x2->index)
+					++x2;
+				else
+					++x1;
+			}
+		}
+		return (ret);
+	}
+
 	static void axpy(const double a, const feature_node *x, double *y)
 	{
 		while(x->index != -1)
@@ -2017,6 +2039,342 @@ static void solve_l1r_lr(
 	delete [] D;
 }
 
+struct heap {
+	enum HEAP_TYPE { MIN, MAX };
+	int _size;
+	HEAP_TYPE _type;
+	feature_node* a;
+
+	heap(int max_size, HEAP_TYPE type)
+	{
+		_size = 0;
+		a = new feature_node[max_size];
+		_type = type;
+	}
+	~heap()
+	{
+		delete [] a;
+	}
+	bool cmp(const feature_node& left, const feature_node& right)
+	{
+		if(_type == MIN)
+			return left.value > right.value;
+		else
+			return left.value < right.value;
+	}
+	int size()
+	{
+		return _size;
+	}
+	void push(feature_node node)
+	{
+		a[_size] = node;
+		_size++;
+		int i = _size-1;
+		while(i)
+		{
+			int p = (i-1)/2;
+			if(cmp(a[p], a[i]))
+			{
+				swap(a[i], a[p]);
+				i = p;
+			}
+			else
+				break;
+		}
+	}
+	void pop()
+	{
+		_size--;
+		a[0] = a[_size];
+		int i = 0;
+		while(i*2+1 < _size)
+		{
+			int l = i*2+1;
+			int r = i*2+2;
+			if(r < _size && cmp(a[l], a[r]))
+				l = r;
+			if(cmp(a[i], a[l]))
+			{
+				swap(a[i], a[l]);
+				i = l;
+			}
+			else
+				break;
+		}
+	}
+	feature_node top()
+	{
+		return a[0];
+	}
+};
+
+// A two-level coordinate descent algorithm for
+// a scaled one-class SVM dual problem
+//
+//  min_\alpha  0.5(\alpha^T Q \alpha),
+//    s.t.      0 <= \alpha_i <= 1 and
+//              e^T \alpha = \nu l
+//
+//  where Qij = xi^T xj
+//
+// Given:
+// x, nu
+// eps is the stopping tolerance
+//
+// solution will be put in w and rho
+//
+// See Algorithm 7 in supplementary materials of Chou et al., SDM 2020.
+
+static void solve_oneclass_svm(const problem *prob, double *w, double *rho, double eps, double nu)
+{
+	int l = prob->l;
+	int w_size = prob->n;
+	int i, j, s, iter = 0;
+	double Gi, Gj;
+	double Qij, quad_coef, delta, sum;
+	double old_alpha_i;
+	double *QD = new double[l];
+	double *G = new double[l];
+	int *index = new int[l];
+	double *alpha = new double[l];
+	int max_inner_iter;
+	int max_iter = 1000;
+	int active_size = l;
+
+	double negGmax;			// max { -grad(f)_i | alpha_i < 1 }
+	double negGmin;			// min { -grad(f)_i | alpha_i > 0 }
+
+	int *most_violating_i = new int[l];
+	int *most_violating_j = new int[l];
+
+	int n = (int)(nu*l);		// # of alpha's at upper bound
+	for(i=0; i<n; i++)
+		alpha[i] = 1;
+	if (n<l)
+		alpha[i] = nu*l-n;
+	for(i=n+1; i<l; i++)
+		alpha[i] = 0;
+
+	for(i=0; i<w_size; i++)
+		w[i] = 0;
+	for(i=0; i<l; i++)
+	{
+		feature_node * const xi = prob->x[i];
+		QD[i] = sparse_operator::nrm2_sq(xi);
+		sparse_operator::axpy(alpha[i], xi, w);
+
+		index[i] = i;
+	}
+
+	while (iter < max_iter)
+	{
+		negGmax = -INF;
+		negGmin = INF;
+
+		for (s=0; s<active_size; s++)
+		{
+			i = index[s];
+			feature_node * const xi = prob->x[i];
+			G[i] = sparse_operator::dot(w, xi);
+			if (alpha[i] < 1)
+				negGmax = max(negGmax, -G[i]);
+			if (alpha[i] > 0)
+				negGmin = min(negGmin, -G[i]);
+		}
+
+		if (negGmax - negGmin < eps)
+		{
+			if (active_size == l)
+				break;
+			else
+			{
+				active_size = l;
+				info("*");
+				continue;
+			}
+		}
+
+		for(s=0; s<active_size; s++)
+		{
+			i = index[s];
+			if ((alpha[i] == 1 && -G[i] > negGmax) ||
+			    (alpha[i] == 0 && -G[i] < negGmin))
+			{
+				active_size--;
+				swap(index[s], index[active_size]);
+				s--;
+			}
+		}
+
+		max_inner_iter = max(active_size/10, 1);
+		struct heap min_heap = heap(max_inner_iter, heap::MIN);
+		struct heap max_heap = heap(max_inner_iter, heap::MAX);
+		struct feature_node node;
+		for(s=0; s<active_size; s++)
+		{
+			i = index[s];
+			node.index = i;
+			node.value = -G[i];
+
+			if (alpha[i] < 1)
+			{
+				if (min_heap.size() < max_inner_iter)
+					min_heap.push(node);
+				else if (min_heap.top().value < node.value)
+				{
+					min_heap.pop();
+					min_heap.push(node);
+				}
+			}
+
+			if (alpha[i] > 0)
+			{
+				if (max_heap.size() < max_inner_iter)
+					max_heap.push(node);
+				else if (max_heap.top().value > node.value)
+				{
+					max_heap.pop();
+					max_heap.push(node);
+				}
+			}
+		}
+		max_inner_iter = min(min_heap.size(), max_heap.size());
+		while (max_heap.size() > max_inner_iter)
+			max_heap.pop();
+		while (min_heap.size() > max_inner_iter)
+			min_heap.pop();
+
+		for (s=max_inner_iter-1; s>=0; s--)
+		{
+			most_violating_i[s] = min_heap.top().index;
+			most_violating_j[s] = max_heap.top().index;
+			min_heap.pop();
+			max_heap.pop();
+		}
+
+		for (s=0; s<max_inner_iter; s++)
+		{
+			i = most_violating_i[s];
+			j = most_violating_j[s];
+
+			if ((alpha[i] == 0 && alpha[j] == 0) ||
+			    (alpha[i] == 1 && alpha[j] == 1))
+				continue;
+
+			feature_node const * xi = prob->x[i];
+			feature_node const * xj = prob->x[j];
+
+			Gi = sparse_operator::dot(w, xi);
+			Gj = sparse_operator::dot(w, xj);
+
+			int violating_pair = 0;
+			if (alpha[i] < 1 && alpha[j] > 0 && -Gj + 1e-12 < -Gi)
+				violating_pair = 1;
+			else
+				if (alpha[i] > 0 && alpha[j] < 1 && -Gi + 1e-12 < -Gj)
+					violating_pair = 1;
+			if (violating_pair == 0)
+				continue;
+
+			Qij = sparse_operator::sparse_dot(xi, xj);
+			quad_coef = QD[i] + QD[j] - 2*Qij;
+			if(quad_coef <= 0)
+				quad_coef = 1e-12;
+			delta = (Gi - Gj) / quad_coef;
+			old_alpha_i = alpha[i];
+			sum = alpha[i] + alpha[j];
+			alpha[i] = alpha[i] - delta;
+			alpha[j] = alpha[j] + delta;
+			if (sum > 1)
+			{
+				if (alpha[i] > 1)
+				{
+					alpha[i] = 1;
+					alpha[j] = sum - 1;
+				}
+			}
+			else
+			{
+				if (alpha[j] < 0)
+				{
+					alpha[j] = 0;
+					alpha[i] = sum;
+				}
+			}
+			if (sum > 1)
+			{
+				if (alpha[j] > 1)
+				{
+					alpha[j] = 1;
+					alpha[i] = sum - 1;
+				}
+			}
+			else
+			{
+				if (alpha[i] < 0)
+				{
+					alpha[i] = 0;
+					alpha[j] = sum;
+				}
+			}
+			delta = alpha[i] - old_alpha_i;
+			sparse_operator::axpy(delta, xi, w);
+			sparse_operator::axpy(-delta, xj, w);
+		}
+		iter++;
+		if (iter % 10 == 0)
+			info(".");
+	}
+	info("\noptimization finished, #iter = %d\n",iter);
+	if (iter >= max_iter)
+		info("\nWARNING: reaching max number of iterations\n\n");
+
+	// calculate object value
+	double v = 0;
+	for(i=0; i<w_size; i++)
+		v += w[i]*w[i];
+	int nSV = 0;
+	for(i=0; i<l; i++)
+	{
+		if (alpha[i] > 0)
+			++nSV;
+	}
+	info("Objective value = %lf\n", v/2);
+	info("nSV = %d\n", nSV);
+
+	// calculate rho
+	double nr_free = 0;
+	double ub = INF, lb = -INF, sum_free = 0;
+	for(i=0; i<l; i++)
+	{
+		double G = sparse_operator::dot(w, prob->x[i]);
+		if (alpha[i] == 0)
+			lb = max(lb, G);
+		else if (alpha[i] == 1)
+			ub = min(ub, G);
+		else
+		{
+			++nr_free;
+			sum_free += G;
+		}
+	}
+
+	if (nr_free > 0)
+		*rho = sum_free/nr_free;
+	else
+		*rho = (ub + lb)/2;
+
+	info("rho = %lf\n", *rho);
+
+	delete [] QD;
+	delete [] G;
+	delete [] index;
+	delete [] alpha;
+	delete [] most_violating_i;
+	delete [] most_violating_j;
+}
+
 // transpose matrix X from row format to column format
 static void transpose(const problem *prob, feature_node **x_space_ret, problem *prob_col)
 {
@@ -2473,6 +2831,13 @@ model* train(const problem *prob, const parameter *param)
 		model_->label = NULL;
 		train_one(prob, param, model_->w, 0, 0);
 	}
+	else if(check_oneclass_model(model_))
+	{
+		model_->w = Malloc(double, w_size);
+		model_->nr_class = 2;
+		model_->label = NULL;
+		solve_oneclass_svm(prob, model_->w, &(model_->rho), param->eps, param->nu);
+	}
 	else
 	{
 		int nr_class;
@@ -2793,11 +3158,15 @@ double predict_values(const struct model *model_, const struct feature_node *x, 
 			for(i=0;i<nr_w;i++)
 				dec_values[i] += w[(idx-1)*nr_w+i]*lx->value;
 	}
+	if(check_oneclass_model(model_))
+		dec_values[0] -= model_->rho;
 
 	if(nr_class==2)
 	{
 		if(check_regression_model(model_))
 			return dec_values[0];
+		else if(check_oneclass_model(model_))
+			return (dec_values[0]>0)?1:-1;
 		else
 			return (dec_values[0]>0)?model_->label[0]:model_->label[1];
 	}
@@ -2860,7 +3229,9 @@ static const char *solver_type_table[]=
 	"L2R_LR", "L2R_L2LOSS_SVC_DUAL", "L2R_L2LOSS_SVC", "L2R_L1LOSS_SVC_DUAL", "MCSVM_CS",
 	"L1R_L2LOSS_SVC", "L1R_LR", "L2R_LR_DUAL",
 	"", "", "",
-	"L2R_L2LOSS_SVR", "L2R_L2LOSS_SVR_DUAL", "L2R_L1LOSS_SVR_DUAL", NULL
+	"L2R_L2LOSS_SVR", "L2R_L2LOSS_SVR_DUAL", "L2R_L1LOSS_SVR_DUAL",
+	"", "", "", "", "", "", "",
+	"ONECLASS_SVM", NULL
 };
 
 int save_model(const char *model_file_name, const struct model *model_)
@@ -2905,6 +3276,9 @@ int save_model(const char *model_file_name, const struct model *model_)
 	fprintf(fp, "nr_feature %d\n", nr_feature);
 
 	fprintf(fp, "bias %.17g\n", model_->bias);
+
+	if(check_oneclass_model(model_))
+		fprintf(fp, "rho %.17g\n", model_->rho);
 
 	fprintf(fp, "w\n");
 	for(i=0; i<w_size; i++)
@@ -2956,6 +3330,7 @@ struct model *load_model(const char *model_file_name)
 	int n;
 	int nr_class;
 	double bias;
+	double rho;
 	model *model_ = Malloc(model,1);
 	parameter& param = model_->param;
 	// parameters for training only won't be assigned, but arrays are assigned as NULL for safety
@@ -3009,6 +3384,11 @@ struct model *load_model(const char *model_file_name)
 		{
 			FSCANF(fp,"%lf",&bias);
 			model_->bias=bias;
+		}
+		else if(strcmp(cmd,"rho")==0)
+		{
+			FSCANF(fp,"%lf",&rho);
+			model_->rho=rho;
 		}
 		else if(strcmp(cmd,"w")==0)
 		{
@@ -3082,7 +3462,7 @@ static inline double get_w_value(const struct model *model_, int idx, int label_
 
 	if(idx < 0 || idx > model_->nr_feature)
 		return 0;
-	if(check_regression_model(model_))
+	if(check_regression_model(model_) || check_oneclass_model(model_))
 		return w[idx];
 	else
 	{
@@ -3112,12 +3492,28 @@ double get_decfun_coef(const struct model *model_, int feat_idx, int label_idx)
 
 double get_decfun_bias(const struct model *model_, int label_idx)
 {
+	if(check_oneclass_model(model_))
+	{
+		fprintf(stderr, "ERROR: get_decfun_bias can not be called for a one-class SVM model\n");
+		return 0;
+	}
 	int bias_idx = model_->nr_feature;
 	double bias = model_->bias;
 	if(bias <= 0)
 		return 0;
 	else
 		return bias*get_w_value(model_, bias_idx, label_idx);
+}
+
+double get_decfun_rho(const struct model *model_)
+{
+	if(check_oneclass_model(model_))
+		return model_->rho;
+	else
+	{
+		fprintf(stderr, "ERROR: get_decfun_rho can be called only for a one-class SVM model\n");
+		return 0;
+	}
 }
 
 void free_model_content(struct model *model_ptr)
@@ -3159,6 +3555,9 @@ const char *check_parameter(const problem *prob, const parameter *param)
 	if(param->p < 0)
 		return "p < 0";
 
+	if(prob->bias >= 0 && param->solver_type == ONECLASS_SVM)
+		return "prob->bias >=0, but this is ignored in ONECLASS_SVM";
+
 	if(param->solver_type != L2R_LR
 		&& param->solver_type != L2R_L2LOSS_SVC_DUAL
 		&& param->solver_type != L2R_L2LOSS_SVC
@@ -3169,7 +3568,8 @@ const char *check_parameter(const problem *prob, const parameter *param)
 		&& param->solver_type != L2R_LR_DUAL
 		&& param->solver_type != L2R_L2LOSS_SVR
 		&& param->solver_type != L2R_L2LOSS_SVR_DUAL
-		&& param->solver_type != L2R_L1LOSS_SVR_DUAL)
+		&& param->solver_type != L2R_L1LOSS_SVR_DUAL
+		&& param->solver_type != ONECLASS_SVM)
 		return "unknown solver type";
 
 	if(param->init_sol != NULL
@@ -3193,6 +3593,11 @@ int check_regression_model(const struct model *model_)
 	return (model_->param.solver_type==L2R_L2LOSS_SVR ||
 			model_->param.solver_type==L2R_L1LOSS_SVR_DUAL ||
 			model_->param.solver_type==L2R_L2LOSS_SVR_DUAL);
+}
+
+int check_oneclass_model(const struct model *model_)
+{
+	return model_->param.solver_type == ONECLASS_SVM;
 }
 
 void set_print_string_function(void (*print_func)(const char*))

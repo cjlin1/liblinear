@@ -75,6 +75,8 @@ def train(arg1, arg2=None, arg3=None):
 			11 -- L2-regularized L2-loss support vector regression (primal)
 			12 -- L2-regularized L2-loss support vector regression (dual)
 			13 -- L2-regularized L1-loss support vector regression (dual)
+		  for outlier detection
+			21 -- one-class support vector machine (dual)
 		-c cost : set the parameter C (default 1)
 		-p epsilon : set the epsilon in loss function of SVR (default 0.1)
 		-e epsilon : set tolerance of termination criterion
@@ -83,8 +85,8 @@ def train(arg1, arg2=None, arg3=None):
 				where f is the primal function, (default 0.01)
 			-s 11
 				|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.0001)
-			-s 1, 3, 4, and 7
-				Dual maximal violation <= eps; similar to liblinear (default 0.)
+			-s 1, 3, 4, 7, and 21
+				Dual maximal violation <= eps; similar to libsvm (default 0.1 except 0.01 for -s 21)
 			-s 5 and 6
 				|f'(w)|_inf <= eps*min(pos,neg)/l*|f'(w0)|_inf,
 				where f is the primal function (default 0.01)

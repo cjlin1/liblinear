@@ -29,8 +29,11 @@ void exit_with_help()
 	"	11 -- L2-regularized L2-loss support vector regression (primal)\n"
 	"	12 -- L2-regularized L2-loss support vector regression (dual)\n"
 	"	13 -- L2-regularized L1-loss support vector regression (dual)\n"
+	"  for outlier detection\n"
+	"	21 -- one-class support vector machine (dual)\n"
 	"-c cost : set the parameter C (default 1)\n"
 	"-p epsilon : set the epsilon in loss function of SVR (default 0.1)\n"
+	"-n nu : set the parameter nu of one-class SVM (default 0.5)\n"
 	"-e epsilon : set tolerance of termination criterion\n"
 	"	-s 0 and 2\n"
 	"		|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,\n"
@@ -38,8 +41,8 @@ void exit_with_help()
 	"		positive/negative data (default 0.01)\n"
 	"	-s 11\n"
 	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.0001)\n"
-	"	-s 1, 3, 4, and 7\n"
-	"		Dual maximal violation <= eps; similar to libsvm (default 0.1)\n"
+	"	-s 1, 3, 4, 7, and 21\n"
+	"		Dual maximal violation <= eps; similar to libsvm (default 0.1 except 0.01 for -s 21)\n"
 	"	-s 5 and 6\n"
 	"		|f'(w)|_1 <= eps*min(pos,neg)/l*|f'(w0)|_1,\n"
 	"		where f is the primal function (default 0.01)\n"
@@ -211,8 +214,9 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	// default values
 	param.solver_type = L2R_L2LOSS_SVC_DUAL;
 	param.C = 1;
-	param.eps = INF; // see setting below
 	param.p = 0.1;
+	param.nu = 0.5;
+	param.eps = INF; // see setting below
 	param.nr_weight = 0;
 	param.weight_label = NULL;
 	param.weight = NULL;
@@ -245,6 +249,10 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 			case 'p':
 				flag_p_specified = 1;
 				param.p = atof(argv[i]);
+				break;
+
+			case 'n':
+				param.nu = atof(argv[i]);
 				break;
 
 			case 'e':
@@ -351,6 +359,9 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 			case L2R_L1LOSS_SVR_DUAL:
 			case L2R_L2LOSS_SVR_DUAL:
 				param.eps = 0.1;
+				break;
+			case ONECLASS_SVM:
+				param.eps = 0.01;
 				break;
 		}
 	}

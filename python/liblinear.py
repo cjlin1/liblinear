@@ -20,14 +20,15 @@ __all__ = ['liblinear', 'feature_node', 'gen_feature_nodearray', 'problem',
            'parameter', 'model', 'toPyModel', 'L2R_LR', 'L2R_L2LOSS_SVC_DUAL',
            'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL', 'MCSVM_CS',
            'L1R_L2LOSS_SVC', 'L1R_LR', 'L2R_LR_DUAL', 'L2R_L2LOSS_SVR',
-           'L2R_L2LOSS_SVR_DUAL', 'L2R_L1LOSS_SVR_DUAL', 'print_null']
+           'L2R_L2LOSS_SVR_DUAL', 'L2R_L1LOSS_SVR_DUAL', 'ONECLASS_SVM',
+           'print_null']
 
 try:
 	dirname = path.dirname(path.abspath(__file__))
 	if sys.platform == 'win32':
 		liblinear = CDLL(path.join(dirname, r'..\windows\liblinear.dll'))
 	else:
-		liblinear = CDLL(path.join(dirname, '../liblinear.so.3'))
+		liblinear = CDLL(path.join(dirname, '../liblinear.so.4'))
 except:
 # For unix the prefix 'lib' is not considered.
 	if find_library('linear'):
@@ -48,6 +49,7 @@ L2R_LR_DUAL = 7
 L2R_L2LOSS_SVR = 11
 L2R_L2LOSS_SVR_DUAL = 12
 L2R_L1LOSS_SVR_DUAL = 13
+ONECLASS_SVM = 21
 
 PRINT_STRING_FUN = CFUNCTYPE(None, c_char_p)
 def print_null(s):
@@ -226,8 +228,8 @@ class problem(Structure):
 
 
 class parameter(Structure):
-	_names = ["solver_type", "eps", "C", "nr_weight", "weight_label", "weight", "p", "init_sol"]
-	_types = [c_int, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double), c_double, POINTER(c_double)]
+	_names = ["solver_type", "eps", "C", "nr_weight", "weight_label", "weight", "p", "nu", "init_sol"]
+	_types = [c_int, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double, POINTER(c_double)]
 	_fields_ = genFields(_names, _types)
 
 	def __init__(self, options = None):
@@ -250,6 +252,7 @@ class parameter(Structure):
 		self.eps = float('inf')
 		self.C = 1
 		self.p = 0.1
+		self.nu = 0.5
 		self.nr_weight = 0
 		self.weight_label = None
 		self.weight = None
@@ -289,6 +292,9 @@ class parameter(Structure):
 				i = i + 1
 				self.p = float(argv[i])
 				self.flag_p_specified = True
+			elif argv[i] == "-n":
+				i = i + 1
+				self.nu = float(argv[i])
 			elif argv[i] == "-e":
 				i = i + 1
 				self.eps = float(argv[i])
@@ -343,10 +349,12 @@ class parameter(Structure):
 				self.eps = 0.01
 			elif self.solver_type in [L2R_L2LOSS_SVR_DUAL, L2R_L1LOSS_SVR_DUAL]:
 				self.eps = 0.1
+			elif self.solver_type in [ONECLASS_SVM]:
+				self.eps = 0.01
 
 class model(Structure):
-	_names = ["param", "nr_class", "nr_feature", "w", "label", "bias"]
-	_types = [parameter, c_int, c_int, POINTER(c_double), POINTER(c_int), c_double]
+	_names = ["param", "nr_class", "nr_feature", "w", "label", "bias", "rho"]
+	_types = [parameter, c_int, c_int, POINTER(c_double), POINTER(c_int), c_double, c_double]
 	_fields_ = genFields(_names, _types)
 
 	def __init__(self):
@@ -375,16 +383,26 @@ class model(Structure):
 	def get_decfun_bias(self, label_idx=0):
 		return liblinear.get_decfun_bias(self, label_idx)
 
+	def get_decfun_rho(self):
+		return liblinear.get_decfun_rho(self)
+
 	def get_decfun(self, label_idx=0):
 		w = [liblinear.get_decfun_coef(self, feat_idx, label_idx) for feat_idx in range(1, self.nr_feature+1)]
-		b = liblinear.get_decfun_bias(self, label_idx)
-		return (w, b)
+		if self.is_oneclass_model():
+			rho = self.get_decfun_rho()
+			return (w, -rho)
+		else:
+			b = liblinear.get_decfun_bias(self, label_idx)
+			return (w, b)
 
 	def is_probability_model(self):
 		return (liblinear.check_probability_model(self) == 1)
 
 	def is_regression_model(self):
 		return (liblinear.check_regression_model(self) == 1)
+
+	def is_oneclass_model(self):
+		return (liblinear.check_oneclass_model(self) == 1)
 
 def toPyModel(model_ptr):
 	"""
@@ -414,6 +432,7 @@ fillprototype(liblinear.get_nr_class, c_int, [POINTER(model)])
 fillprototype(liblinear.get_labels, None, [POINTER(model), POINTER(c_int)])
 fillprototype(liblinear.get_decfun_coef, c_double, [POINTER(model), c_int, c_int])
 fillprototype(liblinear.get_decfun_bias, c_double, [POINTER(model), c_int])
+fillprototype(liblinear.get_decfun_rho, c_double, [POINTER(model)])
 
 fillprototype(liblinear.free_model_content, None, [POINTER(model)])
 fillprototype(liblinear.free_and_destroy_model, None, [POINTER(POINTER(model))])
@@ -421,4 +440,5 @@ fillprototype(liblinear.destroy_param, None, [POINTER(parameter)])
 fillprototype(liblinear.check_parameter, c_char_p, [POINTER(problem), POINTER(parameter)])
 fillprototype(liblinear.check_probability_model, c_int, [POINTER(model)])
 fillprototype(liblinear.check_regression_model, c_int, [POINTER(model)])
+fillprototype(liblinear.check_oneclass_model, c_int, [POINTER(model)])
 fillprototype(liblinear.set_print_string_function, None, [CFUNCTYPE(None, c_char_p)])

@@ -12,7 +12,7 @@ typedef int mwIndex;
 
 #define Malloc(type,n) (type *)malloc((n)*sizeof(type))
 
-#define NUM_OF_RETURN_FIELD 6
+#define NUM_OF_RETURN_FIELD 7
 
 static const char *field_names[] = {
 	"Parameters",
@@ -21,6 +21,7 @@ static const char *field_names[] = {
 	"bias",
 	"Label",
 	"w",
+	"rho",
 };
 
 const char *model_to_matlab_structure(mxArray *plhs[], struct model *model_)
@@ -87,6 +88,12 @@ const char *model_to_matlab_structure(mxArray *plhs[], struct model *model_)
 	ptr = mxGetPr(rhs[out_id]);
 	for(i = 0; i < w_size*nr_w; i++)
 		ptr[i]=model_->w[i];
+	out_id++;
+
+	// rho
+	rhs[out_id] = mxCreateDoubleMatrix(1, 1, mxREAL);
+	ptr = mxGetPr(rhs[out_id]);
+	ptr[0] = model_->rho;
 	out_id++;
 
 	/* Create a struct matrix contains NUM_OF_RETURN_FIELD fields */

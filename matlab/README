@@ -109,7 +109,7 @@ Returned Model Structure
 
 The 'train' function returns a model which can be used for future
 prediction.  It is a structure and is organized as [Parameters, nr_class,
-nr_feature, bias, Label, w]:
+nr_feature, bias, Label, w, rho]:
 
         -Parameters: Parameters (now only solver type is provided)
         -nr_class: number of classes; = 2 for regression
@@ -122,6 +122,7 @@ nr_feature, bias, Label, w]:
             nr_w is 1 if nr_class=2 and -s is not 4 (i.e., not
             multi-class svm by Crammer and Singer). It is
             nr_class otherwise.
+        -rho: the bias term of one-class SVM.
 
 If the '-v' option is specified, cross validation is conducted and the
 returned model is just a scalar: cross-validation accuracy for

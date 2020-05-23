@@ -41,6 +41,7 @@ void exit_with_help()
 	"	13 -- L2-regularized L1-loss support vector regression (dual)\n"
 	"-c cost : set the parameter C (default 1)\n"
 	"-p epsilon : set the epsilon in loss function of SVR (default 0.1)\n"
+	"-n nu : set the parameter nu of one-class SVM (default 0.5)\n"
 	"-e epsilon : set tolerance of termination criterion\n"
 	"	-s 0 and 2\n"
 	"		|f'(w)|_2 <= eps*min(pos,neg)/l*|f'(w0)|_2,\n"
@@ -48,8 +49,8 @@ void exit_with_help()
 	"		positive/negative data (default 0.01)\n"
 	"	-s 11\n"
 	"		|f'(w)|_2 <= eps*|f'(w0)|_2 (default 0.0001)\n"
-	"	-s 1, 3, 4 and 7\n"
-	"		Dual maximal violation <= eps; similar to libsvm (default 0.1)\n"
+	"	-s 1, 3, 4, 7, and 21\n"
+	"		Dual maximal violation <= eps; similar to libsvm (default 0.1 except 0.01 for -s 21)\n"
 	"	-s 5 and 6\n"
 	"		|f'(w)|_1 <= eps*min(pos,neg)/l*|f'(w0)|_1,\n"
 	"		where f is the primal function (default 0.01)\n"
@@ -214,6 +215,9 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 				param.p = atof(argv[i]);
 				flag_p_specified = 1;
 				break;
+			case 'n':
+				param.nu = atof(argv[i]);
+				break;
 			case 'e':
 				param.eps = atof(argv[i]);
 				break;
@@ -293,6 +297,9 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 			case L2R_L1LOSS_SVR_DUAL:
 			case L2R_L2LOSS_SVR_DUAL:
 				param.eps = 0.1;
+				break;
+			case ONECLASS_SVM:
+				param.eps = 0.01;
 				break;
 		}
 	}
