@@ -286,11 +286,12 @@ LIBLINEAR shared library:
     >>> b = model_.get_decfun_bias()
     >>> [W, b] = model_.get_decfun()
 
-    For one-class SVM models, label_idx is ignored and b=-rho is returned. That
-    is, the decision function is w*x+b=w*x-rho.
+    For one-class SVM models, label_idx is ignored and b=-rho is
+    returned from get_decfun(). That is, the decision function is
+    w*x+b = w*x-rho.
 
     >>> rho = model_.get_decfun_rho()
-    >>> [W, rho] = model_.get_decfun()
+    >>> [W, b] = model_.get_decfun()
 
     Note that in get_decfun_coef, get_decfun_bias, and get_decfun, feat_idx
     starts from 1, while label_idx starts from 0. If label_idx is not in the

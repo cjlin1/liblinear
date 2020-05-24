@@ -3482,7 +3482,8 @@ static inline double get_w_value(const struct model *model_, int idx, int label_
 
 // feat_idx: starting from 1 to nr_feature
 // label_idx: starting from 0 to nr_class-1 for classification models;
-//            for regression models, label_idx is ignored.
+//            for regression and one-class SVM models, label_idx is
+//            ignored.
 double get_decfun_coef(const struct model *model_, int feat_idx, int label_idx)
 {
 	if(feat_idx > model_->nr_feature)
