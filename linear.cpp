@@ -2847,12 +2847,15 @@ model* train(const problem *prob, const parameter *param)
 	{
 		model_->w = Malloc(double, w_size);
 
-		if(param->init_sol != NULL)
+		if(param->init_sol != NULL) {
+			printf("Warm start: init_sol != NULL. ok!\n");
 			for(i=0;i<w_size;i++)
 				model_->w[i] = param->init_sol[i];
-		else
+		}
+		else {
 			for(i=0;i<w_size;i++)
 				model_->w[i] = 0;
+		}
 
 		model_->nr_class = 2;
 		model_->label = NULL;

@@ -39,6 +39,7 @@ struct parameter
 	double* weight;
 	double p;
 	double *init_sol;
+	int init_sol_size;
 };
 
 struct model

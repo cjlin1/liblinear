@@ -87,6 +87,7 @@ static char* readline(FILE *input)
 
 void parse_command_line(int argc, char **argv, char *input_file_name, char *model_file_name);
 void read_problem(const char *filename);
+double* read_old_weights(const char *filename, int * num_weights);
 void do_cross_validation();
 void do_find_parameters();
 
@@ -103,6 +104,9 @@ int flag_p_specified;
 int flag_solver_specified;
 int nr_fold;
 double bias;
+
+int warmstart_size;
+double* w;
 
 int main(int argc, char **argv)
 {
@@ -224,6 +228,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	param.weight_label = NULL;
 	param.weight = NULL;
 	param.init_sol = NULL;
+	param.init_sol_size = 0;
 	flag_cross_validation = 0;
 	weight_file = NULL;
 	flag_C_specified = 0;
@@ -299,6 +304,16 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 			case 'C':
 				flag_find_parameters = 1;
 				i--;
+				break;
+
+			case 'X':
+				printf("Warm start: old model file = %s\n", argv[i]);
+				param.init_sol = read_old_weights(argv[i], &warmstart_size);
+				if(warmstart_size == 0){
+					printf("Empty model :(");
+					exit(1);
+				} 				
+				param.init_sol_size = warmstart_size;
 				break;
 
 			default:
@@ -529,3 +544,45 @@ void read_problem(const char *filename)
 			prob.W[i] = 1;
 	}
 }
+
+
+
+
+
+
+double* read_old_weights(const char *filename, int * num_weights) {
+	FILE *fp = fopen(filename,"r");
+	if(fp == NULL)
+	{
+		fprintf(stderr,"can't open input file %s\n",filename);
+		exit(1);
+	}
+
+	char * line = NULL;
+	size_t len = 0;
+	ssize_t bytes;
+
+	// read header
+	getline(&line, &len, fp);
+	int num_lines = atoi(line);
+	*num_weights = num_lines;
+	printf("Warm start: model has %d weights\n", num_lines);
+
+	// allocate memory for weights
+	double * w = Malloc(double, num_lines);
+
+	// go through the file and read weights into array
+	size_t idx = 0;
+	while ((bytes = getline(&line, &len, fp)) != -1) {
+		w[idx] = atof(line);
+		idx++;
+    	}
+	printf("Warm start: read %d weights\n", idx);
+
+    if (line)
+        free(line);
+	fclose(fp);
+
+	return w;
+} 
+
