@@ -38,6 +38,7 @@ struct parameter
 	double p;
 	double nu;
 	double *init_sol;
+	int regularize_bias;
 };
 
 struct model

@@ -105,7 +105,7 @@ public:
 class l2r_lr_fun: public function
 {
 public:
-	l2r_lr_fun(const problem *prob, double *C);
+	l2r_lr_fun(const problem *prob, const parameter *param, double *C);
 	~l2r_lr_fun();
 
 	double fun(double *w);
@@ -123,9 +123,10 @@ private:
 	double *z;
 	double *D;
 	const problem *prob;
+	int regularize_bias;
 };
 
-l2r_lr_fun::l2r_lr_fun(const problem *prob, double *C)
+l2r_lr_fun::l2r_lr_fun(const problem *prob, const parameter *param, double *C)
 {
 	int l=prob->l;
 
@@ -134,6 +135,7 @@ l2r_lr_fun::l2r_lr_fun(const problem *prob, double *C)
 	z = new double[l];
 	D = new double[l];
 	this->C = C;
+	this->regularize_bias = param->regularize_bias;
 }
 
 l2r_lr_fun::~l2r_lr_fun()
@@ -155,6 +157,8 @@ double l2r_lr_fun::fun(double *w)
 
 	for(i=0;i<w_size;i++)
 		f += w[i]*w[i];
+	if(regularize_bias == 0)
+		f -= w[w_size-1]*w[w_size-1];
 	f /= 2.0;
 	for(i=0;i<l;i++)
 	{
@@ -185,6 +189,8 @@ void l2r_lr_fun::grad(double *w, double *g)
 
 	for(i=0;i<w_size;i++)
 		g[i] = w[i] + g[i];
+	if(regularize_bias == 0)
+		g[w_size-1] -= w[w_size-1];
 }
 
 int l2r_lr_fun::get_nr_variable(void)
@@ -201,6 +207,8 @@ void l2r_lr_fun::get_diag_preconditioner(double *M)
 
 	for (i=0; i<w_size; i++)
 		M[i] = 1;
+	if(regularize_bias == 0)
+		M[w_size-1] = 0;
 
 	for (i=0; i<l; i++)
 	{
@@ -233,6 +241,8 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	}
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + Hs[i];
+	if(regularize_bias == 0)
+		Hs[w_size-1] -= s[w_size-1];
 }
 
 void l2r_lr_fun::Xv(double *v, double *Xv)
@@ -261,7 +271,7 @@ void l2r_lr_fun::XTv(double *v, double *XTv)
 class l2r_l2_svc_fun: public function
 {
 public:
-	l2r_l2_svc_fun(const problem *prob, double *C);
+	l2r_l2_svc_fun(const problem *prob, const parameter *param, double *C);
 	~l2r_l2_svc_fun();
 
 	double fun(double *w);
@@ -280,9 +290,10 @@ protected:
 	int *I;
 	int sizeI;
 	const problem *prob;
+	int regularize_bias;
 };
 
-l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, double *C)
+l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, const parameter *param, double *C)
 {
 	int l=prob->l;
 
@@ -291,6 +302,7 @@ l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, double *C)
 	z = new double[l];
 	I = new int[l];
 	this->C = C;
+	this->regularize_bias = param->regularize_bias;
 }
 
 l2r_l2_svc_fun::~l2r_l2_svc_fun()
@@ -311,6 +323,8 @@ double l2r_l2_svc_fun::fun(double *w)
 
 	for(i=0;i<w_size;i++)
 		f += w[i]*w[i];
+	if(regularize_bias == 0)
+		f -= w[w_size-1]*w[w_size-1];
 	f /= 2.0;
 	for(i=0;i<l;i++)
 	{
@@ -342,6 +356,8 @@ void l2r_l2_svc_fun::grad(double *w, double *g)
 
 	for(i=0;i<w_size;i++)
 		g[i] = w[i] + 2*g[i];
+	if(regularize_bias == 0)
+		g[w_size-1] -= w[w_size-1];
 }
 
 int l2r_l2_svc_fun::get_nr_variable(void)
@@ -357,6 +373,8 @@ void l2r_l2_svc_fun::get_diag_preconditioner(double *M)
 
 	for (i=0; i<w_size; i++)
 		M[i] = 1;
+	if(regularize_bias == 0)
+		M[w_size-1] = 0;
 
 	for (i=0; i<sizeI; i++)
 	{
@@ -389,6 +407,8 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 	}
 	for(i=0;i<w_size;i++)
 		Hs[i] = s[i] + 2*Hs[i];
+	if(regularize_bias == 0)
+		Hs[w_size-1] -= s[w_size-1];
 }
 
 void l2r_l2_svc_fun::Xv(double *v, double *Xv)
@@ -416,19 +436,21 @@ void l2r_l2_svc_fun::subXTv(double *v, double *XTv)
 class l2r_l2_svr_fun: public l2r_l2_svc_fun
 {
 public:
-	l2r_l2_svr_fun(const problem *prob, double *C, double p);
+	l2r_l2_svr_fun(const problem *prob, const parameter *param, double *C);
 
 	double fun(double *w);
 	void grad(double *w, double *g);
 
 private:
 	double p;
+	int regularize_bias;
 };
 
-l2r_l2_svr_fun::l2r_l2_svr_fun(const problem *prob, double *C, double p):
-	l2r_l2_svc_fun(prob, C)
+l2r_l2_svr_fun::l2r_l2_svr_fun(const problem *prob, const parameter *param, double *C):
+	l2r_l2_svc_fun(prob, param, C)
 {
-	this->p = p;
+	this->p = param->p;
+	this->regularize_bias = param->regularize_bias;
 }
 
 double l2r_l2_svr_fun::fun(double *w)
@@ -444,6 +466,8 @@ double l2r_l2_svr_fun::fun(double *w)
 
 	for(i=0;i<w_size;i++)
 		f += w[i]*w[i];
+	if(regularize_bias == 0)
+		f -= w[w_size-1]*w[w_size-1];
 	f /= 2;
 	for(i=0;i<l;i++)
 	{
@@ -489,6 +513,8 @@ void l2r_l2_svr_fun::grad(double *w, double *g)
 
 	for(i=0;i<w_size;i++)
 		g[i] = w[i] + 2*g[i];
+	if(regularize_bias == 0)
+		g[w_size-1] -= w[w_size-1];
 }
 
 // A coordinate descent algorithm for
@@ -1400,6 +1426,9 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 // solution will be put in w
 //
 // See Yuan et al. (2010) and appendix of LIBLINEAR paper, Fan et al. (2008)
+//
+// To not regularize the bias (i.e., regularize_bias = 0), a constant feature = 1
+// must have been added to the original data. (see -B and -R option)
 
 #undef GETI
 #define GETI(i) (y[i]+1)
@@ -1407,7 +1436,7 @@ void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, do
 
 static void solve_l1r_l2_svc(
 	problem *prob_col, double *w, double eps,
-	double Cp, double Cn)
+	double Cp, double Cn, int regularize_bias)
 {
 	int l = prob_col->l;
 	int w_size = prob_col->n;
@@ -1497,49 +1526,66 @@ static void solve_l1r_l2_svc(
 			H *= 2;
 			H = max(H, 1e-12);
 
-			double Gp = G+1;
-			double Gn = G-1;
 			double violation = 0;
-			if(w[j] == 0)
-			{
-				if(Gp < 0)
-					violation = -Gp;
-				else if(Gn > 0)
-					violation = Gn;
-				else if(Gp>Gmax_old/l && Gn<-Gmax_old/l)
-				{
-					active_size--;
-					swap(index[s], index[active_size]);
-					s--;
-					continue;
-				}
-			}
-			else if(w[j] > 0)
-				violation = fabs(Gp);
+			double Gp = 0, Gn = 0;
+			if(j == w_size-1 && regularize_bias == 0)
+				violation = fabs(G);
 			else
-				violation = fabs(Gn);
-
+			{
+				Gp = G+1;
+				Gn = G-1;
+				if(w[j] == 0)
+				{
+					if(Gp < 0)
+						violation = -Gp;
+					else if(Gn > 0)
+						violation = Gn;
+					else if(Gp>Gmax_old/l && Gn<-Gmax_old/l)
+					{
+						active_size--;
+						swap(index[s], index[active_size]);
+						s--;
+						continue;
+					}
+				}
+				else if(w[j] > 0)
+					violation = fabs(Gp);
+				else
+					violation = fabs(Gn);
+			}
 			Gmax_new = max(Gmax_new, violation);
 			Gnorm1_new += violation;
 
 			// obtain Newton direction d
-			if(Gp < H*w[j])
-				d = -Gp/H;
-			else if(Gn > H*w[j])
-				d = -Gn/H;
+			if(j == w_size-1 && regularize_bias == 0)
+				d = -G/H;
 			else
-				d = -w[j];
+			{
+				if(Gp < H*w[j])
+					d = -Gp/H;
+				else if(Gn > H*w[j])
+					d = -Gn/H;
+				else
+					d = -w[j];
+			}
 
 			if(fabs(d) < 1.0e-12)
 				continue;
 
-			double delta = fabs(w[j]+d)-fabs(w[j]) + G*d;
+			double delta;
+			if(j == w_size-1 && regularize_bias == 0)
+				delta = G*d;
+			else
+				delta = fabs(w[j]+d)-fabs(w[j]) + G*d;
 			d_old = 0;
 			int num_linesearch;
 			for(num_linesearch=0; num_linesearch < max_num_linesearch; num_linesearch++)
 			{
 				d_diff = d_old - d;
-				cond = fabs(w[j]+d)-fabs(w[j]) - sigma*delta;
+				if(j == w_size-1 && regularize_bias == 0)
+					cond = -sigma*delta;
+				else
+					cond = fabs(w[j]+d)-fabs(w[j]) - sigma*delta;
 
 				appxcond = xj_sq[j]*d*d + G_loss*d + cond;
 				if(appxcond <= 0)
@@ -1654,6 +1700,8 @@ static void solve_l1r_l2_svc(
 			nnz++;
 		}
 	}
+	if (regularize_bias == 0)
+		v -= fabs(w[w_size-1]);
 	for(j=0; j<l; j++)
 		if(b[j] > 0)
 			v += C[GETI(j)]*b[j]*b[j];
@@ -1679,6 +1727,9 @@ static void solve_l1r_l2_svc(
 // solution will be put in w
 //
 // See Yuan et al. (2011) and appendix of LIBLINEAR paper, Fan et al. (2008)
+//
+// To not regularize the bias (i.e., regularize_bias = 0), a constant feature = 1
+// must have been added to the original data. (see -B and -R option)
 
 #undef GETI
 #define GETI(i) (y[i]+1)
@@ -1686,7 +1737,7 @@ static void solve_l1r_l2_svc(
 
 static void solve_l1r_lr(
 	const problem *prob_col, double *w, double eps,
-	double Cp, double Cn)
+	double Cp, double Cn, int regularize_bias)
 {
 	int l = prob_col->l;
 	int w_size = prob_col->n;
@@ -1756,6 +1807,9 @@ static void solve_l1r_lr(
 			x++;
 		}
 	}
+	if (regularize_bias == 0)
+		w_norm -= fabs(w[w_size-1]);
+
 	for(j=0; j<l; j++)
 	{
 		exp_wTx[j] = exp(exp_wTx[j]);
@@ -1787,29 +1841,33 @@ static void solve_l1r_lr(
 			}
 			Grad[j] = -tmp + xjneg_sum[j];
 
-			double Gp = Grad[j]+1;
-			double Gn = Grad[j]-1;
 			double violation = 0;
-			if(w[j] == 0)
-			{
-				if(Gp < 0)
-					violation = -Gp;
-				else if(Gn > 0)
-					violation = Gn;
-				//outer-level shrinking
-				else if(Gp>Gmax_old/l && Gn<-Gmax_old/l)
-				{
-					active_size--;
-					swap(index[s], index[active_size]);
-					s--;
-					continue;
-				}
-			}
-			else if(w[j] > 0)
-				violation = fabs(Gp);
+			if (j == w_size-1 && regularize_bias == 0)
+				violation = fabs(Grad[j]);
 			else
-				violation = fabs(Gn);
-
+			{
+				double Gp = Grad[j]+1;
+				double Gn = Grad[j]-1;
+				if(w[j] == 0)
+				{
+					if(Gp < 0)
+						violation = -Gp;
+					else if(Gn > 0)
+						violation = Gn;
+					//outer-level shrinking
+					else if(Gp>Gmax_old/l && Gn<-Gmax_old/l)
+					{
+						active_size--;
+						swap(index[s], index[active_size]);
+						s--;
+						continue;
+					}
+				}
+				else if(w[j] > 0)
+					violation = fabs(Gp);
+				else
+					violation = fabs(Gn);
+			}
 			Gmax_new = max(Gmax_new, violation);
 			Gnorm1_new += violation;
 		}
@@ -1853,39 +1911,47 @@ static void solve_l1r_lr(
 					x++;
 				}
 
-				double Gp = G+1;
-				double Gn = G-1;
 				double violation = 0;
-				if(wpd[j] == 0)
+				if (j == w_size-1 && regularize_bias == 0)
 				{
-					if(Gp < 0)
-						violation = -Gp;
-					else if(Gn > 0)
-						violation = Gn;
-					//inner-level shrinking
-					else if(Gp>QP_Gmax_old/l && Gn<-QP_Gmax_old/l)
-					{
-						QP_active_size--;
-						swap(index[s], index[QP_active_size]);
-						s--;
-						continue;
-					}
+					// bias term not shrunken
+					violation = fabs(G);
+					z = -G/H;
 				}
-				else if(wpd[j] > 0)
-					violation = fabs(Gp);
 				else
-					violation = fabs(Gn);
+				{
+					double Gp = G+1;
+					double Gn = G-1;
+					if(wpd[j] == 0)
+					{
+						if(Gp < 0)
+							violation = -Gp;
+						else if(Gn > 0)
+							violation = Gn;
+						//inner-level shrinking
+						else if(Gp>QP_Gmax_old/l && Gn<-QP_Gmax_old/l)
+						{
+							QP_active_size--;
+							swap(index[s], index[QP_active_size]);
+							s--;
+							continue;
+						}
+					}
+					else if(wpd[j] > 0)
+						violation = fabs(Gp);
+					else
+						violation = fabs(Gn);
 
+					// obtain solution of one-variable problem
+					if(Gp < H*wpd[j])
+						z = -Gp/H;
+					else if(Gn > H*wpd[j])
+						z = -Gn/H;
+					else
+						z = -wpd[j];
+				}
 				QP_Gmax_new = max(QP_Gmax_new, violation);
 				QP_Gnorm1_new += violation;
-
-				// obtain solution of one-variable problem
-				if(Gp < H*wpd[j])
-					z = -Gp/H;
-				else if(Gn > H*wpd[j])
-					z = -Gn/H;
-				else
-					z = -wpd[j];
 
 				if(fabs(z) < 1.0e-12)
 					continue;
@@ -1927,6 +1993,8 @@ static void solve_l1r_lr(
 			if(wpd[j] != 0)
 				w_norm_new += fabs(wpd[j]);
 		}
+		if (regularize_bias == 0)
+			w_norm_new -= fabs(wpd[w_size-1]);
 		delta += (w_norm_new-w_norm);
 
 		negsum_xTd = 0;
@@ -1969,6 +2037,8 @@ static void solve_l1r_lr(
 					if(wpd[j] != 0)
 						w_norm_new += fabs(wpd[j]);
 				}
+				if (regularize_bias == 0)
+					w_norm_new -= fabs(wpd[w_size-1]);
 				delta *= 0.5;
 				negsum_xTd *= 0.5;
 				for(int i=0; i<l; i++)
@@ -2017,6 +2087,8 @@ static void solve_l1r_lr(
 			v += fabs(w[j]);
 			nnz++;
 		}
+	if (regularize_bias == 0)
+		v -= fabs(w[w_size-1]);
 	for(j=0; j<l; j++)
 		if(y[j] == 1)
 			v += C[GETI(j)]*log(1+1/exp_wTx[j]);
@@ -2537,7 +2609,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 				else
 					C[i] = Cn;
 			}
-			fun_obj=new l2r_lr_fun(prob, C);
+			fun_obj=new l2r_lr_fun(prob, param, C);
 			TRON tron_obj(fun_obj, primal_solver_tol, eps_cg);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
@@ -2555,7 +2627,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 				else
 					C[i] = Cn;
 			}
-			fun_obj=new l2r_l2_svc_fun(prob, C);
+			fun_obj=new l2r_l2_svc_fun(prob, param, C);
 			TRON tron_obj(fun_obj, primal_solver_tol, eps_cg);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
@@ -2574,7 +2646,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			problem prob_col;
 			feature_node *x_space = NULL;
 			transpose(prob, &x_space ,&prob_col);
-			solve_l1r_l2_svc(&prob_col, w, primal_solver_tol, Cp, Cn);
+			solve_l1r_l2_svc(&prob_col, w, primal_solver_tol, Cp, Cn, param->regularize_bias);
 			delete [] prob_col.y;
 			delete [] prob_col.x;
 			delete [] x_space;
@@ -2585,7 +2657,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			problem prob_col;
 			feature_node *x_space = NULL;
 			transpose(prob, &x_space ,&prob_col);
-			solve_l1r_lr(&prob_col, w, primal_solver_tol, Cp, Cn);
+			solve_l1r_lr(&prob_col, w, primal_solver_tol, Cp, Cn, param->regularize_bias);
 			delete [] prob_col.y;
 			delete [] prob_col.x;
 			delete [] x_space;
@@ -2600,7 +2672,7 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			for(int i = 0; i < prob->l; i++)
 				C[i] = param->C;
 
-			fun_obj=new l2r_l2_svr_fun(prob, C, param->p);
+			fun_obj=new l2r_l2_svr_fun(prob, param, C);
 			TRON tron_obj(fun_obj, param->eps);
 			tron_obj.set_print_string(liblinear_print_string);
 			tron_obj.tron(w);
@@ -3558,6 +3630,18 @@ const char *check_parameter(const problem *prob, const parameter *param)
 
 	if(prob->bias >= 0 && param->solver_type == ONECLASS_SVM)
 		return "prob->bias >=0, but this is ignored in ONECLASS_SVM";
+
+	if(param->regularize_bias == 0)
+	{
+		if(prob->bias != 1.0)
+			return "To not regularize bias, must specify -B 1 along with -R";
+		if(param->solver_type != L2R_LR
+			&& param->solver_type != L2R_L2LOSS_SVC
+			&& param->solver_type != L1R_L2LOSS_SVC
+			&& param->solver_type != L1R_LR
+			&& param->solver_type != L2R_L2LOSS_SVR)
+			return "-R option supported only for solver L2R_LR, L2R_L2LOSS_SVC, L1R_L2LOSS_SVC, L1R_LR, and L2R_L2LOSS_SVR";
+	}
 
 	if(param->solver_type != L2R_LR
 		&& param->solver_type != L2R_L2LOSS_SVC_DUAL
