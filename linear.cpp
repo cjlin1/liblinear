@@ -5,7 +5,7 @@
 #include <stdarg.h>
 #include <locale.h>
 #include "linear.h"
-#include "tron.h"
+#include "newton.h"
 int liblinear_version = LIBLINEAR_VERSION;
 typedef signed char schar;
 template <class T> static inline void swap(T& x, T& y) { T t=x; x=y; y=t; }
@@ -102,74 +102,195 @@ public:
 	}
 };
 
-class l2r_lr_fun: public function
+// L2-regularized empirical risk minimization
+// min_w w^Tw/2 + \sum C_i \xi(w^Tx_i), where \xi() is the loss
+
+class l2r_erm_fun: public function
 {
 public:
-	l2r_lr_fun(const problem *prob, const parameter *param, double *C);
-	~l2r_lr_fun();
+	l2r_erm_fun(const problem *prob, const parameter *param, double *C);
+	~l2r_erm_fun();
 
 	double fun(double *w);
-	void grad(double *w, double *g);
-	void Hv(double *s, double *Hs);
-
+	double linesearch_and_update(double *w, double *d, double *f, double *g, double alpha);
 	int get_nr_variable(void);
-	void get_diag_preconditioner(double *M);
 
-private:
+protected:
+	virtual double C_times_loss(int i, double wx_i) = 0;
 	void Xv(double *v, double *Xv);
 	void XTv(double *v, double *XTv);
 
 	double *C;
-	double *z;
-	double *D;
 	const problem *prob;
+	double *wx;
+	double *tmp; // a working array
+	double wTw;
 	int regularize_bias;
 };
 
-l2r_lr_fun::l2r_lr_fun(const problem *prob, const parameter *param, double *C)
+l2r_erm_fun::l2r_erm_fun(const problem *prob, const parameter *param, double *C)
 {
 	int l=prob->l;
 
 	this->prob = prob;
 
-	z = new double[l];
-	D = new double[l];
+	wx = new double[l];
+	tmp = new double[l];
 	this->C = C;
 	this->regularize_bias = param->regularize_bias;
 }
 
-l2r_lr_fun::~l2r_lr_fun()
+l2r_erm_fun::~l2r_erm_fun()
 {
-	delete[] z;
-	delete[] D;
+	delete[] wx;
+	delete[] tmp;
 }
 
-
-double l2r_lr_fun::fun(double *w)
+double l2r_erm_fun::fun(double *w)
 {
 	int i;
 	double f=0;
-	double *y=prob->y;
 	int l=prob->l;
 	int w_size=get_nr_variable();
 
-	Xv(w, z);
+	wTw = 0;
+	Xv(w, wx);
 
 	for(i=0;i<w_size;i++)
-		f += w[i]*w[i];
+		wTw += w[i]*w[i];
 	if(regularize_bias == 0)
-		f -= w[w_size-1]*w[w_size-1];
-	f /= 2.0;
+		wTw -= w[w_size-1]*w[w_size-1];
 	for(i=0;i<l;i++)
-	{
-		double yz = y[i]*z[i];
-		if (yz >= 0)
-			f += C[i]*log(1 + exp(-yz));
-		else
-			f += C[i]*(-yz+log(1 + exp(yz)));
-	}
+		f += C_times_loss(i, wx[i]);
+	f = f + 0.5 * wTw;
 
 	return(f);
+}
+
+int l2r_erm_fun::get_nr_variable(void)
+{
+	return prob->n;
+}
+
+// On entry *f must be the function value of w
+// On exit w is updated and *f is the new function value
+double l2r_erm_fun::linesearch_and_update(double *w, double *s, double *f, double *g, double alpha)
+{
+	int i;
+	int l = prob->l;
+	double sTs = 0;
+	double wTs = 0;
+	double gTs = 0;
+	double eta = 0.01;
+	int w_size = get_nr_variable();
+	int max_num_linesearch = 20;
+	double fold = *f;
+	Xv(s, tmp);
+
+	for (i=0;i<w_size;i++)
+	{
+		sTs += s[i] * s[i];
+		wTs += s[i] * w[i];
+		gTs += s[i] * g[i];
+	}
+	if(regularize_bias == 0)
+	{
+		// bias not used in calculating (w + \alpha s)^T (w + \alpha s)
+		sTs -= s[w_size-1] * s[w_size-1];
+		wTs -= s[w_size-1] * w[w_size-1];
+	}
+
+	int num_linesearch = 0;
+	for(num_linesearch=0; num_linesearch < max_num_linesearch; num_linesearch++)
+	{
+		double loss = 0;
+		for(i=0;i<l;i++)
+		{
+			double inner_product = tmp[i] * alpha + wx[i];
+			loss += C_times_loss(i, inner_product);
+		}
+		*f = loss + (alpha * alpha * sTs + wTw) / 2.0 + alpha * wTs;
+		if (*f - fold <= eta * alpha * gTs)
+		{
+			for (i=0;i<l;i++)
+				wx[i] += alpha * tmp[i];
+			break;
+		}
+		else
+			alpha *= 0.5;
+	}
+
+	if (num_linesearch >= max_num_linesearch)
+	{
+		*f = fold;
+		return 0;
+	}
+	else
+		for (i=0;i<w_size;i++)
+			w[i] += alpha * s[i];
+
+	wTw += alpha * alpha * sTs + 2* alpha * wTs;
+	return alpha;
+}
+
+void l2r_erm_fun::Xv(double *v, double *Xv)
+{
+	int i;
+	int l=prob->l;
+	feature_node **x=prob->x;
+
+	for(i=0;i<l;i++)
+		Xv[i]=sparse_operator::dot(v, x[i]);
+}
+
+void l2r_erm_fun::XTv(double *v, double *XTv)
+{
+	int i;
+	int l=prob->l;
+	int w_size=get_nr_variable();
+	feature_node **x=prob->x;
+
+	for(i=0;i<w_size;i++)
+		XTv[i]=0;
+	for(i=0;i<l;i++)
+		sparse_operator::axpy(v[i], x[i], XTv);
+}
+
+class l2r_lr_fun: public l2r_erm_fun
+{
+public:
+	l2r_lr_fun(const problem *prob, const parameter *param, double *C);
+	~l2r_lr_fun();
+
+	void grad(double *w, double *g);
+	void Hv(double *s, double *Hs);
+
+	void get_diag_preconditioner(double *M);
+
+private:
+	double *D;
+	double C_times_loss(int i, double wx_i);
+};
+
+l2r_lr_fun::l2r_lr_fun(const problem *prob, const parameter *param, double *C):
+	l2r_erm_fun(prob, param, C)
+{
+	int l=prob->l;
+	D = new double[l];
+}
+
+l2r_lr_fun::~l2r_lr_fun()
+{
+	delete[] D;
+}
+
+double l2r_lr_fun::C_times_loss(int i, double wx_i)
+{
+	double ywx_i = wx_i * prob->y[i];
+	if (ywx_i >= 0)
+		return C[i]*log(1 + exp(-ywx_i));
+	else
+		return C[i]*(-ywx_i + log(1 + exp(ywx_i)));
 }
 
 void l2r_lr_fun::grad(double *w, double *g)
@@ -181,21 +302,16 @@ void l2r_lr_fun::grad(double *w, double *g)
 
 	for(i=0;i<l;i++)
 	{
-		z[i] = 1/(1 + exp(-y[i]*z[i]));
-		D[i] = z[i]*(1-z[i]);
-		z[i] = C[i]*(z[i]-1)*y[i];
+		tmp[i] = 1/(1 + exp(-y[i]*wx[i]));
+		D[i] = tmp[i]*(1-tmp[i]);
+		tmp[i] = C[i]*(tmp[i]-1)*y[i];
 	}
-	XTv(z, g);
+	XTv(tmp, g);
 
 	for(i=0;i<w_size;i++)
 		g[i] = w[i] + g[i];
 	if(regularize_bias == 0)
 		g[w_size-1] -= w[w_size-1];
-}
-
-int l2r_lr_fun::get_nr_variable(void)
-{
-	return prob->n;
 }
 
 void l2r_lr_fun::get_diag_preconditioner(double *M)
@@ -245,96 +361,45 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 		Hs[w_size-1] -= s[w_size-1];
 }
 
-void l2r_lr_fun::Xv(double *v, double *Xv)
-{
-	int i;
-	int l=prob->l;
-	feature_node **x=prob->x;
-
-	for(i=0;i<l;i++)
-		Xv[i]=sparse_operator::dot(v, x[i]);
-}
-
-void l2r_lr_fun::XTv(double *v, double *XTv)
-{
-	int i;
-	int l=prob->l;
-	int w_size=get_nr_variable();
-	feature_node **x=prob->x;
-
-	for(i=0;i<w_size;i++)
-		XTv[i]=0;
-	for(i=0;i<l;i++)
-		sparse_operator::axpy(v[i], x[i], XTv);
-}
-
-class l2r_l2_svc_fun: public function
+class l2r_l2_svc_fun: public l2r_erm_fun
 {
 public:
 	l2r_l2_svc_fun(const problem *prob, const parameter *param, double *C);
 	~l2r_l2_svc_fun();
 
-	double fun(double *w);
 	void grad(double *w, double *g);
 	void Hv(double *s, double *Hs);
 
-	int get_nr_variable(void);
 	void get_diag_preconditioner(double *M);
 
 protected:
-	void Xv(double *v, double *Xv);
 	void subXTv(double *v, double *XTv);
 
-	double *C;
-	double *z;
 	int *I;
 	int sizeI;
-	const problem *prob;
-	int regularize_bias;
+
+private:
+	double C_times_loss(int i, double wx_i);
 };
 
-l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, const parameter *param, double *C)
+l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *prob, const parameter *param, double *C):
+	l2r_erm_fun(prob, param, C)
 {
-	int l=prob->l;
-
-	this->prob = prob;
-
-	z = new double[l];
-	I = new int[l];
-	this->C = C;
-	this->regularize_bias = param->regularize_bias;
+	I = new int[prob->l];
 }
 
 l2r_l2_svc_fun::~l2r_l2_svc_fun()
 {
-	delete[] z;
 	delete[] I;
 }
 
-double l2r_l2_svc_fun::fun(double *w)
+double l2r_l2_svc_fun::C_times_loss(int i, double wx_i)
 {
-	int i;
-	double f=0;
-	double *y=prob->y;
-	int l=prob->l;
-	int w_size=get_nr_variable();
-
-	Xv(w, z);
-
-	for(i=0;i<w_size;i++)
-		f += w[i]*w[i];
-	if(regularize_bias == 0)
-		f -= w[w_size-1]*w[w_size-1];
-	f /= 2.0;
-	for(i=0;i<l;i++)
-	{
-		z[i] = y[i]*z[i];
-		double d = 1-z[i];
-		if (d > 0)
-			f += C[i]*d*d;
-	}
-
-	return(f);
+	double d = 1 - prob->y[i] * wx_i;
+	if (d > 0)
+		return C[i] * d * d;
+	else
+		return 0;
 }
 
 void l2r_l2_svc_fun::grad(double *w, double *g)
@@ -346,23 +411,21 @@ void l2r_l2_svc_fun::grad(double *w, double *g)
 
 	sizeI = 0;
 	for (i=0;i<l;i++)
-		if (z[i] < 1)
+	{
+		tmp[i] = wx[i] * y[i];
+		if (tmp[i] < 1)
 		{
-			z[sizeI] = C[i]*y[i]*(z[i]-1);
+			tmp[sizeI] = C[i]*y[i]*(tmp[i]-1);
 			I[sizeI] = i;
 			sizeI++;
 		}
-	subXTv(z, g);
+	}
+	subXTv(tmp, g);
 
 	for(i=0;i<w_size;i++)
 		g[i] = w[i] + 2*g[i];
 	if(regularize_bias == 0)
 		g[w_size-1] -= w[w_size-1];
-}
-
-int l2r_l2_svc_fun::get_nr_variable(void)
-{
-	return prob->n;
 }
 
 void l2r_l2_svc_fun::get_diag_preconditioner(double *M)
@@ -411,16 +474,6 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 		Hs[w_size-1] -= s[w_size-1];
 }
 
-void l2r_l2_svc_fun::Xv(double *v, double *Xv)
-{
-	int i;
-	int l=prob->l;
-	feature_node **x=prob->x;
-
-	for(i=0;i<l;i++)
-		Xv[i]=sparse_operator::dot(v, x[i]);
-}
-
 void l2r_l2_svc_fun::subXTv(double *v, double *XTv)
 {
 	int i;
@@ -438,12 +491,11 @@ class l2r_l2_svr_fun: public l2r_l2_svc_fun
 public:
 	l2r_l2_svr_fun(const problem *prob, const parameter *param, double *C);
 
-	double fun(double *w);
 	void grad(double *w, double *g);
 
 private:
+	double C_times_loss(int i, double wx_i);
 	double p;
-	int regularize_bias;
 };
 
 l2r_l2_svr_fun::l2r_l2_svr_fun(const problem *prob, const parameter *param, double *C):
@@ -453,32 +505,14 @@ l2r_l2_svr_fun::l2r_l2_svr_fun(const problem *prob, const parameter *param, doub
 	this->regularize_bias = param->regularize_bias;
 }
 
-double l2r_l2_svr_fun::fun(double *w)
+double l2r_l2_svr_fun::C_times_loss(int i, double wx_i)
 {
-	int i;
-	double f=0;
-	double *y=prob->y;
-	int l=prob->l;
-	int w_size=get_nr_variable();
-	double d;
-
-	Xv(w, z);
-
-	for(i=0;i<w_size;i++)
-		f += w[i]*w[i];
-	if(regularize_bias == 0)
-		f -= w[w_size-1]*w[w_size-1];
-	f /= 2;
-	for(i=0;i<l;i++)
-	{
-		d = z[i] - y[i];
-		if(d < -p)
-			f += C[i]*(d+p)*(d+p);
-		else if(d > p)
-			f += C[i]*(d-p)*(d-p);
-	}
-
-	return(f);
+	double d = wx_i - prob->y[i];
+	if(d < -p)
+		return C[i]*(d+p)*(d+p);
+	else if(d > p)
+		return C[i]*(d-p)*(d-p);
+	return 0;
 }
 
 void l2r_l2_svr_fun::grad(double *w, double *g)
@@ -492,24 +526,24 @@ void l2r_l2_svr_fun::grad(double *w, double *g)
 	sizeI = 0;
 	for(i=0;i<l;i++)
 	{
-		d = z[i] - y[i];
+		d = wx[i] - y[i];
 
 		// generate index set I
 		if(d < -p)
 		{
-			z[sizeI] = C[i]*(d+p);
+			tmp[sizeI] = C[i]*(d+p);
 			I[sizeI] = i;
 			sizeI++;
 		}
 		else if(d > p)
 		{
-			z[sizeI] = C[i]*(d-p);
+			tmp[sizeI] = C[i]*(d-p);
 			I[sizeI] = i;
 			sizeI++;
 		}
 
 	}
-	subXTv(z, g);
+	subXTv(tmp, g);
 
 	for(i=0;i<w_size;i++)
 		g[i] = w[i] + 2*g[i];
@@ -2582,11 +2616,7 @@ static void group_classes(const problem *prob, int *nr_class_ret, int **label_re
 
 static void train_one(const problem *prob, const parameter *param, double *w, double Cp, double Cn)
 {
-	//inner and outer tolerances for TRON
 	double eps = param->eps;
-	double eps_cg = 0.1;
-	if(param->init_sol != NULL)
-		eps_cg = 0.5;
 
 	int pos = 0;
 	int neg = 0;
@@ -2610,9 +2640,9 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 					C[i] = Cn;
 			}
 			fun_obj=new l2r_lr_fun(prob, param, C);
-			TRON tron_obj(fun_obj, primal_solver_tol, eps_cg);
-			tron_obj.set_print_string(liblinear_print_string);
-			tron_obj.tron(w);
+			NEWTON newton_obj(fun_obj, primal_solver_tol);
+			newton_obj.set_print_string(liblinear_print_string);
+			newton_obj.newton(w);
 			delete fun_obj;
 			delete[] C;
 			break;
@@ -2628,9 +2658,9 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 					C[i] = Cn;
 			}
 			fun_obj=new l2r_l2_svc_fun(prob, param, C);
-			TRON tron_obj(fun_obj, primal_solver_tol, eps_cg);
-			tron_obj.set_print_string(liblinear_print_string);
-			tron_obj.tron(w);
+			NEWTON newton_obj(fun_obj, primal_solver_tol);
+			newton_obj.set_print_string(liblinear_print_string);
+			newton_obj.newton(w);
 			delete fun_obj;
 			delete[] C;
 			break;
@@ -2673,9 +2703,9 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 				C[i] = param->C;
 
 			fun_obj=new l2r_l2_svr_fun(prob, param, C);
-			TRON tron_obj(fun_obj, param->eps);
-			tron_obj.set_print_string(liblinear_print_string);
-			tron_obj.tron(w);
+			NEWTON newton_obj(fun_obj, param->eps);
+			newton_obj.set_print_string(liblinear_print_string);
+			newton_obj.newton(w);
 			delete fun_obj;
 			delete[] C;
 			break;
