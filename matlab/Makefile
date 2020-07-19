@@ -20,14 +20,14 @@ octave:
 	@echo "please type make under Octave"
 binary: train.$(MEX_EXT) predict.$(MEX_EXT) libsvmread.$(MEX_EXT) libsvmwrite.$(MEX_EXT)
 
-train.$(MEX_EXT): train.c ../linear.h ../tron.cpp ../linear.cpp linear_model_matlab.c \
+train.$(MEX_EXT): train.c ../linear.h ../newton.cpp ../linear.cpp linear_model_matlab.c \
 		../blas/daxpy.c ../blas/ddot.c ../blas/dnrm2.c ../blas/dscal.c
-	$(MEX) $(MEX_OPTION) train.c ../tron.cpp ../linear.cpp linear_model_matlab.c \
+	$(MEX) $(MEX_OPTION) train.c ../newton.cpp ../linear.cpp linear_model_matlab.c \
 		../blas/daxpy.c ../blas/ddot.c ../blas/dnrm2.c ../blas/dscal.c
 
-predict.$(MEX_EXT): predict.c ../linear.h ../tron.cpp ../linear.cpp linear_model_matlab.c \
+predict.$(MEX_EXT): predict.c ../linear.h ../newton.cpp ../linear.cpp linear_model_matlab.c \
 		../blas/daxpy.c ../blas/ddot.c ../blas/dnrm2.c ../blas/dscal.c
-	$(MEX) $(MEX_OPTION) predict.c ../tron.cpp ../linear.cpp linear_model_matlab.c \
+	$(MEX) $(MEX_OPTION) predict.c ../newton.cpp ../linear.cpp linear_model_matlab.c \
 		../blas/daxpy.c ../blas/ddot.c ../blas/dnrm2.c ../blas/dscal.c
 
 libsvmread.$(MEX_EXT):	libsvmread.c
