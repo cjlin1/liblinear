@@ -171,11 +171,18 @@ const char *matlab_matrix_to_model(struct model *model_, const mxArray *matlab_s
 	}
 	id++;
 
+	// w
 	ptr = mxGetPr(rhs[id]);
 	model_->w=Malloc(double, w_size*nr_w);
 	for(i = 0; i < w_size*nr_w; i++)
 		model_->w[i]=ptr[i];
 	id++;
+
+	// rho
+	ptr = mxGetPr(rhs[id]);
+	model_->rho = ptr[0];
+	id++;
+
 	mxFree(rhs);
 
 	return NULL;

@@ -162,8 +162,9 @@ int parse_command_line(int nrhs, const mxArray *prhs[], char *model_file_name)
 	// default values
 	param.solver_type = L2R_L2LOSS_SVC_DUAL;
 	param.C = 1;
-	param.eps = INF; // see setting below
 	param.p = 0.1;
+	param.nu = 0.5;
+	param.eps = INF; // see setting below
 	param.nr_weight = 0;
 	param.weight_label = NULL;
 	param.weight = NULL;

@@ -2455,9 +2455,9 @@ static void solve_oneclass_svm(const problem *prob, double *w, double *rho, doub
 	for(i=0; i<l; i++)
 	{
 		double G = sparse_operator::dot(w, prob->x[i]);
-		if (alpha[i] == 0)
+		if (alpha[i] == 1)
 			lb = max(lb, G);
-		else if (alpha[i] == 1)
+		else if (alpha[i] == 0)
 			ub = min(ub, G);
 		else
 		{
