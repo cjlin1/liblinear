@@ -39,6 +39,8 @@ void exit_with_help()
 	"	11 -- L2-regularized L2-loss support vector regression (primal)\n"
 	"	12 -- L2-regularized L2-loss support vector regression (dual)\n"
 	"	13 -- L2-regularized L1-loss support vector regression (dual)\n"
+	"  for outlier detection\n"
+	"	21 -- one-class support vector machine (dual)\n"
 	"-c cost : set the parameter C (default 1)\n"
 	"-p epsilon : set the epsilon in loss function of SVR (default 0.1)\n"
 	"-n nu : set the parameter nu of one-class SVM (default 0.5)\n"
