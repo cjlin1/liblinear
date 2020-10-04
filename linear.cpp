@@ -2768,7 +2768,7 @@ static double calc_start_C(const problem *prob, const parameter *param)
 	return pow( 2, floor(log(min_C) / log(2.0)) );
 }
 
-static double calc_max_p(const problem *prob, const parameter *param)
+static double calc_max_p(const problem *prob)
 {
 	int i;
 	double max_p = 0.0;
@@ -3193,7 +3193,7 @@ void find_parameters(const problem *prob, const parameter *param, int nr_fold, d
 	}
 	else if(param->solver_type == L2R_L2LOSS_SVR)
 	{
-		double max_p = calc_max_p(prob, &param_tmp);
+		double max_p = calc_max_p(prob);
 		int num_p_steps = 20;
 		double max_C = 1048576;
 		*best_score = INF;
