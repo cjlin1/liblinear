@@ -124,7 +124,6 @@ void NEWTON::newton(double *w)
 	if (gnorm <= eps*gnorm0)
 		search = 0;
 
-	double *w_new = new double[n];
 	while (iter <= max_iter && search)
 	{
 		fun_obj->get_diag_preconditioner(M);
@@ -165,7 +164,6 @@ void NEWTON::newton(double *w)
 
 	delete[] g;
 	delete[] r;
-	delete[] w_new;
 	delete[] s;
 	delete[] M;
 }
