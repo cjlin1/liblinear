@@ -117,9 +117,9 @@ void NEWTON::newton(double *w)
 	delete [] w0;
 
 	f = fun_obj->fun(w);
-	info("init f %5.3e\n", f);
 	fun_obj->grad(w, g);
 	double gnorm = dnrm2_(&n, g, &inc);
+	info("init f %5.3e |g| %5.3e\n", f, gnorm);
 
 	if (gnorm <= eps*gnorm0)
 		search = 0;
@@ -132,7 +132,7 @@ void NEWTON::newton(double *w)
 		cg_iter = pcg(g, M, s, r);
 
 		fold = f;
-		step_size = fun_obj->linesearch_and_update(w, s, & f, g, init_step_size);
+		step_size = fun_obj->linesearch_and_update(w, s, &f, g, init_step_size);
 
 		if (step_size == 0)
 		{
@@ -140,14 +140,11 @@ void NEWTON::newton(double *w)
 			break;
 		}
 
-		info("iter %2d f %5.3e |g| %5.3e CG %3d step_size %4.2e \n", iter, f, gnorm, cg_iter, step_size);
-
-		actred = fold - f;
-		iter++;
-
 		fun_obj->grad(w, g);
-
 		gnorm = dnrm2_(&n, g, &inc);
+
+		info("iter %2d f %5.3e |g| %5.3e CG %3d step_size %4.2e \n", iter, f, gnorm, cg_iter, step_size);
+		
 		if (gnorm <= eps*gnorm0)
 			break;
 		if (f < -1.0e+32)
@@ -155,11 +152,14 @@ void NEWTON::newton(double *w)
 			info("WARNING: f < -1.0e+32\n");
 			break;
 		}
+		actred = fold - f;
 		if (fabs(actred) <= 1.0e-12*fabs(f))
 		{
 			info("WARNING: actred too small\n");
 			break;
 		}
+
+		iter++;
 	}
 
 	delete[] g;
@@ -175,7 +175,7 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 	double one = 1;
 	double *d = new double[n];
 	double *Hd = new double[n];
-	double zTr, znewTrnew, alpha, beta, cgtol;
+	double zTr, znewTrnew, alpha, beta, cgtol, dHd;
 	double *z = new double[n];
 	double Q = 0, newQ, Qdiff;
 
@@ -196,9 +196,14 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 	while (cg_iter < max_cg_iter)
 	{
 		cg_iter++;
-		fun_obj->Hv(d, Hd);
 
-		alpha = zTr/ddot_(&n, d, &inc, Hd, &inc);
+		fun_obj->Hv(d, Hd);
+		dHd = ddot_(&n, d, &inc, Hd, &inc);
+		// avoid 0/0 in getting alpha
+		if (dHd <= 1.0e-16)
+			break;
+		
+		alpha = zTr/dHd;
 		daxpy_(&n, &alpha, d, &inc, s, &inc);
 		alpha = -alpha;
 		daxpy_(&n, &alpha, Hd, &inc, r, &inc);
