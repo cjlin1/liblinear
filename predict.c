@@ -97,7 +97,7 @@ void do_predict(FILE *input, FILE *output)
 
 		while(1)
 		{
-			if(i>=max_nr_attr-2)	// need one more for index = -1
+			if(i>=max_nr_attr-2)    // need one more for index = -1
 			{
 				max_nr_attr *= 2;
 				x = (struct feature_node *) realloc(x,max_nr_attr*sizeof(struct feature_node));

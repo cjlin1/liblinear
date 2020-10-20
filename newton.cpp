@@ -162,6 +162,9 @@ void NEWTON::newton(double *w)
 		iter++;
 	}
 
+	if(iter >= max_iter)
+		info("\nWARNING: reaching max number of Newton iterations\n");
+
 	delete[] g;
 	delete[] r;
 	delete[] s;

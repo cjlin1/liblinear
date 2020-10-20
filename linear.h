@@ -30,7 +30,7 @@ struct parameter
 	int solver_type;
 
 	/* these are for training only */
-	double eps;	        /* stopping criteria */
+	double eps;             /* stopping tolerance */
 	double C;
 	int nr_weight;
 	int *weight_label;
@@ -44,12 +44,12 @@ struct parameter
 struct model
 {
 	struct parameter param;
-	int nr_class;		/* number of classes */
+	int nr_class;           /* number of classes */
 	int nr_feature;
 	double *w;
-	int *label;		/* label of each class */
+	int *label;             /* label of each class */
 	double bias;
-	double rho;		/* one-class SVM only */
+	double rho;             /* one-class SVM only */
 };
 
 struct model* train(const struct problem *prob, const struct parameter *param);
