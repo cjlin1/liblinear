@@ -1025,7 +1025,8 @@ static int solve_l2r_l1l2_svc(const problem *prob, const parameter *param, doubl
 		if(iter % 10 == 0)
 			info(".");
 
-		if(PGmax_new - PGmin_new <= eps)
+		if(PGmax_new - PGmin_new <= eps &&
+			fabs(PGmax_new) <= eps && fabs(PGmin_new) <= eps)
 		{
 			if(active_size == l)
 				break;
