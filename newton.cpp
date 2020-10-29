@@ -108,13 +108,12 @@ void NEWTON::newton(double *w)
 	double *M = new double[n];
 
 	// calculate gradient norm at w=0 for stopping condition.
-	double *w0 = new double[n];
+    double *w_new = new double[n];
 	for (i=0; i<n; i++)
-		w0[i] = 0;
-	fun_obj->fun(w0);
-	fun_obj->grad(w0, g);
+        w_new[i] = 0;
+	fun_obj->fun(w_new);
+	fun_obj->grad(w_new, g);
 	double gnorm0 = dnrm2_(&n, g, &inc);
-	delete [] w0;
 
 	f = fun_obj->fun(w);
 	info("init f %5.3e\n", f);
@@ -124,7 +123,6 @@ void NEWTON::newton(double *w)
 	if (gnorm <= eps*gnorm0)
 		search = 0;
 
-	double *w_new = new double[n];
 	while (iter <= max_iter && search)
 	{
 		fun_obj->get_diag_preconditioner(M);
