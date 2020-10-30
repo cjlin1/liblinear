@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <vector>
 #include "newton.h"
 
 #ifndef min
@@ -39,7 +40,7 @@ double function::linesearch_and_update(double *w, double *s, double *f, double *
 	double eta = 0.01;
 	int n = get_nr_variable();
 	int max_num_linesearch = 20;
-	double *w_new = new double[n];
+	std::vector<double> w_new(n);
 	double fold = *f;
 
 	for (int i=0;i<n;i++)
@@ -50,7 +51,7 @@ double function::linesearch_and_update(double *w, double *s, double *f, double *
 	{
 		for (int i=0;i<n;i++)
 			w_new[i] = w[i] + alpha*s[i];
-		*f = fun(w_new);
+		*f = fun(w_new.data());
 		if (*f - fold <= eta * alpha * gTs)
 			break;
 		else
@@ -63,9 +64,8 @@ double function::linesearch_and_update(double *w, double *s, double *f, double *
 		return 0;
 	}
 	else
-		memcpy(w, w_new, sizeof(double)*n);
+		memcpy(w, w_new.data(), sizeof(double)*n);
 
-	delete [] w_new;
 	return alpha;
 }
 
@@ -96,41 +96,41 @@ void NEWTON::newton(double *w)
 {
 	int n = fun_obj->get_nr_variable();
 	double init_step_size = 1;
-	int search = 1, inc = 1;
-	double *s = new double[n];
-	double *r = new double[n];
-	double *g = new double[n];
+	int inc = 1;
+    std::vector<double> s(n);
+    std::vector<double> r(n);
+    std::vector<double> g(n);
 
 	const double alpha_pcg = 0.01;
-	double *M = new double[n];
+    std::vector<double> M(n, 0.0);
 
 	// calculate gradient norm at w=0 for stopping condition.
-	double *w0 = new double[n];
-	for (int i=0; i<n; i++)
-		w0[i] = 0;
-	fun_obj->fun(w0);
-	fun_obj->grad(w0, g);
-	double gnorm0 = dnrm2_(&n, g, &inc);
-	delete [] w0;
+	// the vector M has not been used yet, and has been filled
+	// with zeros, so we have M == x_0 == 0 here.
+    fun_obj->fun(M.data());
+    fun_obj->grad(M.data(), g.data());
+
+	double gnorm0 = dnrm2_(&n, g.data(), &inc);
+
 
 	double f = fun_obj->fun(w);
 	info("init f %5.3e\n", f);
-	fun_obj->grad(w, g);
-	double gnorm = dnrm2_(&n, g, &inc);
+	fun_obj->grad(w, g.data());
+	double gnorm = dnrm2_(&n, g.data(), &inc);
 
 	if (gnorm <= eps*gnorm0)
-		search = 0;
+		return;
 
-	double *w_new = new double[n];
-	for (int iter=1; iter <= max_iter && search; )
+
+	for (int iter=1; iter <= max_iter; )
 	{
-		fun_obj->get_diag_preconditioner(M);
+		fun_obj->get_diag_preconditioner(M.data());
 		for(int i=0; i<n; i++)
 			M[i] = (1-alpha_pcg) + alpha_pcg*M[i];
-		int cg_iter = pcg(g, M, s, r);
+		int cg_iter = pcg(g.data(), M.data(), s.data(), r.data());
 
 		double fold = f;
-        double step_size = fun_obj->linesearch_and_update(w, s, & f, g, init_step_size);
+        double step_size = fun_obj->linesearch_and_update(w, s.data(), &f, g.data(), init_step_size);
 
 		if (step_size == 0)
 		{
@@ -143,9 +143,9 @@ void NEWTON::newton(double *w)
 		double actred = fold - f;
 		iter++;
 
-		fun_obj->grad(w, g);
+		fun_obj->grad(w, g.data());
 
-		gnorm = dnrm2_(&n, g, &inc);
+		gnorm = dnrm2_(&n, g.data(), &inc);
 		if (gnorm <= eps*gnorm0)
 			break;
 		if (f < -1.0e+32)
@@ -159,12 +159,6 @@ void NEWTON::newton(double *w)
 			break;
 		}
 	}
-
-	delete[] g;
-	delete[] r;
-	delete[] w_new;
-	delete[] s;
-	delete[] M;
 }
 
 int NEWTON::pcg(double *g, double *M, double *s, double *r)
@@ -172,10 +166,10 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 	int i, inc = 1;
 	int n = fun_obj->get_nr_variable();
 	double one = 1;
-	double *d = new double[n];
-	double *Hd = new double[n];
+	std::vector<double> d(n);
+	std::vector<double> Hd(n);
+	std::vector<double> z(n);
 	double zTr, znewTrnew, alpha, beta, cgtol;
-	double *z = new double[n];
 	double Q = 0, newQ, Qdiff;
 
 	for (i=0; i<n; i++)
@@ -186,7 +180,7 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 		d[i] = z[i];
 	}
 
-	zTr = ddot_(&n, z, &inc, r, &inc);
+	zTr = ddot_(&n, z.data(), &inc, r, &inc);
 	double gMinv_norm = sqrt(zTr);
 	cgtol = min(eps_cg, sqrt(gMinv_norm));
 	int cg_iter = 0;
@@ -195,12 +189,12 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 	while (cg_iter < max_cg_iter)
 	{
 		cg_iter++;
-		fun_obj->Hv(d, Hd);
+		fun_obj->Hv(d.data(), Hd.data());
 
-		alpha = zTr/ddot_(&n, d, &inc, Hd, &inc);
-		daxpy_(&n, &alpha, d, &inc, s, &inc);
+		alpha = zTr/ddot_(&n, d.data(), &inc, Hd.data(), &inc);
+		daxpy_(&n, &alpha, d.data(), &inc, s, &inc);
 		alpha = -alpha;
-		daxpy_(&n, &alpha, Hd, &inc, r, &inc);
+		daxpy_(&n, &alpha, Hd.data(), &inc, r, &inc);
 
 		// Using quadratic approximation as CG stopping criterion
 		newQ = -0.5*(ddot_(&n, s, &inc, r, &inc) - ddot_(&n, s, &inc, g, &inc));
@@ -213,27 +207,23 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 		else
 		{
 			info("WARNING: quadratic approximation > 0 or increasing in CG\n");
-			break;
+			return cg_iter;
 		}
 		Q = newQ;
 
 		for (i=0; i<n; i++)
 			z[i] = r[i] / M[i];
-		znewTrnew = ddot_(&n, z, &inc, r, &inc);
+		znewTrnew = ddot_(&n, z.data(), &inc, r, &inc);
 		beta = znewTrnew/zTr;
-		dscal_(&n, &beta, d, &inc);
-		daxpy_(&n, &one, z, &inc, d, &inc);
+		dscal_(&n, &beta, d.data(), &inc);
+		daxpy_(&n, &one, z.data(), &inc, d.data(), &inc);
 		zTr = znewTrnew;
 	}
 
 	if (cg_iter == max_cg_iter)
 		info("WARNING: reaching maximal number of CG steps\n");
 
-	delete[] d;
-	delete[] Hd;
-	delete[] z;
-
-	return(cg_iter);
+	return cg_iter;
 }
 
 void NEWTON::set_print_string(void (*print_string) (const char *buf))
