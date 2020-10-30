@@ -95,11 +95,8 @@ NEWTON::~NEWTON()
 void NEWTON::newton(double *w)
 {
 	int n = fun_obj->get_nr_variable();
-	int i, cg_iter;
-	double step_size;
-	double f, fold, actred;
 	double init_step_size = 1;
-	int search = 1, iter = 1, inc = 1;
+	int search = 1, inc = 1;
 	double *s = new double[n];
 	double *r = new double[n];
 	double *g = new double[n];
@@ -109,14 +106,14 @@ void NEWTON::newton(double *w)
 
 	// calculate gradient norm at w=0 for stopping condition.
 	double *w0 = new double[n];
-	for (i=0; i<n; i++)
+	for (int i=0; i<n; i++)
 		w0[i] = 0;
 	fun_obj->fun(w0);
 	fun_obj->grad(w0, g);
 	double gnorm0 = dnrm2_(&n, g, &inc);
 	delete [] w0;
 
-	f = fun_obj->fun(w);
+	double f = fun_obj->fun(w);
 	info("init f %5.3e\n", f);
 	fun_obj->grad(w, g);
 	double gnorm = dnrm2_(&n, g, &inc);
@@ -125,15 +122,15 @@ void NEWTON::newton(double *w)
 		search = 0;
 
 	double *w_new = new double[n];
-	while (iter <= max_iter && search)
+	for (int iter=1; iter <= max_iter && search; )
 	{
 		fun_obj->get_diag_preconditioner(M);
-		for(i=0; i<n; i++)
+		for(int i=0; i<n; i++)
 			M[i] = (1-alpha_pcg) + alpha_pcg*M[i];
-		cg_iter = pcg(g, M, s, r);
+		int cg_iter = pcg(g, M, s, r);
 
-		fold = f;
-		step_size = fun_obj->linesearch_and_update(w, s, & f, g, init_step_size);
+		double fold = f;
+        double step_size = fun_obj->linesearch_and_update(w, s, & f, g, init_step_size);
 
 		if (step_size == 0)
 		{
@@ -143,7 +140,7 @@ void NEWTON::newton(double *w)
 
 		info("iter %2d f %5.3e |g| %5.3e CG %3d step_size %4.2e \n", iter, f, gnorm, cg_iter, step_size);
 
-		actred = fold - f;
+		double actred = fold - f;
 		iter++;
 
 		fun_obj->grad(w, g);
