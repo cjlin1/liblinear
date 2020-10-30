@@ -97,18 +97,18 @@ void NEWTON::newton(double *w)
 	int n = fun_obj->get_nr_variable();
 	double init_step_size = 1;
 	int inc = 1;
-    std::vector<double> s(n);
-    std::vector<double> r(n);
-    std::vector<double> g(n);
+	std::vector<double> s(n);
+	std::vector<double> r(n);
+	std::vector<double> g(n);
 
 	const double alpha_pcg = 0.01;
-    std::vector<double> M(n, 0.0);
+	std::vector<double> M(n, 0.0);
 
 	// calculate gradient norm at w=0 for stopping condition.
 	// the vector M has not been used yet, and has been filled
 	// with zeros, so we have M == x_0 == 0 here.
-    fun_obj->fun(M.data());
-    fun_obj->grad(M.data(), g.data());
+	fun_obj->fun(M.data());
+	fun_obj->grad(M.data(), g.data());
 
 	double gnorm0 = dnrm2_(&n, g.data(), &inc);
 
@@ -130,7 +130,7 @@ void NEWTON::newton(double *w)
 		int cg_iter = pcg(g.data(), M.data(), s.data(), r.data());
 
 		double fold = f;
-        double step_size = fun_obj->linesearch_and_update(w, s.data(), &f, g.data(), init_step_size);
+		double step_size = fun_obj->linesearch_and_update(w, s.data(), &f, g.data(), init_step_size);
 
 		if (step_size == 0)
 		{
