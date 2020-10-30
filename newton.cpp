@@ -202,7 +202,7 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 		if (newQ <= 0 && Qdiff <= 0)
 		{
 			if (cg_iter * Qdiff >= cgtol * newQ)
-				break;
+				return cg_iter;
 		}
 		else
 		{
@@ -220,8 +220,7 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 		zTr = znewTrnew;
 	}
 
-	if (cg_iter == max_cg_iter)
-		info("WARNING: reaching maximal number of CG steps\n");
+	info("WARNING: reaching maximal number of CG steps\n");
 
 	return cg_iter;
 }
