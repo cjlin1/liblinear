@@ -898,7 +898,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 #define GETI(i) (y[i]+1)
 // To support weights for instances, use GETI(i) (i)
 
-static int solve_l2r_l1l2_svc(const problem *prob, const parameter *param, double *w, double Cp, double Cn, int max_iter=500)
+static int solve_l2r_l1l2_svc(const problem *prob, const parameter *param, double *w, double Cp, double Cn, int max_iter=300)
 {
 	int l = prob->l;
 	int w_size = prob->n;
@@ -1103,7 +1103,7 @@ static int solve_l2r_l1l2_svc(const problem *prob, const parameter *param, doubl
 #define GETI(i) (0)
 // To support weights for instances, use GETI(i) (i)
 
-static int solve_l2r_l1l2_svr(const problem *prob, const parameter *param, double *w, int max_iter=500)
+static int solve_l2r_l1l2_svr(const problem *prob, const parameter *param, double *w, int max_iter=300)
 {
 	const int solver_type = param->solver_type;
 	int l = prob->l;
@@ -1311,7 +1311,7 @@ static int solve_l2r_l1l2_svr(const problem *prob, const parameter *param, doubl
 #define GETI(i) (y[i]+1)
 // To support weights for instances, use GETI(i) (i)
 
-static int solve_l2r_lr_dual(const problem *prob, const parameter *param, double *w, double Cp, double Cn, int max_iter=500)
+static int solve_l2r_lr_dual(const problem *prob, const parameter *param, double *w, double Cp, double Cn, int max_iter=300)
 {
 	int l = prob->l;
 	int w_size = prob->n;
