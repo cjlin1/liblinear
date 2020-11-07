@@ -56,7 +56,7 @@ public:
 			ret += x->value*x->value;
 			x++;
 		}
-		return (ret);
+		return ret;
 	}
 
 	static double dot(const double *s, const feature_node *x)
@@ -67,7 +67,7 @@ public:
 			ret += s[x->index-1]*x->value;
 			x++;
 		}
-		return (ret);
+		return ret;
 	}
 
 	static double sparse_dot(const feature_node *x1, const feature_node *x2)
@@ -89,7 +89,7 @@ public:
 					++x1;
 			}
 		}
-		return (ret);
+		return ret;
 	}
 
 	static void axpy(const double a, const feature_node *x, double *y)
@@ -164,7 +164,7 @@ double l2r_erm_fun::fun(double *w)
 		f += C_times_loss(i, wx[i]);
 	f = f + 0.5 * wTw;
 
-	return(f);
+	return f;
 }
 
 int l2r_erm_fun::get_nr_variable(void)
@@ -2747,7 +2747,6 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 			newton_obj.set_print_string(liblinear_print_string);
 			newton_obj.newton(w);
 			break;
-
 		}
 		case L2R_L1LOSS_SVR_DUAL:
 		{

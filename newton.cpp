@@ -242,7 +242,7 @@ int NEWTON::pcg(double *g, double *M, double *s, double *r)
 	delete[] Hd;
 	delete[] z;
 
-	return(cg_iter);
+	return cg_iter;
 }
 
 void NEWTON::set_print_string(void (*print_string) (const char *buf))
