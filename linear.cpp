@@ -1048,6 +1048,8 @@ static int solve_l2r_l1l2_svc(const problem *prob, const parameter *param, doubl
 	}
 
 	info("\noptimization finished, #iter = %d\n",iter);
+	if (solver_type == L2R_L1LOSS_SVC_DUAL && iter >= max_iter)
+		info("\nWARNING: reaching max number of iterations\nUsing -s 2 may be faster (also see FAQ)\n\n");
 
 	// calculate objective value
 
@@ -1262,6 +1264,8 @@ static int solve_l2r_l1l2_svr(const problem *prob, const parameter *param, doubl
 	}
 
 	info("\noptimization finished, #iter = %d\n", iter);
+	if(solver_type == L2R_L1LOSS_SVR_DUAL && iter >= max_iter)
+		info("\nWARNING: reaching max number of iterations\nUsing -s 11 may be faster\n\n");
 
 	// calculate objective value
 	double v = 0;
