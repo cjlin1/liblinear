@@ -1048,8 +1048,6 @@ static int solve_l2r_l1l2_svc(const problem *prob, const parameter *param, doubl
 	}
 
 	info("\noptimization finished, #iter = %d\n",iter);
-	if (solver_type == L2R_L1LOSS_SVC_DUAL && iter >= max_iter)
-		info("\nWARNING: reaching max number of iterations\nUsing -s 2 may be faster (also see FAQ)\n\n");
 
 	// calculate objective value
 
@@ -1264,8 +1262,6 @@ static int solve_l2r_l1l2_svr(const problem *prob, const parameter *param, doubl
 	}
 
 	info("\noptimization finished, #iter = %d\n", iter);
-	if(solver_type == L2R_L1LOSS_SVR_DUAL && iter >= max_iter)
-		info("\nWARNING: reaching max number of iterations\nUsing -s 11 may be faster\n\n");
 
 	// calculate objective value
 	double v = 0;
@@ -2704,7 +2700,9 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 		}
 		case L2R_L1LOSS_SVC_DUAL:
 		{
-			solve_l2r_l1l2_svc(prob, param, w, Cp, Cn, dual_solver_max_iter);
+			iter = solve_l2r_l1l2_svc(prob, param, w, Cp, Cn, dual_solver_max_iter);
+			if(iter >= dual_solver_max_iter)
+				info("\nWARNING: reaching max number of iterations\nUsing -s 2 may be faster (also see FAQ)\n\n");			
 			break;
 		}
 		case L1R_L2LOSS_SVC:
@@ -2754,7 +2752,10 @@ static void train_one(const problem *prob, const parameter *param, double *w, do
 		}
 		case L2R_L1LOSS_SVR_DUAL:
 		{
-			solve_l2r_l1l2_svr(prob, param, w, dual_solver_max_iter);
+			iter = solve_l2r_l1l2_svr(prob, param, w, dual_solver_max_iter);
+			if(iter >= dual_solver_max_iter)
+				info("\nWARNING: reaching max number of iterations\nUsing -s 11 may be faster (also see FAQ)\n\n");			
+
 			break;
 		}
 		case L2R_L2LOSS_SVR_DUAL:
