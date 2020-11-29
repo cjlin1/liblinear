@@ -390,7 +390,7 @@ in linear.h, so you can check the version number.
                 int solver_type;
 
                 /* these are for training only */
-                double eps;             /* stopping criteria */
+                double eps;             /* stopping tolerance */
                 double C;
                 double nu;              /* one-class SVM only */
                 int nr_weight;
