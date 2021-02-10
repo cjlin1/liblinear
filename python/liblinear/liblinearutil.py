@@ -2,11 +2,11 @@
 
 import os, sys
 sys.path = [os.path.dirname(os.path.abspath(__file__))] + sys.path
-from liblinear import *
-from liblinear import __all__ as liblinear_all
-from liblinear import scipy, sparse
-from commonutil import *
-from commonutil import __all__ as common_all
+from .liblinear import *
+from .liblinear import __all__ as liblinear_all
+from .liblinear import scipy, sparse
+from .commonutil import *
+from .commonutil import __all__ as common_all
 from ctypes import c_double
 
 if sys.version_info[0] < 3:

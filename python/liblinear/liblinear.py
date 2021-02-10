@@ -3,6 +3,7 @@
 from ctypes import *
 from ctypes.util import find_library
 from os import path
+from glob import glob
 import sys
 
 try:
@@ -25,18 +26,23 @@ __all__ = ['liblinear', 'feature_node', 'gen_feature_nodearray', 'problem',
 
 try:
 	dirname = path.dirname(path.abspath(__file__))
-	if sys.platform == 'win32':
-		liblinear = CDLL(path.join(dirname, r'..\windows\liblinear.dll'))
-	else:
-		liblinear = CDLL(path.join(dirname, '../liblinear.so.4'))
+	dynamic_lib_name = 'clib.cp*'
+	path_to_so = glob(path.join(dirname, dynamic_lib_name))[0]
+	liblinear = CDLL(path_to_so)
 except:
-# For unix the prefix 'lib' is not considered.
-	if find_library('linear'):
-		liblinear = CDLL(find_library('linear'))
-	elif find_library('liblinear'):
-		liblinear = CDLL(find_library('liblinear'))
-	else:
-		raise Exception('LIBLINEAR library not found.')
+	try :
+		if sys.platform == 'win32':
+			liblinear = CDLL(path.join(dirname, r'..\..\windows\liblinear.dll'))
+		else:
+			liblinear = CDLL(path.join(dirname, '../../liblinear.so.4'))
+	except:
+	# For unix the prefix 'lib' is not considered.
+		if find_library('linear'):
+			liblinear = CDLL(find_library('linear'))
+		elif find_library('liblinear'):
+			liblinear = CDLL(find_library('liblinear'))
+		else:
+			raise Exception('LIBLINEAR library not found.')
 
 L2R_LR = 0
 L2R_L2LOSS_SVC_DUAL = 1
