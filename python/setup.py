@@ -14,6 +14,7 @@ from distutils.command.build_ext import build_ext
 build_ext.get_export_symbols = lambda x, y: []
 
 
+PACKAGE_DIR = "liblinear"
 PACKAGE_NAME = "liblinear-official"
 VERSION = "2.42.0"
 cpp_dir = "cpp-source"
@@ -66,8 +67,8 @@ def create_cpp_source():
 class CleanCommand(clean_cmd):
     def run(self):
         clean_cmd.run(self)
-        to_be_removed = ["build/", "dist/", "MANIFEST", cpp_dir, "{}.egg-info".format(PACKAGE_NAME)]
-        to_be_removed += glob("./{}/{}.*".format(PACKAGE_NAME, dynamic_lib_name))
+        to_be_removed = ["build/", "dist/", "MANIFEST", cpp_dir, "{}.egg-info".format(PACKAGE_DIR)]
+        to_be_removed += glob("./{}/{}.*".format(PACKAGE_DIR, dynamic_lib_name))
         for root, dirs, files in os.walk(os.curdir, topdown=False):
             if "__pycache__" in dirs:
                 to_be_removed.append(path.join(root, "__pycache__"))
@@ -91,7 +92,7 @@ def main():
 
     setup(
         name=PACKAGE_NAME,
-        packages=[PACKAGE_NAME],
+        packages=[PACKAGE_DIR],
         version=VERSION,
         description="Python binding of LIBLINEAR",
         long_description=long_description,
@@ -102,7 +103,7 @@ def main():
         install_requires=["scipy"],
         ext_modules=[
             Extension(
-                "{}.{}".format(PACKAGE_NAME, dynamic_lib_name), **kwargs_for_extension
+                "{}.{}".format(PACKAGE_DIR, dynamic_lib_name), **kwargs_for_extension
             )
         ],
         cmdclass={"clean": CleanCommand},
