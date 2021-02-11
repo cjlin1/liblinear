@@ -67,7 +67,7 @@ def create_cpp_source():
 class CleanCommand(clean_cmd):
     def run(self):
         clean_cmd.run(self)
-        to_be_removed = ["build/", "dist/", "MANIFEST", cpp_dir, "{}.egg-info".format(PACKAGE_DIR)]
+        to_be_removed = ["build/", "dist/", "MANIFEST", cpp_dir, "{}.egg-info".format(PACKAGE_NAME)]
         to_be_removed += glob("./{}/{}.*".format(PACKAGE_DIR, dynamic_lib_name))
         for root, dirs, files in os.walk(os.curdir, topdown=False):
             if "__pycache__" in dirs:

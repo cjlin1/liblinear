@@ -28,7 +28,7 @@ Installation
 
 To install via pip or conda, run
 
-> pip install -U liblinear
+> pip install -U liblinear-official
 
 Alternatively, you may also directly use the Python interface without installing this package; see the following.
 
