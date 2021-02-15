@@ -6,7 +6,8 @@ Table of Contents
 =================
 
 - Introduction
-- Installation
+- Installation via PyPI
+- Installation via Sources
 - Quick Start
 - Quick Start with Scipy
 - Design Description
@@ -33,39 +34,44 @@ To install the interface from PyPI, execute the following command:
 Installation via Sources
 ========================
 
-Alternateively, you may want to install the interface from sources and generate
-the LIBLINEAR shared library by yourself.
+Alternatively, you may install the interface from sources by
+generating the LIBLINEAR shared library.
 
-Depending on your use cases, you can choose between systemwide installation and
-local directory installation. Microsoft Visual C++ and other tools might be
-required for systemwide installation for windows.
+Depending on your use cases, you can choose between local-directory
+and system-wide installation.
 
-- Systemwide Installation:
-
-    To have a systemwide access to the interface, execute the following command:
-
-    > pip install -e .
-
-    Please note that you still have to keep the sources after the installation.
-
-    In addition, please DON'T use other commands such as
-
-    > python setup.py install
-
-    or
-
-    > pip install .
-
-- Local Directory Installation:
+- Local-directory installation:
 
     On Unix systems, type
 
     > make
 
-    For windows, the shared library liblinear.dll is ready in the directory
-    `..\windows'. You can also copy it to the system directory (e.g.,
-    `C:\WINDOWS\system32\' for Windows XP). To regenerate the shared library,
-    please follow the instruction of building windows binaries in LIBLINEAR README.
+    This generates a .so file in the LIBLINEAR main directory and you
+    can run the interface in the current python directory.
+    
+    For windows, the shared library liblinear.dll is ready in the
+    directory `..\windows' and you can directly run the interface in
+    the current python directory. You can copy liblinear.dll to the
+    system directory (e.g., `C:\WINDOWS\system32\') to make it
+    system-widely available. To regenerate liblinear.dll, please
+    follow the instruction of building windows binaries in LIBLINEAR
+    README.
+
+- System-wide installation:
+
+    Type
+
+    > pip install -e .
+
+    Please note that you must keep the sources after the installation.
+
+    For windows, to run the above command, Microsoft Visual C++ and
+    other tools are needed.
+
+    In addition, DON'T use the following FAILED commands
+
+    > python setup.py install (failed to run at the python directory)
+    > pip install .
 
 Quick Start
 ===========
