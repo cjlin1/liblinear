@@ -26,8 +26,8 @@ of LIBLINEAR.
 Installation
 ============
 
-On Windows systems, pre-built binary files are already in the
-directory '..\windows', so no need to conduct installation. Now we
+On Windows systems, pre-built mex files are already in the directory
+'..\windows', so please just copy them to the matlab directory. Now we
 provide binary files only for 64bit MATLAB on Windows. If you would
 like to re-build the package, please rely on the following steps.
 

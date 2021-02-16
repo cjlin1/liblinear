@@ -49,12 +49,12 @@ and system-wide installation.
     This generates a .so file in the LIBLINEAR main directory and you
     can run the interface in the current python directory.
     
-    For windows, the shared library liblinear.dll is ready in the
+    For Windows, the shared library liblinear.dll is ready in the
     directory `..\windows' and you can directly run the interface in
     the current python directory. You can copy liblinear.dll to the
     system directory (e.g., `C:\WINDOWS\system32\') to make it
     system-widely available. To regenerate liblinear.dll, please
-    follow the instruction of building windows binaries in LIBLINEAR
+    follow the instruction of building Windows binaries in LIBLINEAR
     README.
 
 - System-wide installation:
@@ -65,7 +65,7 @@ and system-wide installation.
 
     Please note that you must keep the sources after the installation.
 
-    For windows, to run the above command, Microsoft Visual C++ and
+    For Windows, to run the above command, Microsoft Visual C++ and
     other tools are needed.
 
     In addition, DON'T use the following FAILED commands
