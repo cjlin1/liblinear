@@ -22,9 +22,9 @@ Table of Contents
 - Examples
 - Library Usage
 - Building Windows Binaries
-- Additional Information
 - MATLAB/OCTAVE interface
-- PYTHON interface
+- Python Interface
+- Additional Information
 
 When to use LIBLINEAR but not LIBSVM
 ====================================
@@ -665,7 +665,7 @@ MATLAB/OCTAVE Interface
 
 Please check the file README in the directory `matlab'.
 
-PYTHON Interface
+Python Interface
 ================
 
 Please check the file README in the directory `python'.
