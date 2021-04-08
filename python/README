@@ -63,6 +63,14 @@ and system-wide installation.
 
     > pip install -e .
 
+    or
+
+    > pip install --user -e .
+
+    The option --user would install the package in the home directory
+    instead of the system directory, and thus does not require the
+    root privilege.
+
     Please note that you must keep the sources after the installation.
 
     For Windows, to run the above command, Microsoft Visual C++ and
