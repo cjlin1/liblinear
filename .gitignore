@@ -1,0 +1,10 @@
+# Ignore compilation outputs
+blas/blas.a
+blas/daxpy.o
+blas/ddot.o
+blas/dnrm2.o
+blas/dscal.o
+linear.o
+predict
+train
+tron.o
