@@ -346,7 +346,7 @@ in linear.h, so you can check the version number.
         struct problem
         {
             int l, n;
-            int *y;
+            double *y;
             struct feature_node **x;
             double bias;
         };
