@@ -16,7 +16,13 @@ build_ext.get_export_symbols = lambda x, y: []
 
 PACKAGE_DIR = "liblinear"
 PACKAGE_NAME = "liblinear-official"
-VERSION = "2.43.0"
+with open('../linear.h') as f:
+    for l in f:
+        if l.startswith('#define LIBLINEAR_VERSION '):
+            num = l[:-1].split(' ')[-1]
+            VERSION = f'{num[0]}.{num[1:3]}.0'
+            break
+
 cpp_dir = "cpp-source"
 # should be consistent with dynamic_lib_name in liblinear/liblinear.py
 dynamic_lib_name = "clib"
