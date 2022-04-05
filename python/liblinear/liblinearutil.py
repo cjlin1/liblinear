@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import os, sys
-sys.path = [os.path.dirname(os.path.abspath(__file__))] + sys.path
 from .liblinear import *
 from .liblinear import __all__ as liblinear_all
 from .liblinear import scipy, sparse
