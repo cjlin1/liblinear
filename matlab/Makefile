@@ -18,6 +18,7 @@ matlab:	binary
 
 octave:
 	@echo "please type make under Octave"
+
 binary: train.$(MEX_EXT) predict.$(MEX_EXT) libsvmread.$(MEX_EXT) libsvmwrite.$(MEX_EXT)
 
 train.$(MEX_EXT): train.c ../linear.h ../newton.cpp ../linear.cpp linear_model_matlab.c \
