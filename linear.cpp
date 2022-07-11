@@ -658,7 +658,7 @@ void Solver_MCSVM_CS::Solve(double *w)
 {
 	int i, m, s;
 	int iter = 0;
-	double *alpha =  new double[l*nr_class];
+	double *alpha = new double[l*nr_class];
 	double *alpha_new = new double[nr_class];
 	int *index = new int[l];
 	double *QD = new double[l];
