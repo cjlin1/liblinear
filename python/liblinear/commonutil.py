@@ -160,8 +160,8 @@ def csr_scale(x, scale_param):
 
     if not n == len(coef):
         print("WARNING: The dimension of scaling parameters and feature number do not match.", file=sys.stderr)
-        coef = resize(coef, n)
-        offset = resize(offset, n)
+        coef = np.resize(coef, n)
+        offset = np.resize(offset, n)
 
     # scaled_x = x * diag(coef) + ones(l, 1) * offset'
     offset = sparse.csr_matrix(offset.reshape(1, n))
