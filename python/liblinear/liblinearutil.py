@@ -3,10 +3,16 @@
 import os, sys
 from .liblinear import *
 from .liblinear import __all__ as liblinear_all
-from .liblinear import scipy, sparse
 from .commonutil import *
 from .commonutil import __all__ as common_all
 from ctypes import c_double
+
+try:
+    import numpy as np
+    import scipy
+    from scipy import sparse
+except:
+    scipy = None
 
 if sys.version_info[0] < 3:
     range = xrange
@@ -101,8 +107,8 @@ def train(arg1, arg2=None, arg3=None):
         -q : quiet mode (no outputs)
     """
     prob, param = None, None
-    if isinstance(arg1, (list, tuple)) or (scipy and isinstance(arg1, scipy.ndarray)):
-        assert isinstance(arg2, (list, tuple)) or (scipy and isinstance(arg2, (scipy.ndarray, sparse.spmatrix)))
+    if isinstance(arg1, (list, tuple)) or (scipy and isinstance(arg1, np.ndarray)):
+        assert isinstance(arg2, (list, tuple)) or (scipy and isinstance(arg2, (np.ndarray, sparse.spmatrix)))
         y, x, options = arg1, arg2, arg3
         prob = problem(y, x)
         param = parameter(options)
@@ -195,14 +201,14 @@ def predict(y, x, m, options=""):
     def info(s):
         print(s)
 
-    if scipy and isinstance(x, scipy.ndarray):
-        x = scipy.ascontiguousarray(x) # enforce row-major
+    if scipy and isinstance(x, np.ndarray):
+        x = np.ascontiguousarray(x) # enforce row-major
     elif sparse and isinstance(x, sparse.spmatrix):
         x = x.tocsr()
     elif not isinstance(x, (list, tuple)):
         raise TypeError("type of x: {0} is not supported!".format(type(x)))
 
-    if (not isinstance(y, (list, tuple))) and (not (scipy and isinstance(y, scipy.ndarray))):
+    if (not isinstance(y, (list, tuple))) and (not (scipy and isinstance(y, np.ndarray))):
         raise TypeError("type of y: {0} is not supported!".format(type(y)))
 
     predict_probability = 0

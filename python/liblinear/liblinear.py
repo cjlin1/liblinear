@@ -7,11 +7,11 @@ from glob import glob
 import sys
 
 try:
+    import numpy as np
     import scipy
     from scipy import sparse
 except:
     scipy = None
-    sparse = None
 
 if sys.version_info[0] < 3:
     range = xrange
@@ -82,15 +82,15 @@ def gen_feature_nodearray(xi, feature_max=None):
 
     xi_shift = 0 # ensure correct indices of xi
     if scipy and isinstance(xi, tuple) and len(xi) == 2\
-            and isinstance(xi[0], scipy.ndarray) and isinstance(xi[1], scipy.ndarray): # for a sparse vector
+            and isinstance(xi[0], np.ndarray) and isinstance(xi[1], np.ndarray): # for a sparse vector
         index_range = xi[0] + 1 # index starts from 1
         if feature_max:
-            index_range = index_range[scipy.where(index_range <= feature_max)]
-    elif scipy and isinstance(xi, scipy.ndarray):
+            index_range = index_range[np.where(index_range <= feature_max)]
+    elif scipy and isinstance(xi, np.ndarray):
         xi_shift = 1
         index_range = xi.nonzero()[0] + 1 # index starts from 1
         if feature_max:
-            index_range = index_range[scipy.where(index_range <= feature_max)]
+            index_range = index_range[np.where(index_range <= feature_max)]
     elif isinstance(xi, (dict, list, tuple)):
         if isinstance(xi, dict):
             index_range = xi.keys()
@@ -110,7 +110,7 @@ def gen_feature_nodearray(xi, feature_max=None):
     ret[-2].index = -1
 
     if scipy and isinstance(xi, tuple) and len(xi) == 2\
-            and isinstance(xi[0], scipy.ndarray) and isinstance(xi[1], scipy.ndarray): # for a sparse vector
+            and isinstance(xi[0], np.ndarray) and isinstance(xi[1], np.ndarray): # for a sparse vector
         for idx, j in enumerate(index_range):
             ret[idx].index = j
             ret[idx].value = (xi[1])[idx]
@@ -148,9 +148,9 @@ def csr_to_problem_nojit(l, x_val, x_ind, x_rowptr, prob_val, prob_ind, prob_row
 
 def csr_to_problem(x, prob):
     # Extra space for termination node and (possibly) bias term
-    x_space = prob.x_space = scipy.empty((x.nnz+x.shape[0]*2), dtype=feature_node)
+    x_space = prob.x_space = np.empty((x.nnz+x.shape[0]*2), dtype=feature_node)
     prob.rowptr = x.indptr.copy()
-    prob.rowptr[1:] += 2*scipy.arange(1,x.shape[0]+1)
+    prob.rowptr[1:] += 2*np.arange(1,x.shape[0]+1)
     prob_ind = x_space["index"]
     prob_val = x_space["value"]
     prob_ind[:] = -1
@@ -165,17 +165,17 @@ class problem(Structure):
     _fields_ = genFields(_names, _types)
 
     def __init__(self, y, x, bias = -1):
-        if (not isinstance(y, (list, tuple))) and (not (scipy and isinstance(y, scipy.ndarray))):
+        if (not isinstance(y, (list, tuple))) and (not (scipy and isinstance(y, np.ndarray))):
             raise TypeError("type of y: {0} is not supported!".format(type(y)))
 
         if isinstance(x, (list, tuple)):
             if len(y) != len(x):
                 raise ValueError("len(y) != len(x)")
-        elif scipy != None and isinstance(x, (scipy.ndarray, sparse.spmatrix)):
+        elif scipy != None and isinstance(x, (np.ndarray, sparse.spmatrix)):
             if len(y) != x.shape[0]:
                 raise ValueError("len(y) != len(x)")
-            if isinstance(x, scipy.ndarray):
-                x = scipy.ascontiguousarray(x) # enforce row-major
+            if isinstance(x, np.ndarray):
+                x = np.ascontiguousarray(x) # enforce row-major
             if isinstance(x, sparse.spmatrix):
                 x = x.tocsr()
                 pass
@@ -197,8 +197,8 @@ class problem(Structure):
         self.n = max_idx
 
         self.y = (c_double * l)()
-        if scipy != None and isinstance(y, scipy.ndarray):
-            scipy.ctypeslib.as_array(self.y, (self.l,))[:] = y
+        if scipy != None and isinstance(y, np.ndarray):
+            np.ctypeslib.as_array(self.y, (self.l,))[:] = y
         else:
             for i, yi in enumerate(y): self.y[i] = yi
 
@@ -206,7 +206,7 @@ class problem(Structure):
         if scipy != None and isinstance(x, sparse.csr_matrix):
             base = addressof(self.x_space.ctypes.data_as(POINTER(feature_node))[0])
             x_ptr = cast(self.x, POINTER(c_uint64))
-            x_ptr = scipy.ctypeslib.as_array(x_ptr,(self.l,))
+            x_ptr = np.ctypeslib.as_array(x_ptr,(self.l,))
             x_ptr[:] = self.rowptr[:-1]*sizeof(feature_node)+base
         else:
             for i, xi in enumerate(self.x_space): self.x[i] = xi
