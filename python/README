@@ -136,6 +136,7 @@ If numba (http://numba.pydata.org) is installed, some operations will be much fa
 There are two levels of usage. The high-level one uses utility functions
 in liblinearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 
+>>> import numpy as np
 >>> import scipy
 >>> from liblinear.liblinearutil import *
 # Read data in LIBSVM format
@@ -145,7 +146,6 @@ in liblinearutil.py and the usage is the same as the LIBLINEAR MATLAB interface.
 
 # Construct problem in Scipy format
 # Dense data: numpy ndarray
->>> import numpy as np
 >>> y, x = np.asarray([1,-1]), np.asarray([[1,0,1], [-1,0,-1]])
 # Sparse data: scipy csr_matrix((data, (row_ind, col_ind))
 >>> y, x = np.asarray([1,-1]), scipy.sparse.csr_matrix(([1, 1, -1, -1], ([0, 0, 1, 1], [0, 2, 0, 2])))
