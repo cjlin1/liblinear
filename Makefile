@@ -2,19 +2,19 @@ CXX ?= g++
 CC ?= gcc
 CFLAGS = -Wall -Wconversion -O3 -fPIC
 LIBS = blas/blas.a
+#LIBS = -lblas
 SHVER = 5
 OS = $(shell uname)
-#LIBS = -lblas
+ifeq ($(OS),Darwin)
+	SHARED_LIB_FLAG = -dynamiclib -Wl,-install_name,liblinear.so.$(SHVER)
+else
+	SHARED_LIB_FLAG = -shared -Wl,-soname,liblinear.so.$(SHVER)
+endif
 
 all: train predict
 
 lib: linear.o newton.o blas/blas.a
-	if [ "$(OS)" = "Darwin" ]; then \
-		SHARED_LIB_FLAG="-dynamiclib -Wl,-install_name,liblinear.so.$(SHVER)"; \
-	else \
-		SHARED_LIB_FLAG="-shared -Wl,-soname,liblinear.so.$(SHVER)"; \
-	fi; \
-	$(CXX) $${SHARED_LIB_FLAG} linear.o newton.o blas/blas.a -o liblinear.so.$(SHVER)
+	$(CXX) $(SHARED_LIB_FLAG) linear.o newton.o blas/blas.a -o liblinear.so.$(SHVER)
 
 train: newton.o linear.o train.c blas/blas.a
 	$(CXX) $(CFLAGS) -o train train.c newton.o linear.o $(LIBS)
