@@ -463,11 +463,12 @@ in linear.h, so you can check the version number.
 
      nr_feature is the number of features.
 
-     The array w gives feature weights; its size is
-     nr_feature*nr_class but is nr_feature if nr_class = 2 (see more
-     explanation below). We use one against the rest for multi-class
-     classification, so each feature index corresponds to nr_class
-     weight values. Weights are organized in the following way
+     The array w gives feature weights. Its size is
+     nr_feature*nr_class but is nr_feature if nr_class = 2 and the
+     solver is not MCSVM_CS (see more explanation below). We use one
+     against the rest for multi-class classification, so each feature
+     index corresponds to nr_class weight values. Weights are
+     organized in the following way
 
      +------------------+------------------+------------+
      | nr_class weights | nr_class weights |  ...
@@ -476,8 +477,9 @@ in linear.h, so you can check the version number.
 
      The array label stores class labels.
 
-     For classification, if nr_class = 1 or 2, the single vector of
-     weights is obtained by considering label[0] as positive.
+     When nr_class = 1 or 2, classification solvers (MCSVM_CS
+     excluded) return a single vector of weights by considering
+     label[0] as positive in training.
 
      If bias >= 0, x becomes [x; bias]. The number of features is
      increased by one, so w is a (nr_feature+1)*nr_class array. The
