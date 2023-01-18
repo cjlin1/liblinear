@@ -2155,75 +2155,59 @@ static int solve_l1r_lr(const problem *prob_col, const parameter *param, double 
 	return newton_iter;
 }
 
-struct heap {
-	enum HEAP_TYPE { MIN, MAX };
-	int _size;
-	HEAP_TYPE _type;
-	feature_node* a;
+static int compare_feature_node(const void *a, const void *b)
+{
+	double a_value = (*(feature_node *)a).value;
+	double b_value = (*(feature_node *)b).value;
+	int a_index = (*(feature_node *)a).index;
+	int b_index = (*(feature_node *)b).index;
 
-	heap(int max_size, HEAP_TYPE type)
+	if(a_value < b_value)
+		return -1;
+	else if(a_value == b_value)
 	{
-		_size = 0;
-		a = new feature_node[max_size];
-		_type = type;
+		if(a_index < b_index)
+			return -1;
+		else if(a_index == b_index)
+			return 0;
 	}
-	~heap()
-	{
-		delete [] a;
-	}
-	bool cmp(const feature_node& left, const feature_node& right)
-	{
-		if(_type == MIN)
-			return left.value > right.value;
-		else
-			return left.value < right.value;
-	}
-	int size()
-	{
-		return _size;
-	}
-	void push(feature_node node)
-	{
-		a[_size] = node;
-		_size++;
-		int i = _size-1;
-		while(i)
+	return 1;
+}
+
+// elements before the returned index are < pivot, while those after are >= pivot
+static int partition(feature_node *nodes, int low, int high)
+{
+	int i;
+	int index;
+
+	swap(nodes[low + rand()%(high-low+1)], nodes[high]); // select and move pivot to the end
+
+	index = low;
+	for(i = low; i < high; i++)
+		if (compare_feature_node(&nodes[i], &nodes[high]) == -1)
 		{
-			int p = (i-1)/2;
-			if(cmp(a[p], a[i]))
-			{
-				swap(a[i], a[p]);
-				i = p;
-			}
-			else
-				break;
+			swap(nodes[index], nodes[i]);
+			index++;
 		}
-	}
-	void pop()
-	{
-		_size--;
-		a[0] = a[_size];
-		int i = 0;
-		while(i*2+1 < _size)
-		{
-			int l = i*2+1;
-			int r = i*2+2;
-			if(r < _size && cmp(a[l], a[r]))
-				l = r;
-			if(cmp(a[i], a[l]))
-			{
-				swap(a[i], a[l]);
-				i = l;
-			}
-			else
-				break;
-		}
-	}
-	feature_node top()
-	{
-		return a[0];
-	}
-};
+
+	swap(nodes[high], nodes[index]);
+	return index;
+}
+
+// rearrange nodes so that nodes[:k] contains nodes with the k smallest values.
+static void quick_select_min_k(feature_node *nodes, int low, int high, int k)
+{
+	int pivot;
+	if(low == high)
+		return;
+	pivot = partition(nodes, low, high);
+	if(pivot == k)
+		return;
+	else if(k-1 < pivot)
+		return quick_select_min_k(nodes, low, pivot-1, k);
+	else
+		return quick_select_min_k(nodes, pivot+1, high, k);
+}
 
 // A two-level coordinate descent algorithm for
 // a scaled one-class SVM dual problem
@@ -2262,11 +2246,12 @@ static int solve_oneclass_svm(const problem *prob, const parameter *param, doubl
 	int max_iter = 1000;
 	int active_size = l;
 
-	double negGmax;                 // max { -grad(f)_i | alpha_i < 1 }
-	double negGmin;                 // min { -grad(f)_i | alpha_i > 0 }
-
-	int *most_violating_i = new int[l];
-	int *most_violating_j = new int[l];
+	double negGmax;                 // max { -grad(f)_i | i in Iup }
+	double negGmin;                 // min { -grad(f)_i | i in Ilow }
+	// Iup = { i | alpha_i < 1 }, Ilow = { i | alpha_i > 0 }
+	feature_node *max_negG_of_Iup = new feature_node[l];
+	feature_node *min_negG_of_Ilow = new feature_node[l];
+	feature_node node;
 
 	int n = (int)(nu*l);            // # of alpha's at upper bound
 	for(i=0; i<n; i++)
@@ -2328,9 +2313,8 @@ static int solve_oneclass_svm(const problem *prob, const parameter *param, doubl
 		}
 
 		max_inner_iter = max(active_size/10, 1);
-		struct heap min_heap = heap(max_inner_iter, heap::MIN);
-		struct heap max_heap = heap(max_inner_iter, heap::MAX);
-		struct feature_node node;
+		int len_Iup = 0;
+		int len_Ilow = 0;
 		for(s=0; s<active_size; s++)
 		{
 			i = index[s];
@@ -2339,44 +2323,28 @@ static int solve_oneclass_svm(const problem *prob, const parameter *param, doubl
 
 			if (alpha[i] < 1)
 			{
-				if (min_heap.size() < max_inner_iter)
-					min_heap.push(node);
-				else if (min_heap.top().value < node.value)
-				{
-					min_heap.pop();
-					min_heap.push(node);
-				}
+				max_negG_of_Iup[len_Iup] = node;
+				len_Iup++;
 			}
 
 			if (alpha[i] > 0)
 			{
-				if (max_heap.size() < max_inner_iter)
-					max_heap.push(node);
-				else if (max_heap.top().value > node.value)
-				{
-					max_heap.pop();
-					max_heap.push(node);
-				}
+				min_negG_of_Ilow[len_Ilow] = node;
+				len_Ilow++;
 			}
 		}
-		max_inner_iter = min(min_heap.size(), max_heap.size());
-		while (max_heap.size() > max_inner_iter)
-			max_heap.pop();
-		while (min_heap.size() > max_inner_iter)
-			min_heap.pop();
+		max_inner_iter = min(max_inner_iter, min(len_Iup, len_Ilow));
 
-		for (s=max_inner_iter-1; s>=0; s--)
-		{
-			most_violating_i[s] = min_heap.top().index;
-			most_violating_j[s] = max_heap.top().index;
-			min_heap.pop();
-			max_heap.pop();
-		}
+		quick_select_min_k(max_negG_of_Iup, 0, len_Iup-1, len_Iup-max_inner_iter);
+		qsort(&(max_negG_of_Iup[len_Iup-max_inner_iter]), max_inner_iter, sizeof(struct feature_node), compare_feature_node);
+
+		quick_select_min_k(min_negG_of_Ilow, 0, len_Ilow-1, max_inner_iter);
+		qsort(min_negG_of_Ilow, max_inner_iter, sizeof(struct feature_node), compare_feature_node);
 
 		for (s=0; s<max_inner_iter; s++)
 		{
-			i = most_violating_i[s];
-			j = most_violating_j[s];
+			i = max_negG_of_Iup[len_Iup-s-1].index;
+			j = min_negG_of_Ilow[s].index;
 
 			if ((alpha[i] == 0 && alpha[j] == 0) ||
 			    (alpha[i] == 1 && alpha[j] == 1))
@@ -2484,15 +2452,14 @@ static int solve_oneclass_svm(const problem *prob, const parameter *param, doubl
 		*rho = sum_free/nr_free;
 	else
 		*rho = (ub + lb)/2;
-
 	info("rho = %lf\n", *rho);
 
 	delete [] QD;
 	delete [] G;
 	delete [] index;
 	delete [] alpha;
-	delete [] most_violating_i;
-	delete [] most_violating_j;
+	delete [] max_negG_of_Iup;
+	delete [] min_negG_of_Ilow;
 
 	return iter;
 }
