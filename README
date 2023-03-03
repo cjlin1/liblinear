@@ -88,11 +88,11 @@ This software uses some level-1 BLAS subroutines. The needed functions are
 included in this package.  If a BLAS library is available on your
 machine, you may use it by modifying the Makefile: Unmark the following line
 
-        #LIBS ?= -lblas
+        #LIBS = -lblas
 
 and mark
 
-        LIBS ?= blas/blas.a
+        LIBS = blas/blas.a
 
 The tool `svm-scale', borrowed from LIBSVM, is for scaling input data file.
 
