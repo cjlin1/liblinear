@@ -3406,6 +3406,8 @@ int save_model(const char *model_file_name, const struct model *model_)
 	if(check_oneclass_model(model_))
 		fprintf(fp, "rho %.17g\n", model_->rho);
 
+	fprintf(fp, "normalization %d\n", model_->normal);
+
 	fprintf(fp, "w\n");
 	for(i=0; i<w_size; i++)
 	{
@@ -3455,6 +3457,7 @@ struct model *load_model(const char *model_file_name)
 	int nr_feature;
 	int n;
 	int nr_class;
+	int normalfac;
 	double bias;
 	double rho;
 	model *model_ = Malloc(model,1);
@@ -3500,6 +3503,11 @@ struct model *load_model(const char *model_file_name)
 		{
 			FSCANF(fp,"%d",&nr_class);
 			model_->nr_class=nr_class;
+		}
+		else if(strcmp(cmd,"normalization")==0)
+		{
+			fscanf(fp,"%d",&normalfac);
+			model_->normal=normalfac;
 		}
 		else if(strcmp(cmd,"nr_feature")==0)
 		{
