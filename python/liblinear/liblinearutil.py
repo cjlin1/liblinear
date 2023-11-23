@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os, sys
 from .liblinear import *
 from .liblinear import __all__ as liblinear_all
