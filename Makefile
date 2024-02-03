@@ -13,7 +13,7 @@ endif
 
 all: train predict
 
-lib: linear.o newton.o blas/blas.a
+lib: linear.o newton.o blas/blas.a liblinear.a
 	$(CXX) $(SHARED_LIB_FLAG) linear.o newton.o blas/blas.a -o liblinear.so.$(SHVER)
 
 train: newton.o linear.o train.c blas/blas.a
@@ -31,7 +31,10 @@ linear.o: linear.cpp linear.h
 blas/blas.a: blas/*.c blas/*.h
 	make -C blas OPTFLAGS='$(CFLAGS)' CC='$(CC)';
 
+liblinear.a: linear.o newton.o
+	ar -rcvs liblinear.a linear.o newton.o blas/*.o
+
 clean:
 	make -C blas clean
 	make -C matlab clean
-	rm -f *~ newton.o linear.o train predict liblinear.so.$(SHVER)
+	rm -f *~ newton.o linear.o train predict liblinear.a liblinear.so.$(SHVER)
