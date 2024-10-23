@@ -2194,11 +2194,14 @@ static int partition(feature_node *nodes, int low, int high)
 	return index;
 }
 
-// rearrange nodes so that nodes[:k] contains nodes with the k smallest values.
+// rearrange nodes so that
+// nodes[i] <= nodes[k] for all i < k
+// nodes[k] <= nodes[j] for all j > k
+// low and high are the bounds of the index range during the rearranging process
 static void quick_select_min_k(feature_node *nodes, int low, int high, int k)
 {
 	int pivot;
-	if(low == high)
+	if(low == high || high < k)
 		return;
 	pivot = partition(nodes, low, high);
 	if(pivot == k)
