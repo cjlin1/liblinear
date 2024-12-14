@@ -242,8 +242,11 @@ class problem(Structure):
 
 
 class parameter(Structure):
-    _names = ["solver_type", "eps", "C", "nr_weight", "weight_label", "weight", "p", "nu", "init_sol", "regularize_bias"]
-    _types = [c_int, c_double, c_double, c_int, POINTER(c_int), POINTER(c_double), c_double, c_double, POINTER(c_double), c_int]
+    _names = ["solver_type", "eps", "C", "nr_weight", "weight_label",
+              "weight", "p", "nu", "init_sol", "regularize_bias",
+              "w_recalc"]
+    _types = [c_int, c_double, c_double, c_int, POINTER(c_int),
+              POINTER(c_double), c_double, c_double, POINTER(c_double), c_int,c_bool]
     _fields_ = genFields(_names, _types)
 
     def __init__(self, options = None):
@@ -273,6 +276,7 @@ class parameter(Structure):
         self.init_sol = None
         self.bias = -1
         self.regularize_bias = 1
+        self.w_recalc = False
         self.flag_cross_validation = False
         self.flag_C_specified = False
         self.flag_p_specified = False
