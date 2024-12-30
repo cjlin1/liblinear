@@ -1,0 +1,9 @@
+-------------------------------------
+--- Windows binaries of LIBLINEAR ---
+-------------------------------------
+
+Starting from version 2.48, we no longer provide pre-built Windows binaries.
+If you would like to build them, please follow the instruction of building 
+Windows binaries in LIBLINEAR README.
+
+For any question, please contact Chih-Jen Lin <cjlin@csie.ntu.edu.tw>.

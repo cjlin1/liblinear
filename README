@@ -81,8 +81,7 @@ On Unix systems, type `make' to build the `train', `predict',
 and `svm-scale' programs. Run them without arguments to show the usages.
 
 On other systems, consult `Makefile' to build them (e.g., see
-'Building Windows binaries' in this file) or use the pre-built
-binaries (Windows binaries are in the directory `windows').
+'Building Windows binaries' in this file).
 
 This software uses some level-1 BLAS subroutines. The needed functions are
 included in this package.  If a BLAS library is available on your
@@ -658,8 +657,8 @@ in linear.h, so you can check the version number.
 Building Windows Binaries
 =========================
 
-Windows binaries are available in the directory `windows'. To re-build
-them via Visual C++, use the following steps:
+Starting from version 2.48, we no longer provide pre-built Windows binaries, 
+to build them via Visual C++, use the following steps:
 
 1. Open a dos command box and change to liblinear directory. If
 environment variables of VC++ have not been set, type
