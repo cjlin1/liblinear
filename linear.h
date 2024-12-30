@@ -2,7 +2,7 @@
 #ifndef _LIBLINEAR_H
 #define _LIBLINEAR_H
 
-#define LIBLINEAR_VERSION 247
+#define LIBLINEAR_VERSION 248
 
 #ifdef __cplusplus
 extern "C" {
