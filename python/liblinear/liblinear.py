@@ -3,7 +3,7 @@ from ctypes.util import find_library
 from os import path
 from glob import glob
 import sys
-
+from enum import IntEnum
 try:
     import numpy as np
     import scipy
@@ -16,10 +16,7 @@ if sys.version_info[0] < 3:
     from itertools import izip as zip
 
 __all__ = ['liblinear', 'feature_node', 'gen_feature_nodearray', 'problem',
-           'parameter', 'model', 'toPyModel', 'L2R_LR', 'L2R_L2LOSS_SVC_DUAL',
-           'L2R_L2LOSS_SVC', 'L2R_L1LOSS_SVC_DUAL', 'MCSVM_CS',
-           'L1R_L2LOSS_SVC', 'L1R_LR', 'L2R_LR_DUAL', 'L2R_L2LOSS_SVR',
-           'L2R_L2LOSS_SVR_DUAL', 'L2R_L1LOSS_SVR_DUAL', 'ONECLASS_SVM',
+           'parameter', 'model', 'toPyModel', 'solver_names',
            'print_null']
 
 try:
@@ -42,18 +39,19 @@ except:
         else:
             raise Exception('LIBLINEAR library not found.')
 
-L2R_LR = 0
-L2R_L2LOSS_SVC_DUAL = 1
-L2R_L2LOSS_SVC = 2
-L2R_L1LOSS_SVC_DUAL = 3
-MCSVM_CS = 4
-L1R_L2LOSS_SVC = 5
-L1R_LR = 6
-L2R_LR_DUAL = 7
-L2R_L2LOSS_SVR = 11
-L2R_L2LOSS_SVR_DUAL = 12
-L2R_L1LOSS_SVR_DUAL = 13
-ONECLASS_SVM = 21
+class solver_names(IntEnum):
+    L2R_LR = 0
+    L2R_L2LOSS_SVC_DUAL = 1
+    L2R_L2LOSS_SVC = 2
+    L2R_L1LOSS_SVC_DUAL = 3
+    MCSVM_CS = 4
+    L1R_L2LOSS_SVC = 5
+    L1R_LR = 6
+    L2R_LR_DUAL = 7
+    L2R_L2LOSS_SVR = 11
+    L2R_L2LOSS_SVR_DUAL = 12
+    L2R_L1LOSS_SVR_DUAL = 13
+    ONECLASS_SVM = 21
 
 PRINT_STRING_FUN = CFUNCTYPE(None, c_char_p)
 def print_null(s):
@@ -265,7 +263,7 @@ class parameter(Structure):
         return s
 
     def set_to_default_values(self):
-        self.solver_type = L2R_L2LOSS_SVC_DUAL
+        self.solver_type = solver_names.L2R_L2LOSS_SVC_DUAL
         self.eps = float('inf')
         self.C = 1
         self.p = 0.1
@@ -301,7 +299,7 @@ class parameter(Structure):
         while i < len(argv) :
             if argv[i] == "-s":
                 i = i + 1
-                self.solver_type = int(argv[i])
+                self.solver_type = solver_names(int(argv[i]))
                 self.flag_solver_specified = True
             elif argv[i] == "-c":
                 i = i + 1
@@ -353,23 +351,23 @@ class parameter(Structure):
             if not self.flag_cross_validation:
                 self.nr_fold = 5
             if not self.flag_solver_specified:
-                self.solver_type = L2R_L2LOSS_SVC
+                self.solver_type = solver_names.L2R_L2LOSS_SVC
                 self.flag_solver_specified = True
-            elif self.solver_type not in [L2R_LR, L2R_L2LOSS_SVC, L2R_L2LOSS_SVR]:
+            elif self.solver_type not in [solver_names.L2R_LR, solver_names.L2R_L2LOSS_SVC, solver_names.L2R_L2LOSS_SVR]:
                 raise ValueError("Warm-start parameter search only available for -s 0, -s 2 and -s 11")
 
         if self.eps == float('inf'):
-            if self.solver_type in [L2R_LR, L2R_L2LOSS_SVC]:
+            if self.solver_type in [solver_names.L2R_LR, solver_names.L2R_L2LOSS_SVC]:
                 self.eps = 0.01
-            elif self.solver_type in [L2R_L2LOSS_SVR]:
+            elif self.solver_type in [solver_names.L2R_L2LOSS_SVR]:
                 self.eps = 0.0001
-            elif self.solver_type in [L2R_L2LOSS_SVC_DUAL, L2R_L1LOSS_SVC_DUAL, MCSVM_CS, L2R_LR_DUAL]:
+            elif self.solver_type in [solver_names.L2R_L2LOSS_SVC_DUAL, solver_names.L2R_L1LOSS_SVC_DUAL, solver_names.MCSVM_CS, solver_names.L2R_LR_DUAL]:
                 self.eps = 0.1
-            elif self.solver_type in [L1R_L2LOSS_SVC, L1R_LR]:
+            elif self.solver_type in [solver_names.L1R_L2LOSS_SVC, solver_names.L1R_LR]:
                 self.eps = 0.01
-            elif self.solver_type in [L2R_L2LOSS_SVR_DUAL, L2R_L1LOSS_SVR_DUAL]:
+            elif self.solver_type in [solver_names.L2R_L2LOSS_SVR_DUAL, solver_names.L2R_L1LOSS_SVR_DUAL]:
                 self.eps = 0.1
-            elif self.solver_type in [ONECLASS_SVM]:
+            elif self.solver_type in [solver_names.ONECLASS_SVM]:
                 self.eps = 0.01
 
 class model(Structure):
