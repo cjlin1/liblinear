@@ -654,6 +654,27 @@ in linear.h, so you can check the version number.
         set_print_string_function(NULL);
     for default printing to stdout.
 
+    Please note that this function is not thread-safe. When multiple threads load or
+    use the same dynamic library (for example, liblinear.so.6), they actually share the
+    same memory space of the dynamic library, which results in all threads modifying
+    the same static function pointer, liblinear_print_string, in linear.cpp when they
+    call this function.
+
+    For example, suppose we have threads A and B. They call this function sequentially
+    and pass their own thread-local print_func into it. After that, they both call (*liblinear_print_string)(str)
+    once. When the last thread finishes setting it (say B), liblinear_print_string
+    is set to B.print_func. Now, if thread A wants to access liblinear_print_string,
+    it is actually accessing B.print_func rather than A.print_func, which is incorrect
+    since we expect to use the functionality of A.print_func.
+
+    Even if A.print_func and B.print_func have identical functionality, it is still risky.
+    Suppose liblinear_print_string is now set to B.print_func, and B deletes B.print_func
+    after finishing its work. Later, thread A calls liblinear_print_string, but the address
+    points to, which is B.print_func, has already been deleted. This invalid memory access
+    will crash the program. To mitigate this issue, in this example, you should ensure that
+    A.print_func and B.print_func remain valid after threads finish their work. For example,
+    in Python, you can assign them as global variables.
+
 Building Windows Binaries
 =========================
 
