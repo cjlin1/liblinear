@@ -97,15 +97,14 @@ def gen_feature_nodearray(xi, feature_max=None):
             index_range = index_range[np.where(index_range <= feature_max)]
     elif isinstance(xi, (dict, list, tuple)):
         if isinstance(xi, dict):
-            index_range = xi.keys()
+            index_range = sorted(xi.keys())
         elif isinstance(xi, (list, tuple)):
             xi_shift = 1
             index_range = range(1, len(xi) + 1)
-        index_range = filter(lambda j: xi[j-xi_shift] != 0, index_range)
+        index_range = list(filter(lambda j: xi[j-xi_shift] != 0, index_range))
 
         if feature_max:
-            index_range = filter(lambda j: j <= feature_max, index_range)
-        index_range = sorted(index_range)
+            index_range = list(filter(lambda j: j <= feature_max, index_range))
     else:
         raise TypeError('xi should be a dictionary, list, tuple, 1-d numpy array, or tuple of (index, data)')
 
@@ -115,9 +114,10 @@ def gen_feature_nodearray(xi, feature_max=None):
 
     if scipy and isinstance(xi, tuple) and len(xi) == 2\
             and isinstance(xi[0], np.ndarray) and isinstance(xi[1], np.ndarray): # for a sparse vector
-        for idx, j in enumerate(index_range):
-            ret[idx].index = j
-            ret[idx].value = (xi[1])[idx]
+        # since xi=(indices, values), we must sort them simultaneously.
+        for idx, arg in enumerate(np.argsort(index_range)):
+            ret[idx].index = index_range[arg]
+            ret[idx].value = (xi[1])[arg]
     else:
         for idx, j in enumerate(index_range):
             ret[idx].index = j
@@ -159,6 +159,9 @@ def csr_to_problem_nojit(l, x_val, x_ind, x_rowptr, prob_val, prob_ind, prob_row
         prob_val[prob_slice] = x_val[x_slice]
 
 def csr_to_problem(x, prob):
+    if not x.has_sorted_indices:
+        x.sort_indices()
+
     # Extra space for termination node and (possibly) bias term
     x_space = prob.x_space = np.empty((x.nnz+x.shape[0]*2), dtype=feature_node)
     # rowptr has to be a 64bit integer because it will later be used for pointer arithmetic,
