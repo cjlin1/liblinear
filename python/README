@@ -353,12 +353,14 @@ To use utility functions, type
     >>> from liblinear.liblinearutil import *
 
 The above command loads
-    train()            : train a linear model
-    predict()          : predict testing data
-    svm_read_problem() : read the data from a LIBSVM-format file or object.
-    load_model()       : load a LIBLINEAR model.
-    save_model()       : save model to a file.
-    evaluations()      : evaluate prediction results.
+    train()                : train a linear model
+    predict()              : predict testing data
+    svm_read_problem()     : read the data from a LIBSVM-format file or object.
+    load_model()           : load a LIBLINEAR model.
+    save_model()           : save model to a file.
+    evaluations()          : evaluate prediction results.
+    csr_find_scale_param() : find scaling parameter for data in csr format.
+    csr_scale()            : apply data scaling to data in csr format.
 
 - Function: train
 
