@@ -355,7 +355,7 @@ To use utility functions, type
 The above command loads
     train()            : train a linear model
     predict()          : predict testing data
-    svm_read_problem() : read the data from a LIBSVM-format file.
+    svm_read_problem() : read the data from a LIBSVM-format file or object.
     load_model()       : load a LIBLINEAR model.
     save_model()       : save model to a file.
     evaluations()      : evaluate prediction results.
@@ -458,6 +458,8 @@ The above command loads
     See the usage by examples:
 
     >>> y, x = svm_read_problem('data.txt')
+    >>> with open('data.txt') as f:
+    >>>     y, x = svm_read_problem(f)
     >>> m = load_model('model_file')
     >>> save_model('model_file', m)
 
