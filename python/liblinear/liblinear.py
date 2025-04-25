@@ -249,6 +249,12 @@ class problem(Structure):
 
         self.bias = bias
 
+    def copy(self):
+        prob_copy = problem.__new__(problem)
+        for key in problem._names + list(vars(self)):
+            setattr(prob_copy, key, getattr(self, key))
+        return prob_copy
+
 
 class parameter(Structure):
     _names = ["solver_type", "eps", "C", "nr_weight", "weight_label",

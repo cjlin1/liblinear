@@ -261,6 +261,32 @@ LIBLINEAR shared library:
     Note that if your x contains sparse data (i.e., dictionary), the internal
     ctypes data format is still sparse.
 
+    Copy a problem instance.
+    DON'T use this unless you know what it does.
+
+    >>> prob_copy = prob.copy()
+
+    The reason we need to copy a problem instance is because, for example,
+    in multi-label tasks using the OVR setting, we need to train a binary
+    classification problem for each label on data with/without that label.
+    Since each training uses the same x but different y, simply looping
+    over labels and creating a new problem instance for each training would
+    introduce overhead either from repeatedly transforming x into feature_node
+    or from allocating additional memory space for x during parallel training.
+
+    With problem copying, suppose x represents data, y1 represents the label
+    for class 1 and y2 represent the label for class 2.
+    We can do:
+
+    >>> class1_prob = problem(y1, x)
+    >>> class2_prob = class1_prob.copy()
+    >>> class2_prob.y = (ctypes.c_double * class1_prob.l)(*y2)
+
+    Note that although the copied problem is a new instance, attributes such as
+    y (POINTER(c_double)), x (POINTER(POINTER(feature_node))), and x_space (list/np.ndarray)
+    are copied by reference. That is, class1_prob and class2_prob share the same
+    y, x and x_space after the copy.
+
 - class parameter:
 
     Construct a parameter instance
