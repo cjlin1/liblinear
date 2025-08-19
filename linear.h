@@ -48,6 +48,7 @@ struct model
 	struct parameter param;
 	int nr_class;           /* number of classes */
 	int nr_feature;
+	int normal;
 	double *w;
 	int *label;             /* label of each class */
 	double bias;
