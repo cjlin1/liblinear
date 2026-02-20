@@ -3348,10 +3348,13 @@ double predict_probability(const struct model *model_, const struct feature_node
 
 		double label=predict_values(model_, x, prob_estimates);
 		for(i=0;i<nr_w;i++)
-			prob_estimates[i]=1/(1+exp(-prob_estimates[i]));
+			prob_estimates[i]=exp(prob_estimates[i]);
 
 		if(nr_class==2) // for binary classification
+		{
+			prob_estimates[0]=1/(1+1/prob_estimates[0]);
 			prob_estimates[1]=1.-prob_estimates[0];
+		}
 		else
 		{
 			double sum=0;
