@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <math.h>
 #include <string.h>
 #include <errno.h>
 #include "linear.h"
@@ -132,6 +133,17 @@ void do_predict(FILE *input, FILE *output)
 			i++;
 		}
 		x[i].index = -1;
+
+		if(model_->normal){
+			double length = 0;
+			for(int kk = 0; x[kk].index != -1; kk++)
+				length += x[kk].value * x[kk].value;
+	
+			length = sqrt(length);
+			
+			for(int kk = 0; x[kk].index != -1; kk++)
+				x[kk].value /= length;
+		}
 
 		if(flag_predict_probability)
 		{

@@ -104,6 +104,24 @@ int flag_solver_specified;
 int nr_fold;
 double bias;
 
+int normal = 0;
+
+void normalize(problem *pb){
+	feature_node **p = pb->x;
+	
+	for(int i = 0; i < pb->l; i++){
+		double length = 0;
+
+		for(int j = 0; p[i][j].index != -1; j++)
+			length += (p[i][j].value) * (p[i][j].value);
+
+		length = sqrt(length);
+
+		for(int j = 0; p[i][j].index != -1; j++)
+			p[i][j].value /= length;
+	}
+}
+
 int main(int argc, char **argv)
 {
 	char input_file_name[1024];
@@ -112,6 +130,7 @@ int main(int argc, char **argv)
 
 	parse_command_line(argc, argv, input_file_name, model_file_name);
 	read_problem(input_file_name);
+	if(normal) normalize(&prob);
 	error_msg = check_parameter(&prob,&param);
 
 	if(error_msg)
@@ -131,6 +150,7 @@ int main(int argc, char **argv)
 	else
 	{
 		model_=train(&prob, &param);
+		model_->normal = normal;
 		if(save_model(model_file_name, model_))
 		{
 			fprintf(stderr,"can't save model to file %s\n",model_file_name);
@@ -240,6 +260,11 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 			exit_with_help();
 		switch(argv[i-1][1])
 		{
+			case 'n':
+				normal = 1;
+				i--;
+				break;
+
 			case 's':
 				param.solver_type = atoi(argv[i]);
 				flag_solver_specified = 1;
@@ -312,7 +337,7 @@ void parse_command_line(int argc, char **argv, char *input_file_name, char *mode
 	// determine filenames
 	if(i>=argc)
 		exit_with_help();
-
+	
 	strcpy(input_file_name, argv[i]);
 
 	if(i<argc-1)
