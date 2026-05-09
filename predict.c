@@ -51,12 +51,21 @@ void do_predict(FILE *input, FILE *output)
 
 	int nr_class=get_nr_class(model_);
 	double *prob_estimates=NULL;
+	double *dec_values;
+	int nr_w;
 	int j, n;
 	int nr_feature=get_nr_feature(model_);
 	if(model_->bias>=0)
 		n=nr_feature+1;
 	else
 		n=nr_feature;
+
+	// Hoisted out of the per-row loop, parallel to prob_estimates below.
+	if(nr_class==2 && model_->param.solver_type != MCSVM_CS)
+		nr_w = 1;
+	else
+		nr_w = nr_class;
+	dec_values = (double *) malloc(nr_w*sizeof(double));
 
 	if(flag_predict_probability)
 	{
@@ -144,7 +153,7 @@ void do_predict(FILE *input, FILE *output)
 		}
 		else
 		{
-			predict_label = predict(model_,x);
+			predict_label = predict_values(model_,x,dec_values);
 			fprintf(output,"%.17g\n",predict_label);
 		}
 
@@ -170,6 +179,7 @@ void do_predict(FILE *input, FILE *output)
 		info("Accuracy = %g%% (%d/%d)\n",(double) correct/total*100,correct,total);
 	if(flag_predict_probability)
 		free(prob_estimates);
+	free(dec_values);
 }
 
 void exit_with_help()

@@ -3326,11 +3326,34 @@ double predict_values(const struct model *model_, const struct feature_node *x, 
 	}
 }
 
+// Stack-buffer threshold for predict()'s dec_values. predict() is invoked
+// in tight per-row loops (do_predict, cross_validation, embedders) and the
+// allocator round-trip would otherwise dominate cheap dot products on small
+// models. 64 is chosen as a safe ceiling: 64 doubles = 512 bytes (negligible
+// stack), and it covers binary, regression, one-class, and the vast majority
+// of multiclass models. Callers with more classes fall back to malloc with
+// the original behavior.
+#define LIBLINEAR_PREDICT_STACK_DEC_VALUES 64
+
+// Suppress -fstack-protector on this function. Apple clang (and gcc with
+// -fstack-protector-strong, which some distros default to) inserts a canary
+// load+compare into any function holding a stack array. On predict(), called
+// millions of times in scoring loops, those extra loads measurably dominate
+// the dot product for small-but-not-trivial multiclass models. The buffer
+// here is internal, fixed-size, and never indexed by external input; the
+// nr_class check guarantees writes stay in bounds, so the canary protects
+// nothing here.
+#if defined(__clang__) || (defined(__GNUC__) && __GNUC__ >= 11)
+__attribute__((no_stack_protector))
+#endif
 double predict(const model *model_, const feature_node *x)
 {
-	double *dec_values = Malloc(double, model_->nr_class);
+	double stack_buf[LIBLINEAR_PREDICT_STACK_DEC_VALUES];
+	double *dec_values = (model_->nr_class <= LIBLINEAR_PREDICT_STACK_DEC_VALUES)
+		? stack_buf
+		: Malloc(double, model_->nr_class);
 	double label=predict_values(model_, x, dec_values);
-	free(dec_values);
+	if(dec_values != stack_buf) free(dec_values);
 	return label;
 }
 
